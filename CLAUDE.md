@@ -2,6 +2,18 @@
 
 開発時に Claude Code が読む補助メモ。プロジェクト固有の事情と"知っておかないと事故る"罠を集約。
 
+## TL;DR (30秒で把握する)
+
+- **何か?** Kaggle ポケモン TCG AI バトル (シミュ部門) の提出エージェント
+- **提出は?** `./make_submission.sh` → `submission.tar.gz` (1.1MB) → `kaggle competitions submit`
+- **エントリ?** リポジトリ root の `main.py` (filename 固定、ネスト不可)
+- **学習は?** `scripts/run.sh python3 -m train.reinforce ...` (numpy 線形ポリシー、CPU、~6分/2000ep)
+- **強さ?** 2000ep 学習で vs random 34-6 (85%)
+- **PIMC?** `cg/api.py` の `search_begin/step/release` で実装可能 (凍結解除済)
+- **GPU?** RTX 3070 Ti (8GB) + PyTorch cu128 動作確認済。`scripts/env.sh` が `libcuda` を解決
+- **コミット前?** `pre-commit install` 必須 (deck/main/bundle/ruff の品質ゲート)
+- **次の打ち手?** §"次の打ち手" を見るべし
+
 ## プロジェクト概要
 
 Kaggle コンペ **「ポケモンカードゲーム AI Battle Challenge (PTCGABC / ポケカABC)」** のシミュレーション部門への提出エージェント。

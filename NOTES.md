@@ -13,16 +13,24 @@ historical reasons, but they ARE in the submission runtime as long as we
 include `cg/` in our tar.gz.
 
 This unfreezes the PIMC / IS-MCTS path that previous notes marked as
-"drop entirely". `cg.api` exposes:
+"drop entirely". `cg.api` (see line refs to the in-repo file) exposes:
 
-- `Observation / SelectData / Option / State / PlayerState / Pokemon / Card / SearchState / Skill / CardData / Attack` (dataclasses)
-- `OptionType (0-16)`, `SelectType (0-10)`, `SelectContext`, `AreaType`, `EnergyType (0-11)`, `CardType (0-6)`, `SpecialConditionType (0-4)`, `LogType`
-- `all_card_data() -> list[CardData]`
-- `all_attack() -> list[Attack]`
-- `to_observation_class(obs_dict) -> Observation`
-- `search_begin(agent_observation, your_deck, your_prize, opponent_deck, opponent_prize, opponent_hand, opponent_active, manual_coin=False) -> SearchState`
-- `search_step(search_id, select) -> SearchState`
-- `search_end()`, `search_release(search_id)`
+- Dataclasses: `Observation` (`cg/api.py:439`), `SelectData` (`:399`), `Option` (`:382`),
+  `State` (`:367`), `PlayerState` (`:351`), `Pokemon` (`:339`), `Card` (`:333`),
+  `SearchState` (`:448`), `Skill` (`:459`), `CardData` (`:464`), `Attack` (`:485`)
+- Enums: `OptionType` 0-16 (`cg/api.py:120`), `SelectType` 0-10 (`:55`),
+  `SelectContext` (`:68`), `AreaType` 1-12 (`:11`), `EnergyType` 0-11 (`:25`),
+  `CardType` 0-6 (`:39`), `SpecialConditionType` 0-4 (`:48`), `LogType` (`:189`)
+- `all_card_data() -> list[CardData]` (`cg/api.py:495`)
+- `all_attack() -> list[Attack]` (`:502`)
+- `to_observation_class(obs_dict) -> Observation` (`:509`)
+- `search_begin(agent_observation, your_deck, your_prize, opponent_deck, opponent_prize, opponent_hand, opponent_active, manual_coin=False) -> SearchState` (`:517`)
+- `search_step(search_id, select) -> SearchState` (`:597`)
+- `search_end()` (`:629`), `search_release(search_id)` (`:633`)
+
+Battle entrypoints in `cg/game.py`: `battle_start(deck0, deck1)` (`:19`),
+`battle_select(select_list)` (`:48`), `battle_finish()` (`:43`),
+`visualize_data() -> str` (`:69`).
 
 Official API docs: <https://matsuoinstitute.github.io/cabt/>
 
@@ -152,35 +160,44 @@ kaggle_data/          # Extracted contents of pokemon-tcg-ai-battle.zip
 
 ## Training quick start
 
-```bash
-# (Optional) burn-in: 200 self-play games, ~80 s on this image.
-python3 -m train.reinforce --episodes 200 --lr 0.05
+`scripts/run.sh` wraps the python invocation with the `LD_LIBRARY_PATH`
+adjustments numpy / kaggle_environments / torch need on this nix image.
 
-# Re-benchmark with weights loaded.
-python3 selfplay_test.py 8
+```bash
+# Warm-started 2000ep training, ~6 min on CPU.
+scripts/run.sh python3 -m train.reinforce \
+    --episodes 2000 --lr 0.05 \
+    --warm-start train/policy.npz \
+    --out train/policy.npz \
+    --metrics-out train/metrics_2000ep.json
+
+# Benchmark vs random.
+scripts/run.sh python3 selfplay_test.py 20
 ```
 
-The current setup is intentionally tiny: numpy-only, linear policy on a
-24-dim state vector + 18-dim option vector, REINFORCE with the terminal
-reward. It beats `random_agent` 14-2 after 40 self-play episodes.
+Current setup: numpy-only linear policy on 36-d state + 36-d option features
+(`train/features.py`), REINFORCE with terminal reward (`train/reinforce.py`).
+2000ep beats `random_agent` 34-6 (85%) over 40 games.
 
 ### Upgrade path
 
-1. **Better features.** Add card-id embeddings (look up `Pokemon.id`,
-   energy types, attack costs) and tile-encoded counts (active/bench HP
-   per slot).
-2. **Bigger model.** Drop in a small MLP (PyTorch) once the feature dim
-   stops being the bottleneck. `pip install torch --user`.
-3. **PPO + value baseline.** Replace `reinforce_update` with a clipped
-   PPO objective and a value head; that removes the high-variance terminal
-   reward signal that REINFORCE suffers from.
-4. **Self-play league.** Keep a rotating snapshot of past policies and
-   train against the league instead of only the current policy — prevents
-   cycle-collapse where the agent over-fits to its own quirks.
-5. **Search (UNFROZEN 2026-06-17).** `cg.api.search_begin/step/release` is
+1. **Search (UNFROZEN 2026-06-17).** `cg.api.search_begin/step/release` is
    available — wrap the trained linear policy as the rollout policy inside
    IS-MCTS. For the hidden-info sampler, draw `opponent_hand` from cards
    we haven't seen yet (deck minus visible cards minus our predicted hand).
+2. **Better features.** Add card-id embeddings (look up `Pokemon.id`,
+   energy types, attack costs) and tile-encoded counts (active/bench HP
+   per slot). `all_card_data()` is the canonical source.
+3. **Bigger model.** Drop in a small MLP (PyTorch) once the feature dim
+   stops being the bottleneck. `torch==2.11.0+cu128` is already in `.venv`
+   and `scripts/env.sh` resolves `libcuda.so.1` via `/usr/lib/wsl/lib`,
+   so `torch.cuda.is_available()` returns True on the RTX 3070 Ti.
+4. **PPO + value baseline.** Replace `reinforce_update` with a clipped
+   PPO objective and a value head; that removes the high-variance terminal
+   reward signal that REINFORCE suffers from.
+5. **Self-play league.** Keep a rotating snapshot of past policies and
+   train against the league instead of only the current policy — prevents
+   cycle-collapse where the agent over-fits to its own quirks.
 
 ## Open items
 
