@@ -13,13 +13,30 @@ from __future__ import annotations
 import numpy as np
 
 STATE_DIM = 36
-OPTION_DIM = 36
+OPTION_DIM = 40
 
 # Card ID hash buckets — cheap proxy for "this is the same card I saw last time"
 # without needing the C-side AllCard table. Increase if collisions become a
 # problem in practice.
 _ID_BUCKETS = 8
 _ATTACK_BUCKETS = 8
+
+# attackId -> (damage, energy_cost) lookup table from cg.api.all_attack().
+# Built lazily on first call so that imports don't pay the cost when only
+# state_features is used (e.g., from a pure-Python smoke test).
+_ATTACK_TABLE: dict[int, tuple[int, int]] | None = None
+
+
+def _attack_table() -> dict[int, tuple[int, int]]:
+    global _ATTACK_TABLE
+    if _ATTACK_TABLE is None:
+        try:
+            from cg.api import all_attack  # noqa: PLC0415
+
+            _ATTACK_TABLE = {a.attackId: (a.damage, len(a.energies)) for a in all_attack()}
+        except Exception:
+            _ATTACK_TABLE = {}
+    return _ATTACK_TABLE
 
 
 def state_features(obs: dict) -> np.ndarray:
@@ -117,17 +134,30 @@ def option_features(opt: dict, obs: dict, sel: dict) -> np.ndarray:
     if card_id is not None:
         f[18 + (card_id % _ID_BUCKETS)] = 1.0
 
-    # ATTACK-only: hash the attackId.
+    # ATTACK-only: hash the attackId + look up damage/cost from cg.api.all_attack().
     if t == 13:
         a_id = opt.get("attackId")
         if a_id is not None:
             f[18 + _ID_BUCKETS + (a_id % _ATTACK_BUCKETS)] = 1.0
+            dmg_cost = _attack_table().get(a_id)
+            if dmg_cost is not None:
+                damage, cost = dmg_cost
+                f[34] = damage / 200.0
+                f[35] = cost / 6.0
+                # Damage-per-energy efficiency. Falls back to raw damage when
+                # cost is 0 (which happens for some attacks that draw cards etc.).
+                f[36] = damage / max(1, cost) / 200.0
+                # "Can the active Pokemon actually pay for this attack right now?"
+                # Approximated by total attached energies vs cost. Doesn't check
+                # color, since the engine has already filtered illegal options.
+                my_act = (me.get("active") or [None])[0]
+                attached = _energy_count(my_act)
+                f[37] = float(attached >= cost) if my_act else 0.0
 
     # Target Pokemon stats for ATTACH/EVOLVE (inPlayArea/inPlayIndex).
     target = _resolve_in_play(opt, me)
     if target is not None:
-        # Reuse the trailing two slots for HP-ratio + energy count of the
-        # target. (Indices 30, 31 in the option vector.)
+        # Trailing two slots: HP-ratio + energy count of the target.
         f[OPTION_DIM - 2] = _hp_ratio(target)
         f[OPTION_DIM - 1] = _energy_count(target) / 6.0
     return f

@@ -175,9 +175,11 @@ scripts/run.sh python3 -m train.reinforce \
 scripts/run.sh python3 selfplay_test.py 20
 ```
 
-Current setup: numpy-only linear policy on 36-d state + 36-d option features
+Current setup: numpy-only linear policy on 36-d state + 40-d option features
 (`train/features.py`), REINFORCE with terminal reward (`train/reinforce.py`).
-2000ep beats `random_agent` 34-6 (85%) over 40 games.
+2000ep from scratch with ATTACK damage/cost/coverage features beats
+`random_agent` 65-15 (81%) over 80 games — matching the 5000ep run that
+used hash-only ATTACK features.
 
 ### Upgrade path
 

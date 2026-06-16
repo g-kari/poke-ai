@@ -87,7 +87,9 @@ CLAUDE.md             Claude Code 向け開発メモ
 | engine 順フォールバック | 14-2 (16 戦) | option index 0 を常に選ぶだけ |
 | 500ep 学習 (state 24-d / opt 18-d) | 19-5 (24 戦) | PR #1 |
 | 500ep + Pokemon-aware 特徴 (36-d / 36-d) | 23-1 (24 戦) | PR #2 |
-| **2000ep warm-start** | **34-6 (40 戦, 85%)** | A/B で 500ep の 31-9 (77.5%) を上回り確認 |
+| 2000ep warm-start | 34-6 (40 戦, 85%) | A/B で 500ep の 31-9 を上回り |
+| 5000ep cumulative | 36-4 (40 戦, 90%) | 2000ep からの warm-start |
+| **2000ep + ATTACK dmg/cost 特徴 (36-d / 40-d)** | **65-15 (80 戦, 81%)** | 5000ep を 2.5x 少ない episode で同等。新 features で baseline 上書き |
 
 ## 環境
 
