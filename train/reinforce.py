@@ -125,7 +125,10 @@ def reinforce_update(policy: LinearPolicy, trace: list[Step],
 
 
 def train(episodes: int, lr: float, out: str, seed: int = 0,
-          start_from: str | None = None) -> None:
+          start_from: str | None = None, log_every: int = 20,
+          metrics_out: str | None = None) -> None:
+    if log_every <= 0:
+        raise ValueError("log_every must be > 0")
     rng = np.random.default_rng(seed)
     policy = LinearPolicy()
     if start_from:
@@ -139,6 +142,10 @@ def train(episodes: int, lr: float, out: str, seed: int = 0,
 
     t0 = time.monotonic()
     wins = losses = draws = 0
+    # Rolling-window stats (last `log_every` episodes) so we can see if
+    # winrate trends up over time rather than just cumulative.
+    recent = []
+    metrics = []
     for ep in range(1, episodes + 1):
         trace0, trace1, r0, r1 = run_episode(policy, rng)
         reinforce_update(policy, trace0, float(r0), lr)
@@ -149,13 +156,31 @@ def train(episodes: int, lr: float, out: str, seed: int = 0,
             losses += 1
         else:
             draws += 1
-        if ep % 20 == 0 or ep == episodes:
+        recent.append(r0)
+        if len(recent) > log_every:
+            recent.pop(0)
+        if ep % log_every == 0 or ep == episodes:
             dt = time.monotonic() - t0
-            print(f"ep {ep:4d}  P0 W/L/D = {wins}/{losses}/{draws}  "
-                  f"|w_opt|={np.linalg.norm(policy.w_opt):.3f}  "
-                  f"{dt:.1f}s")
+            win_rate_recent = sum(1 for r in recent if r == 1) / max(1, len(recent))
+            row = {
+                "ep": ep,
+                "wins": wins, "losses": losses, "draws": draws,
+                "win_rate_recent": round(win_rate_recent, 3),
+                "w_opt_norm": round(float(np.linalg.norm(policy.w_opt)), 4),
+                "w_state_norm": round(float(np.linalg.norm(policy.w_state)), 4),
+                "elapsed_s": round(dt, 1),
+            }
+            metrics.append(row)
+            print(f"ep {ep:4d}  cum W/L/D = {wins}/{losses}/{draws}  "
+                  f"recent {win_rate_recent:.2f}  "
+                  f"|w_opt|={row['w_opt_norm']:.3f}  {dt:.1f}s")
     policy.save(out)
     print(f"saved policy to {out}")
+    if metrics_out:
+        import json as _json
+        with open(metrics_out, "w") as f:
+            _json.dump(metrics, f, indent=2)
+        print(f"saved metrics to {metrics_out}")
 
 
 def main():
@@ -165,8 +190,11 @@ def main():
     p.add_argument("--out", default=DEFAULT_PATH)
     p.add_argument("--warm-start", default=None)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--log-every", type=int, default=20)
+    p.add_argument("--metrics-out", default=None)
     args = p.parse_args()
-    train(args.episodes, args.lr, args.out, args.seed, args.warm_start)
+    train(args.episodes, args.lr, args.out, args.seed, args.warm_start,
+          args.log_every, args.metrics_out)
 
 
 if __name__ == "__main__":
