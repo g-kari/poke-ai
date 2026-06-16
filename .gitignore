@@ -2,3 +2,7 @@ __pycache__/
 *.py[cod]
 *.npz
 !train/policy.npz
+.venv/
+pokemon-tcg-ai-battle.zip
+kaggle_data/
+submission.tar.gz

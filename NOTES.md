@@ -3,41 +3,53 @@
 Living doc of what the actual installed env exposes, paired with the HANDOVER
 items that need correcting and the path to a learned policy.
 
-## VERIFY answers (HANDOVER §5)
+## 2026-06-17 update — Python wrappers exist!
 
-The HANDOVER was written against the docs at `https://matsuoinstitute.github.io/cabt/`
-(which describe a pure-Python `cabt.api` wrapper). The version shipped via
-`pip install kaggle-environments==1.30.1` does **not** expose that wrapper.
-Findings from an actual self-play run on this image:
+The HANDOVER's `cabt.api` Python wrappers **do exist** — they're shipped
+inside the official `sample_submission/cg/` bundle (downloadable via
+`kaggle competitions download -c pokemon-tcg-ai-battle`, copied into this
+repo's `cg/`). They are NOT in `pip install kaggle-environments` for
+historical reasons, but they ARE in the submission runtime as long as we
+include `cg/` in our tar.gz.
 
-1. **Import path.** The Python entry points are
-   `kaggle_environments.envs.cabt.cg.game` (`battle_start`, `battle_select`,
-   `battle_finish`, `visualize_data`) and `...cg.sim` (`lib`, `Battle`,
-   `StartData`, `SerialData`). There is no top-level `cabt` package, no
-   `cabt.api`, and no Python wrapper for `all_card_data() / all_attack() /
-   to_observation_class() / search_begin() / search_step() / search_end() /
-   search_release()`. The C symbols exist in `libcg.so` (`AllCard`,
-   `AllAttack`, `SearchBegin`, `SearchStep`, `SearchEnd`, `SearchRelease`)
-   but the ABI is not documented and `AllAttack()` with no args returns
-   `count=0`, so reverse-engineering it is risky without official docs.
-2. **Terminal & value.** `obs["current"]["result"]` is `-1` while the game
-   continues, `0` if P0 wins, `1` if P1 wins, `2` for draw. `env.steps[-1][i].reward`
-   exposes the same as `+1 / 0 / -1` to the agent function output.
-3. **Search rewind.** Not testable without a Python `SearchBegin` wrapper.
-   Until one is wired in, **drop the PIMC layer entirely** and use a
-   learned policy on the raw observation. The notes below describe the
-   training path.
-4. **`search_begin_input`.** Plain ASCII string ~80 chars at the opening
-   step (`'AGEAjD/...=='`), produced by `GetBattleData` from the C side.
-   It is the engine's serialized state buffer — opaque to Python without
-   a `SearchBegin` wrapper.
-5. **`legal_pool`.** The bundled sample deck in
-   `kaggle_environments.envs.cabt.cabt.deck` is 60 IDs (mostly id `3`,
-   plus a few in the 700-1300 range). The actual contest legal-card list
-   has to come from the Kaggle competition data tab — not from this
-   package.
-6. **`deckCount` vs `len(deck)`.** `deckCount` always reflects the visible
-   remaining cards; the `hand`/`deck`/`prize` arrays are exactly that long.
+This unfreezes the PIMC / IS-MCTS path that previous notes marked as
+"drop entirely". `cg.api` exposes:
+
+- `Observation / SelectData / Option / State / PlayerState / Pokemon / Card / SearchState / Skill / CardData / Attack` (dataclasses)
+- `OptionType (0-16)`, `SelectType (0-10)`, `SelectContext`, `AreaType`, `EnergyType (0-11)`, `CardType (0-6)`, `SpecialConditionType (0-4)`, `LogType`
+- `all_card_data() -> list[CardData]`
+- `all_attack() -> list[Attack]`
+- `to_observation_class(obs_dict) -> Observation`
+- `search_begin(agent_observation, your_deck, your_prize, opponent_deck, opponent_prize, opponent_hand, opponent_active, manual_coin=False) -> SearchState`
+- `search_step(search_id, select) -> SearchState`
+- `search_end()`, `search_release(search_id)`
+
+Official API docs: <https://matsuoinstitute.github.io/cabt/>
+
+## VERIFY answers (HANDOVER §5) — corrected
+
+1. **Import path.** Two flavors:
+   - **For self-play / training** (this image): `kaggle_environments.envs.cabt.cg.game`
+     and `...cg.sim`. ABI here is sufficient for `battle_start/select/finish`.
+   - **For submission** (Kaggle runtime): include `cg/` from
+     `sample_submission/` in the tar.gz; import as `from cg.api import ...`,
+     `from cg.game import battle_start, ...`. The `kaggle_environments`
+     package is NOT guaranteed at submission time, but `cg/` is whatever
+     we bundle.
+2. **Terminal & value.** `obs["current"]["result"]` is `-1` while playing,
+   `0` if P0 wins, `1` if P1 wins, `2` for draw. `env.steps[-1][i].reward`
+   exposes `+1 / 0 / -1` after termination.
+3. **Search rewind.** Now testable via `cg.api.search_begin`. Hidden info
+   (opponent hand/deck/prize/active) is provided as `list[int]` (card IDs)
+   to the call; engine validates lengths against the visible
+   `deckCount`/`handCount`/`prize`. Use `search_release(id)` to free state.
+4. **`search_begin_input`.** Plain ASCII ~80 chars, produced by
+   `GetBattleData` and passed back into `SearchBegin` via `cg.api`.
+5. **`legal_pool`.** The contest-legal cards are listed in
+   `kaggle_data/EN_Card_Data.csv` / `JP_Card_Data.csv` (downloaded with the
+   competition data). Each row has Card ID, name, expansion, etc.
+6. **`deckCount` vs `len(deck)`.** Unchanged — visible counts match array
+   lengths.
 
 ## Observation cheat sheet (empirical)
 
@@ -89,31 +101,53 @@ handCount, hand, poisoned, burned, asleep, paralyzed, confused`. `hand` is
 (8, 38)  NUMBER/...               1
 ```
 
-### MAIN OptionType values (empirical)
+### OptionType full enumeration (cg.api.OptionType, official)
 
 ```
- 7  PLAY     {"index": int}
- 8  ATTACH   {"area": 2 (HAND), "index", "inPlayArea": 4|5, "inPlayIndex"}
- 9  EVOLVE   {"area": 2, "index", "inPlayArea", "inPlayIndex"}
-13  ATTACK   {"attackId": int}
-14  END      {}
+ 0  NUMBER            {"number": int}
+ 1  YES               {}
+ 2  NO                {}
+ 3  CARD              {"area", "index", "playerIndex"}
+ 4  TOOL_CARD         {"area", "index", "playerIndex", "toolIndex"}
+ 5  ENERGY_CARD       {"area", "index", "playerIndex", "energyIndex"}
+ 6  ENERGY            {"area", "index", "playerIndex", "energyIndex", "count"}
+ 7  PLAY              {"index"}
+ 8  ATTACH            {"area", "index", "inPlayArea", "inPlayIndex"}
+ 9  EVOLVE            {"area", "index", "inPlayArea", "inPlayIndex"}
+10  ABILITY           {"area", "index"}
+11  DISCARD           {"area", "index"}
+12  RETREAT           {}
+13  ATTACK            {"attackId"}
+14  END               {}
+15  SKILL             {"cardId", "serial"}
+16  SPECIAL_CONDITION {"specialConditionType"}
 ```
 
-`ABILITY / DISCARD / RETREAT` were not observed in mirror baseline play but
-should also be supported by the engine.
+Mirror baseline self-play hit 7/8/9/13/14 frequently. 10-12, 15-16 are
+emitted in non-mirror match-ups (abilities, retreats, layered effect ordering).
 
 ## Files
 
 ```
-agent.py              # Kaggle submission entry point. Loads train/policy.npz
-                      # if present, otherwise uses the "engine ordering"
-                      # baseline (still beats random ~7-1).
+main.py               # Kaggle submission entry point (renamed from agent.py).
+                      # Reads deck.csv at startup, loads train/policy.npz if
+                      # present, otherwise falls back to engine-order prior.
+agent.py              # Local-dev legacy entry. Kept because selfplay_test.py
+                      # and train/reinforce.py still import from it.
+deck.csv              # 60 card IDs, one per line. Submitted as-is.
+cg/                   # Official Python wrappers + libcg.so + cg.dll. Bundled
+                      # at the root of submission.tar.gz.
+make_submission.sh    # ./make_submission.sh -> submission.tar.gz
 selfplay_test.py      # python3 selfplay_test.py [N]  → benchmark vs random
 train/
-  features.py         # obs -> state/option feature vectors
+  features.py         # obs -> state/option feature vectors (36-d each)
   policy.py           # Linear policy (numpy), save/load .npz
   reinforce.py        # python3 -m train.reinforce --episodes N
   policy.npz          # trained weights (created by training)
+kaggle_data/          # Extracted contents of pokemon-tcg-ai-battle.zip
+  EN_Card_Data.csv    # Card master (English)
+  JP_Card_Data.csv    # Card master (Japanese)
+  sample_submission/  # Reference impl (use cg/ from here)
 ```
 
 ## Training quick start
@@ -143,18 +177,22 @@ reward. It beats `random_agent` 14-2 after 40 self-play episodes.
 4. **Self-play league.** Keep a rotating snapshot of past policies and
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
-5. **Search.** If a Python `SearchBegin` wrapper becomes available (or
-   we figure out the C ABI from official docs), wrap the trained policy
-   as the rollout policy inside MCTS / IS-MCTS as the HANDOVER originally
-   envisioned.
+5. **Search (UNFROZEN 2026-06-17).** `cg.api.search_begin/step/release` is
+   available — wrap the trained linear policy as the rollout policy inside
+   IS-MCTS. For the hidden-info sampler, draw `opponent_hand` from cards
+   we haven't seen yet (deck minus visible cards minus our predicted hand).
 
 ## Open items
 
 - `_try_load_policy()` silently swallows exceptions to keep the Kaggle
   submission robust. Add a CI hook that loads weights on a clean checkout
   so we catch breakage before submitting.
-- The submission deck is still the env's sample deck. Replace with the
-  competition-legal 60-card list once obtained.
+- Card-ID feature hashing in `train/features.py` uses 8 buckets — once we
+  start using `all_card_data()` at training time, switch to a real
+  card-ID embedding indexed by the master CSV.
 - `NUMBER (type=0)` selects (e.g. for "draw N cards" prompts) are routed
   through the same policy; we should special-case them once we see one
   in the wild during a non-mirror match.
+- Verify submission deck is competition-legal under the latest expansion
+  list (check `kaggle_data/EN_Card_Data.csv` for which card IDs are in
+  the legal pool).
