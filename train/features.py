@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import numpy as np
 
-STATE_DIM = 36
+STATE_DIM = 40
 OPTION_DIM = 40
 
 # Card ID hash buckets — cheap proxy for "this is the same card I saw last time"
@@ -26,6 +26,11 @@ _ATTACK_BUCKETS = 8
 # state_features is used (e.g., from a pure-Python smoke test).
 _ATTACK_TABLE: dict[int, tuple[int, int]] | None = None
 
+# cardId -> (weakness EnergyType|None, energyType EnergyType, retreatCost) for
+# Pokemon (cardType=0). Other card types map to None. Lazy-loaded with
+# cg.api.all_card_data() for the same reason as _attack_table.
+_CARD_TABLE: dict[int, tuple[int | None, int, int] | None] | None = None
+
 
 def _attack_table() -> dict[int, tuple[int, int]]:
     global _ATTACK_TABLE
@@ -37,6 +42,21 @@ def _attack_table() -> dict[int, tuple[int, int]]:
         except Exception:
             _ATTACK_TABLE = {}
     return _ATTACK_TABLE
+
+
+def _card_table() -> dict[int, tuple[int | None, int, int] | None]:
+    global _CARD_TABLE
+    if _CARD_TABLE is None:
+        try:
+            from cg.api import CardType, all_card_data  # noqa: PLC0415
+
+            _CARD_TABLE = {}
+            for c in all_card_data():
+                if c.cardType == int(CardType.POKEMON):
+                    _CARD_TABLE[c.cardId] = (c.weakness, c.energyType, c.retreatCost)
+        except Exception:
+            _CARD_TABLE = {}
+    return _CARD_TABLE
 
 
 def state_features(obs: dict) -> np.ndarray:
@@ -98,6 +118,29 @@ def state_features(obs: dict) -> np.ndarray:
     if hand:
         ids = {c["id"] for c in hand}
         f[35] = len(ids) / max(1, len(hand))
+
+    # --- card-data-derived matchup features ---
+    # Heuristic super-effective flags: if defender's weakness matches the
+    # attacker's primary energyType, the attacker's main attack is likely 2x.
+    # Doesn't account for off-type attacks (e.g., a Water Pokemon with a
+    # Fighting attack) but those are rare; the engine prior + ATTACK damage
+    # feature catches them downstream.
+    table = _card_table()
+    my_card = table.get(my_act["id"]) if my_act and my_act.get("id") else None
+    opp_card = table.get(opp_act["id"]) if opp_act and opp_act.get("id") else None
+    if my_card and opp_card:
+        my_weak, my_etype, my_retreat = my_card
+        opp_weak, opp_etype, opp_retreat = opp_card
+        f[36] = float(opp_weak is not None and opp_weak == my_etype)
+        f[37] = float(my_weak is not None and my_weak == opp_etype)
+        f[38] = my_retreat / 4.0
+        f[39] = opp_retreat / 4.0
+    elif my_card:
+        _, _, my_retreat = my_card
+        f[38] = my_retreat / 4.0
+    elif opp_card:
+        _, _, opp_retreat = opp_card
+        f[39] = opp_retreat / 4.0
     return f
 
 

@@ -90,7 +90,8 @@ CLAUDE.md             Claude Code 向け開発メモ
 | 2000ep warm-start | 34-6 (40 戦, 85%) | A/B で 500ep の 31-9 を上回り |
 | 5000ep cumulative | 36-4 (40 戦, 90%) | 2000ep からの warm-start |
 | 2000ep + ATTACK dmg/cost 特徴 (36-d / 40-d) | 65-15 (80 戦, 81%) | 5000ep を 2.5x 少ない episode で同等 |
-| **5000ep cumulative + ATTACK 特徴** | **70-10 (80 戦, 87.5%)** | 新特徴量で warm-start 続行 |
+| 5000ep cumulative + ATTACK 特徴 | 70-10 (80 戦, 87.5%) | 新特徴量で warm-start 続行 |
+| **5000ep + super-effective / retreat 特徴 (40-d / 40-d)** | **72-8 (80 戦, 90.0%)** | A/B で +1 win (誤差内)、線形は飽和。MLP / 探索で活性化見込み |
 
 ## 環境
 

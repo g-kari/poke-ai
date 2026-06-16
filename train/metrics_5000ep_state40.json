@@ -1,0 +1,152 @@
+[
+  {
+    "ep": 200,
+    "wins": 120,
+    "losses": 80,
+    "draws": 0,
+    "win_rate_recent": 0.6,
+    "w_opt_norm": 2.534,
+    "w_state_norm": 0.0,
+    "elapsed_s": 33.5
+  },
+  {
+    "ep": 400,
+    "wins": 247,
+    "losses": 153,
+    "draws": 0,
+    "win_rate_recent": 0.635,
+    "w_opt_norm": 2.6561,
+    "w_state_norm": 0.0,
+    "elapsed_s": 70.7
+  },
+  {
+    "ep": 600,
+    "wins": 365,
+    "losses": 235,
+    "draws": 0,
+    "win_rate_recent": 0.59,
+    "w_opt_norm": 2.6898,
+    "w_state_norm": 0.0,
+    "elapsed_s": 104.8
+  },
+  {
+    "ep": 800,
+    "wins": 478,
+    "losses": 322,
+    "draws": 0,
+    "win_rate_recent": 0.565,
+    "w_opt_norm": 2.7865,
+    "w_state_norm": 0.0,
+    "elapsed_s": 134.9
+  },
+  {
+    "ep": 1000,
+    "wins": 603,
+    "losses": 397,
+    "draws": 0,
+    "win_rate_recent": 0.625,
+    "w_opt_norm": 2.8589,
+    "w_state_norm": 0.0,
+    "elapsed_s": 169.3
+  },
+  {
+    "ep": 1200,
+    "wins": 729,
+    "losses": 471,
+    "draws": 0,
+    "win_rate_recent": 0.63,
+    "w_opt_norm": 2.8933,
+    "w_state_norm": 0.0,
+    "elapsed_s": 203.3
+  },
+  {
+    "ep": 1400,
+    "wins": 847,
+    "losses": 553,
+    "draws": 0,
+    "win_rate_recent": 0.59,
+    "w_opt_norm": 2.9889,
+    "w_state_norm": 0.0,
+    "elapsed_s": 236.6
+  },
+  {
+    "ep": 1600,
+    "wins": 975,
+    "losses": 625,
+    "draws": 0,
+    "win_rate_recent": 0.64,
+    "w_opt_norm": 3.0748,
+    "w_state_norm": 0.0,
+    "elapsed_s": 267.8
+  },
+  {
+    "ep": 1800,
+    "wins": 1080,
+    "losses": 720,
+    "draws": 0,
+    "win_rate_recent": 0.525,
+    "w_opt_norm": 3.1521,
+    "w_state_norm": 0.0,
+    "elapsed_s": 303.5
+  },
+  {
+    "ep": 2000,
+    "wins": 1194,
+    "losses": 806,
+    "draws": 0,
+    "win_rate_recent": 0.57,
+    "w_opt_norm": 3.2164,
+    "w_state_norm": 0.0,
+    "elapsed_s": 337.4
+  },
+  {
+    "ep": 2200,
+    "wins": 1313,
+    "losses": 887,
+    "draws": 0,
+    "win_rate_recent": 0.595,
+    "w_opt_norm": 3.2686,
+    "w_state_norm": 0.0,
+    "elapsed_s": 371.5
+  },
+  {
+    "ep": 2400,
+    "wins": 1438,
+    "losses": 962,
+    "draws": 0,
+    "win_rate_recent": 0.625,
+    "w_opt_norm": 3.3088,
+    "w_state_norm": 0.0,
+    "elapsed_s": 405.6
+  },
+  {
+    "ep": 2600,
+    "wins": 1566,
+    "losses": 1034,
+    "draws": 0,
+    "win_rate_recent": 0.64,
+    "w_opt_norm": 3.3926,
+    "w_state_norm": 0.0,
+    "elapsed_s": 437.3
+  },
+  {
+    "ep": 2800,
+    "wins": 1679,
+    "losses": 1121,
+    "draws": 0,
+    "win_rate_recent": 0.565,
+    "w_opt_norm": 3.4593,
+    "w_state_norm": 0.0,
+    "elapsed_s": 472.4
+  },
+  {
+    "ep": 3000,
+    "wins": 1789,
+    "losses": 1211,
+    "draws": 0,
+    "win_rate_recent": 0.55,
+    "w_opt_norm": 3.4702,
+    "w_state_norm": 0.0,
+    "elapsed_s": 506.2
+  }
+]

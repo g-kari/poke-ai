@@ -175,10 +175,13 @@ scripts/run.sh python3 -m train.reinforce \
 scripts/run.sh python3 selfplay_test.py 20
 ```
 
-Current setup: numpy-only linear policy on 36-d state + 40-d option features
+Current setup: numpy-only linear policy on 40-d state + 40-d option features
 (`train/features.py`), REINFORCE with terminal reward (`train/reinforce.py`).
-Cumulative 5000ep training (2000ep from scratch + 3000ep warm-start at
-lr 0.03) beats `random_agent` 70-10 (87.5%) over 80 games.
+State features include super-effective matchup flags and retreat costs
+sourced from `cg.api.all_card_data()`. Cumulative 5000ep training (2000ep
+from scratch + 3000ep warm-start at lr 0.03) beats `random_agent` 72-8
+(90%) over 80 games. Win rate is saturating against random_agent at this
+feature complexity; further structural gains likely need MLP or PIMC.
 
 ### Upgrade path
 
