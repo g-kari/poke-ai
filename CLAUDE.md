@@ -30,6 +30,17 @@
 | [`commit-gate.md`](.claude/rules/commit-gate.md) | `git commit` する前 |
 | [`rule-maintenance.md`](.claude/rules/rule-maintenance.md) | ルール自体を編集するとき |
 
+## サブエージェント (`.claude/agents/`)
+
+繰り返し性が高く、責務が明確に切れる作業は専用エージェントに委譲する。
+
+| エージェント | いつ使う |
+|---|---|
+| [`trainer`](.claude/agents/trainer.md) | 学習を回す + A/B テストで baseline と比較 + 悪化したら復元 |
+| [`bencher`](.claude/agents/bencher.md) | 勝率測定 (vs random, vs 別 policy) + 95% 信頼区間 |
+| [`submission-validator`](.claude/agents/submission-validator.md) | `kaggle submit` 前の tar.gz 構造 + 動作検証 |
+| [`engine-explorer`](.claude/agents/engine-explorer.md) | `cg/api.py` / カードデータの factual な質問 (実装は禁止) |
+
 ## プロジェクト概要
 
 Kaggle コンペ **「ポケモンカードゲーム AI Battle Challenge (PTCGABC / ポケカABC)」** のシミュレーション部門への提出エージェント。
