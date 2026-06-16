@@ -2,14 +2,32 @@
 
 The linear policy can pick a move that looks good locally but loses to the
 opponent's natural response. PIMC fixes this by sampling the hidden state,
-stepping into each option, and scoring the resulting position with the
-linear policy's value function. The option with the highest scored
-look-ahead value wins.
+stepping into each option, and scoring the resulting position with a
+trained value head. The option with the highest scored look-ahead value
+wins.
 
 This module assumes the opponent's deck composition is identical to ours
 (see DECK in main.py). That's not strictly true at submission time but
 works as a reasonable prior for self-play and against random_agent. A
 multi-world extension would average across several opponent deck samples.
+
+Status (2026-06-17): The look-ahead is NOT a win in practice yet. Against
+PIMC-OFF mirror match the PIMC-ON flavor loses 10-30 (25%), against
+first_agent (engine prior) it loses 15-25 (37.5%), against random it wins
+only 75% vs PIMC-OFF's 92.5%. Suspected root causes (none verified):
+
+  - The value head is trained on MAIN-state features; the children we
+    score after search_step may be at non-MAIN selects where the head
+    extrapolates poorly.
+  - Single-world sampling: assuming opp_deck == our_deck biases the search
+    when the opponent's actual deck differs.
+  - The value head's signal is too low-magnitude to override the engine
+    prior's strong ordering bias.
+
+Kept enabled via POKEAI_PIMC=1 so experiments can continue (longer value
+training, multi-world sampling, replacing the linear value head with a
+PyTorch MLP). The default-OFF flag in main.py is the safe choice for
+submission until one of those fixes lands.
 """
 
 from __future__ import annotations

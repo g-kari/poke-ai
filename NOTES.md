@@ -185,10 +185,22 @@ feature complexity; further structural gains likely need MLP or PIMC.
 
 ### Upgrade path
 
-1. **Search (UNFROZEN 2026-06-17).** `cg.api.search_begin/step/release` is
-   available — wrap the trained linear policy as the rollout policy inside
-   IS-MCTS. For the hidden-info sampler, draw `opponent_hand` from cards
-   we haven't seen yet (deck minus visible cards minus our predicted hand).
+1. **Search (UNFROZEN 2026-06-17; 1-ply scaffold landed but not yet a win).**
+   `cg.api.search_begin/step/release` is wired through `train/pimc.py` and
+   gated by `POKEAI_PIMC=1` in `main.py`. With either the heuristic value
+   or the trained linear value head, PIMC-ON UNDERPERFORMS the engine-prior
+   linear baseline. Diagnostic benches (40 games each):
+   - PIMC-ON vs PIMC-OFF mirror match: 10-30 (25%)
+   - PIMC-ON vs first_agent (engine-prior baseline): 15-25 (37.5%)
+   - PIMC-ON vs random: 75% (PIMC-OFF wins 92.5% on the same setup)
+
+   Suspected reasons (un-fixed): the value head is trained on MAIN-state
+   features and gets evaluated on the children of search_step which can
+   land at CARD / ENERGY sub-selects where the head extrapolates; the
+   single-world mirror-deck sample biases the search; the value head
+   signal is too low-magnitude to override the engine-order bias. Path
+   forward: multi-world sampling, PyTorch MLP value head, or replacing
+   the entire flow with rollout-to-terminal IS-MCTS.
 2. **Better features.** Add card-id embeddings (look up `Pokemon.id`,
    energy types, attack costs) and tile-encoded counts (active/bench HP
    per slot). `all_card_data()` is the canonical source.
