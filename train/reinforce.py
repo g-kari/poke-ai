@@ -127,6 +127,8 @@ def reinforce_update(policy: LinearPolicy, trace: list[Step],
 def train(episodes: int, lr: float, out: str, seed: int = 0,
           start_from: str | None = None, log_every: int = 20,
           metrics_out: str | None = None) -> None:
+    if log_every <= 0:
+        raise ValueError("log_every must be > 0")
     rng = np.random.default_rng(seed)
     policy = LinearPolicy()
     if start_from:
