@@ -148,15 +148,20 @@ def train(episodes: int, lr: float, out: str, seed: int = 0,
     metrics = []
     for ep in range(1, episodes + 1):
         trace0, trace1, r0, r1 = run_episode(policy, rng)
-        reinforce_update(policy, trace0, float(r0), lr)
-        reinforce_update(policy, trace1, float(r1), lr)
+        # Engine occasionally returns reward=None when a player's action is
+        # rejected by the C side (status=INVALID/ERROR). Skip the gradient
+        # for that player so the run keeps going.
+        if r0 is not None:
+            reinforce_update(policy, trace0, float(r0), lr)
+        if r1 is not None:
+            reinforce_update(policy, trace1, float(r1), lr)
         if r0 == 1:
             wins += 1
         elif r0 == -1:
             losses += 1
-        else:
+        elif r0 == 0:
             draws += 1
-        recent.append(r0)
+        recent.append(r0 if r0 is not None else 0)
         if len(recent) > log_every:
             recent.pop(0)
         if ep % log_every == 0 or ep == episodes:
