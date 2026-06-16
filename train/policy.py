@@ -57,4 +57,11 @@ class LinearPolicy:
 
     @classmethod
     def try_load(cls, path: str = DEFAULT_PATH) -> "LinearPolicy | None":
-        return cls.load(path) if os.path.exists(path) else None
+        if not os.path.exists(path):
+            return None
+        p = cls.load(path)
+        # Reject weights from a previous feature-dim layout — agent.py will
+        # then fall back to the engine-order baseline instead of crashing.
+        if p.w_state.shape[0] != STATE_DIM or p.w_opt.shape[0] != OPTION_DIM:
+            return None
+        return p
