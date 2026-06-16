@@ -15,7 +15,8 @@ import random
 
 from kaggle_environments import make
 
-from agent import agent as my_agent, random_agent
+from agent import agent as my_agent
+from agent import random_agent
 
 
 def play(a, b):

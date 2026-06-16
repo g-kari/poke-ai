@@ -19,7 +19,7 @@ def _read_deck() -> list[int]:
     path = "deck.csv"
     if not os.path.exists(path):
         path = "/kaggle_simulations/agent/deck.csv"
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         lines = [line.strip() for line in f if line.strip()]
     deck = [int(x) for x in lines[:60]]
     if len(deck) != 60:
@@ -33,6 +33,7 @@ _DECK = _read_deck()
 def _try_load_policy():
     try:
         from train.policy import LinearPolicy  # noqa: PLC0415
+
         return LinearPolicy.try_load()
     except Exception:
         return None

@@ -53,10 +53,10 @@ def state_features(obs: dict) -> np.ndarray:
     f[19] = _hp_total(opp.get("active")) / 200.0
     f[20] = _hp_total(me.get("bench")) / 1000.0
     f[21] = _hp_total(opp.get("bench")) / 1000.0
-    f[22] = float(any((me.get(s) for s in ("poisoned", "burned", "asleep",
-                                            "paralyzed", "confused"))))
-    f[23] = float(any((opp.get(s) for s in ("poisoned", "burned", "asleep",
-                                             "paralyzed", "confused"))))
+    f[22] = float(any(me.get(s) for s in ("poisoned", "burned", "asleep", "paralyzed", "confused")))
+    f[23] = float(
+        any(opp.get(s) for s in ("poisoned", "burned", "asleep", "paralyzed", "confused"))
+    )
 
     # --- richer per-Pokemon stats ---
     my_act = (me.get("active") or [None])[0]
@@ -96,10 +96,10 @@ def option_features(opt: dict, obs: dict, sel: dict) -> np.ndarray:
     f[11] = (opt.get("number") or 0) / 10.0
     area = opt.get("area")
     if area is not None:
-        f[12] = float(area == 2)   # HAND
-        f[13] = float(area == 4)   # ACTIVE
-        f[14] = float(area == 5)   # BENCH
-        f[15] = float(area == 3)   # DISCARD
+        f[12] = float(area == 2)  # HAND
+        f[13] = float(area == 4)  # ACTIVE
+        f[14] = float(area == 5)  # BENCH
+        f[15] = float(area == 3)  # DISCARD
     f[16] = (sel.get("type") or 0) / 12.0
     f[17] = (sel.get("context") or 0) / 50.0
 
@@ -158,7 +158,7 @@ def _card_id_referenced(opt: dict, me: dict) -> int | None:
     pure ATTACK)."""
     area = opt.get("area")
     idx = opt.get("index")
-    if area == 2 and idx is not None:   # HAND
+    if area == 2 and idx is not None:  # HAND
         hand = me.get("hand") or []
         if 0 <= idx < len(hand):
             return hand[idx].get("id")

@@ -10,6 +10,7 @@ Weights are saved to / loaded from `policy.npz`. The submission agent in
 from __future__ import annotations
 
 import os
+
 import numpy as np
 
 from .features import OPTION_DIM, STATE_DIM, option_features, state_features
@@ -18,13 +19,14 @@ DEFAULT_PATH = os.path.join(os.path.dirname(__file__), "policy.npz")
 
 
 class LinearPolicy:
-    def __init__(self, w_state: np.ndarray | None = None,
-                 w_opt: np.ndarray | None = None,
-                 b: float = 0.0):
-        self.w_state = (w_state if w_state is not None
-                        else np.zeros(STATE_DIM, dtype=np.float32))
-        self.w_opt = (w_opt if w_opt is not None
-                      else np.zeros(OPTION_DIM, dtype=np.float32))
+    def __init__(
+        self,
+        w_state: np.ndarray | None = None,
+        w_opt: np.ndarray | None = None,
+        b: float = 0.0,
+    ):
+        self.w_state = w_state if w_state is not None else np.zeros(STATE_DIM, dtype=np.float32)
+        self.w_opt = w_opt if w_opt is not None else np.zeros(OPTION_DIM, dtype=np.float32)
         # Engine-order prior: small positive weight on "earlier option" so we
         # default to the engine's recommended ordering when untrained.
         self.b_order = float(b)
@@ -47,16 +49,20 @@ class LinearPolicy:
         return e / e.sum()
 
     def save(self, path: str = DEFAULT_PATH) -> None:
-        np.savez(path, w_state=self.w_state, w_opt=self.w_opt,
-                 b_order=np.float32(self.b_order))
+        np.savez(
+            path,
+            w_state=self.w_state,
+            w_opt=self.w_opt,
+            b_order=np.float32(self.b_order),
+        )
 
     @classmethod
-    def load(cls, path: str = DEFAULT_PATH) -> "LinearPolicy":
+    def load(cls, path: str = DEFAULT_PATH) -> LinearPolicy:
         d = np.load(path)
         return cls(d["w_state"], d["w_opt"], float(d["b_order"]))
 
     @classmethod
-    def try_load(cls, path: str = DEFAULT_PATH) -> "LinearPolicy | None":
+    def try_load(cls, path: str = DEFAULT_PATH) -> LinearPolicy | None:
         if not os.path.exists(path):
             return None
         p = cls.load(path)

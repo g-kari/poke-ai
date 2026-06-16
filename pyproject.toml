@@ -1,0 +1,20 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+exclude = [
+    ".venv",
+    "kaggle_data",
+    "cg",          # vendored from sample_submission; do not touch its formatting
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = [
+    "E501",  # line length is enforced by formatter, not lint
+]
+
+[tool.ruff.lint.per-file-ignores]
+# litellm shim MUST be installed in sys.modules before kaggle_environments
+# is imported, so module-level imports cannot all sit at the top of the file.
+"selfplay_test.py" = ["E402"]
+"train/reinforce.py" = ["E402"]

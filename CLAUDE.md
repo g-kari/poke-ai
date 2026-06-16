@@ -22,14 +22,35 @@ Kaggle コンペ **「ポケモンカードゲーム AI Battle Challenge (PTCGAB
 
 ## 開発フロー
 
+### 環境セットアップ (初回のみ)
+
+nix の Python ランタイムは numpy の C 拡張ロード時に libstdc++ / libz が見つから
+ない問題があるため、`scripts/env.sh` で nix store から動的に解決してから python を
+起動する。`scripts/run.sh <cmd>` がワンライナのラッパー。
+
 ```bash
-# スモークテスト (~3秒 / 8試合)
-python3 selfplay_test.py 4
+python3 -m venv .venv
+source .venv/bin/activate
+pip install kaggle kaggle-environments numpy
 
-# 学習 (~3分 / 500ep)
-python3 -m train.reinforce --episodes 500 --lr 0.05 --metrics-out train/metrics.json
+# pre-commit 品質ゲート (deck 60 行 / main.py import / bundle 完全性 / ruff)
+pre-commit install
+```
 
-# 学習済み重みは train/policy.npz に保存され、agent.py が起動時に自動ロード
+### 日常コマンド
+
+```bash
+# スモークテスト (~1秒 / 8試合)
+scripts/run.sh python3 selfplay_test.py 4
+
+# 学習 (~10分 / 2000ep)、policy.npz から warm-start
+scripts/run.sh python3 -m train.reinforce \
+    --episodes 2000 --lr 0.05 \
+    --warm-start train/policy.npz \
+    --out train/policy.npz \
+    --metrics-out train/metrics_2000ep.json
+
+# 学習済み重みは train/policy.npz に保存され、main.py が起動時に自動ロード
 ```
 
 ## ファイル構成
@@ -38,6 +59,14 @@ python3 -m train.reinforce --episodes 500 --lr 0.05 --metrics-out train/metrics.
 main.py               # Kaggle 提出エントリ。agent(obs)→list[int]。policy.npz があれば使う / 無ければ engine 順
 agent.py              # ローカル開発用の旧エントリ (selfplay_test 等が参照)。提出には使われない
 deck.csv              # 提出デッキ 60 行 (card ID per line)
+pyproject.toml        # ruff 設定 (line=100, py312, litellm shim 用 E402 例外)
+.pre-commit-config.yaml  # コミット時の品質ゲート設定
+scripts/
+  env.sh              # source 用: .venv 有効化 + nix libstdc++/libz を LD_LIBRARY_PATH に
+  run.sh              # ラッパー: scripts/run.sh <cmd>
+  check_deck.py       # deck.csv が 60 行か検証 (pre-commit hook)
+  check_main.py       # main.py が import 可能か + agent() が 60 枚返すか (pre-commit hook)
+  check_bundle.py     # 提出に必要なファイルが揃っているか (pre-commit hook)
 cg/                   # 公式サンプル同梱の engine ラッパー
   __init__.py
   api.py              # Observation / Option / SearchState 等 dataclass + 全関数ラッパー
@@ -165,6 +194,8 @@ obs = {
 ## コミット規約
 
 - 1 機能 1 コミット。コミット message は英語 1 行で意図を書く。
+- `pre-commit install` 必須。品質ゲートが通らないコミットは push しない。
+  `--no-verify` で迂回する場合は commit message に理由を明記すること。
 - `train/policy.npz` はコミット対象 (Kaggle 提出時に必要)。
 - `train/metrics_*.json` もコミット (学習履歴として残す)。
 - それ以外の `*.npz` は `.gitignore` で除外。
@@ -212,7 +243,12 @@ train/{__init__.py,policy.py,features.py,policy.npz}
 - `kaggle-environments==1.30.1` で `cabt` env 同梱を確認(配布概要には 1.14.10 とあるが、
   `cg/api.py` がサンプル同梱なのでサンプル側を真と見なすこと)
 - Kaggle CLI: `.venv/bin/kaggle` (`pip install kaggle` を venv 内、OAuth 認証済み)
-- GPU 無し、CPU で numpy 線形ポリシー。500ep ≈ 3分 / 2000ep ≈ 12分
+- **GPU**: RTX 3070 Ti (8 GB), CUDA 13.1 driver via WSL2。
+  `scripts/env.sh` が `/usr/lib/wsl/lib` を `LD_LIBRARY_PATH` に追加するので、
+  `scripts/run.sh python3 -c 'import torch; print(torch.cuda.is_available())'` → True
+- **PyTorch**: `2.11.0+cu128` (CUDA 12.8 wheel) を venv にインストール済み。
+  numpy 線形ポリシーの限界が来たら `train/` を PyTorch (MLP / PPO / value head) に置き換えること。
+- 線形ポリシー学習速度: CPU で 2000ep ≈ 6 分 (warm-start 込み)
 - リモート ephemeral コンテナ前提 (work in progress は push しないと消える)
 - 配布 zip は `pokemon-tcg-ai-battle.zip` (~300MB, PDF カードリスト含む)。
   PDF 以外は `kaggle_data/` に展開済み

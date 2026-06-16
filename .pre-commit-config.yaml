@@ -1,0 +1,55 @@
+# Quality gate before commit. Install once with `pre-commit install`,
+# then every `git commit` runs these hooks. Skip with `--no-verify` only
+# when truly necessary (and document why in the commit message).
+#
+# Submission-critical hooks:
+#   - validate-deck-csv: deck.csv must have exactly 60 lines.
+#   - check-main-py:     main.py must be importable as a module.
+#   - check-cg-bundle:   every file the submission needs must exist.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '^(cg/|kaggle_data/)|\.(npz|so|dll|zip|pdf|tar\.gz)$'
+      - id: end-of-file-fixer
+        exclude: '^(cg/|kaggle_data/)|\.(npz|so|dll|zip|pdf|tar\.gz)$'
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=5000']  # libcg.so / cg.dll are ~1.5MB each
+        exclude: '^(pokemon-tcg-ai-battle\.zip|kaggle_data/)'
+      - id: check-merge-conflict
+      - id: check-toml
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.5
+    hooks:
+      - id: ruff
+        args: [--fix]
+        exclude: '^(kaggle_data/|\.venv/)'
+      - id: ruff-format
+        exclude: '^(kaggle_data/|\.venv/)'
+
+  - repo: local
+    hooks:
+      - id: validate-deck-csv
+        name: deck.csv has exactly 60 card IDs
+        entry: python3 scripts/check_deck.py
+        language: system
+        files: '^deck\.csv$'
+        pass_filenames: false
+
+      - id: check-main-py
+        name: main.py imports without numpy/ctypes side-effects
+        entry: python3 scripts/check_main.py
+        language: system
+        files: '^(main\.py|deck\.csv)$'
+        pass_filenames: false
+
+      - id: check-cg-bundle
+        name: submission bundle files exist
+        entry: python3 scripts/check_bundle.py
+        language: system
+        files: '^(cg/|train/|main\.py|deck\.csv|make_submission\.sh)'
+        pass_filenames: false

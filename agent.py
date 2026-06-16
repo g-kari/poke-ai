@@ -64,9 +64,33 @@ from typing import Any
 # the engine's AllCard catalog). The current list is the sample shipped with
 # the env so self-play is reproducible out of the box.
 DECK: list[int] = [
-    721, 721, 722, 722, 722, 722, 723, 723, 723, 723,
-    1092, 1121, 1121, 1145, 1145, 1163, 1163, 1219, 1219, 1219, 1219,
-    1227, 1227, 1227, 1227, 1262, 1262,
+    721,
+    721,
+    722,
+    722,
+    722,
+    722,
+    723,
+    723,
+    723,
+    723,
+    1092,
+    1121,
+    1121,
+    1145,
+    1145,
+    1163,
+    1163,
+    1219,
+    1219,
+    1219,
+    1219,
+    1227,
+    1227,
+    1227,
+    1227,
+    1262,
+    1262,
 ] + [3] * 33
 
 
@@ -77,6 +101,7 @@ def _try_load_policy():
     """Best-effort load of trained weights. Returns None if unavailable."""
     try:
         from train.policy import LinearPolicy  # noqa: PLC0415
+
         return LinearPolicy.try_load()
     except Exception:
         return None

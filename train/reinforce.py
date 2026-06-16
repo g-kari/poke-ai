@@ -32,23 +32,27 @@ sys.modules.setdefault("litellm", type(sys)("litellm"))
 
 from kaggle_environments import make
 
-from .features import OPTION_DIM, STATE_DIM, option_features, state_features
-from .policy import DEFAULT_PATH, LinearPolicy
-
 # avoid circular import; only need DECK
 from agent import DECK
+
+from .features import OPTION_DIM, STATE_DIM, option_features, state_features
+from .policy import DEFAULT_PATH, LinearPolicy
 
 
 @dataclass
 class Step:
-    sf: np.ndarray            # (STATE_DIM,)
-    of_picked: np.ndarray     # (OPTION_DIM,)
-    of_all: np.ndarray        # (n_opts, OPTION_DIM)
-    probs: np.ndarray         # (n_opts,)
+    sf: np.ndarray  # (STATE_DIM,)
+    of_picked: np.ndarray  # (OPTION_DIM,)
+    of_all: np.ndarray  # (n_opts, OPTION_DIM)
+    probs: np.ndarray  # (n_opts,)
 
 
-def make_training_agent(policy: LinearPolicy, rng: np.random.Generator,
-                        trace: list[Step], my_index_holder: list[int]):
+def make_training_agent(
+    policy: LinearPolicy,
+    rng: np.random.Generator,
+    trace: list[Step],
+    my_index_holder: list[int],
+):
     """Returns a Kaggle agent fn that uses `policy` and appends to `trace`.
 
     Only MAIN decisions (sel.type == 0) are trained on for now — they are
@@ -71,8 +75,7 @@ def make_training_agent(policy: LinearPolicy, rng: np.random.Generator,
             i = int(rng.choice(len(opts), p=probs))
             sf = state_features(obs)
             of_all = np.stack([option_features(o, obs, sel) for o in opts])
-            trace.append(Step(sf=sf, of_picked=of_all[i],
-                              of_all=of_all, probs=probs))
+            trace.append(Step(sf=sf, of_picked=of_all[i], of_all=of_all, probs=probs))
             my_index_holder[0] = obs["current"]["yourIndex"]
             return [i]
 
@@ -90,7 +93,10 @@ def make_training_agent(policy: LinearPolicy, rng: np.random.Generator,
 
 def run_episode(policy: LinearPolicy, rng: np.random.Generator):
     """Run one self-play episode. Returns (trace_p0, trace_p1, r0, r1)."""
-    trace0, trace1 = [], [],
+    trace0, trace1 = (
+        [],
+        [],
+    )
     trace1 = []
     idx0 = [0]
     idx1 = [1]
@@ -103,8 +109,7 @@ def run_episode(policy: LinearPolicy, rng: np.random.Generator):
     return trace0, trace1, r0, r1
 
 
-def reinforce_update(policy: LinearPolicy, trace: list[Step],
-                     reward: float, lr: float) -> None:
+def reinforce_update(policy: LinearPolicy, trace: list[Step], reward: float, lr: float) -> None:
     """One on-policy gradient step over all decisions in `trace`."""
     if not trace or reward == 0:
         return
@@ -124,9 +129,15 @@ def reinforce_update(policy: LinearPolicy, trace: list[Step],
     policy.w_opt += lr * g_opt / max(1, len(trace))
 
 
-def train(episodes: int, lr: float, out: str, seed: int = 0,
-          start_from: str | None = None, log_every: int = 20,
-          metrics_out: str | None = None) -> None:
+def train(
+    episodes: int,
+    lr: float,
+    out: str,
+    seed: int = 0,
+    start_from: str | None = None,
+    log_every: int = 20,
+    metrics_out: str | None = None,
+) -> None:
     if log_every <= 0:
         raise ValueError("log_every must be > 0")
     rng = np.random.default_rng(seed)
@@ -169,20 +180,25 @@ def train(episodes: int, lr: float, out: str, seed: int = 0,
             win_rate_recent = sum(1 for r in recent if r == 1) / max(1, len(recent))
             row = {
                 "ep": ep,
-                "wins": wins, "losses": losses, "draws": draws,
+                "wins": wins,
+                "losses": losses,
+                "draws": draws,
                 "win_rate_recent": round(win_rate_recent, 3),
                 "w_opt_norm": round(float(np.linalg.norm(policy.w_opt)), 4),
                 "w_state_norm": round(float(np.linalg.norm(policy.w_state)), 4),
                 "elapsed_s": round(dt, 1),
             }
             metrics.append(row)
-            print(f"ep {ep:4d}  cum W/L/D = {wins}/{losses}/{draws}  "
-                  f"recent {win_rate_recent:.2f}  "
-                  f"|w_opt|={row['w_opt_norm']:.3f}  {dt:.1f}s")
+            print(
+                f"ep {ep:4d}  cum W/L/D = {wins}/{losses}/{draws}  "
+                f"recent {win_rate_recent:.2f}  "
+                f"|w_opt|={row['w_opt_norm']:.3f}  {dt:.1f}s"
+            )
     policy.save(out)
     print(f"saved policy to {out}")
     if metrics_out:
         import json as _json
+
         with open(metrics_out, "w") as f:
             _json.dump(metrics, f, indent=2)
         print(f"saved metrics to {metrics_out}")
@@ -198,8 +214,15 @@ def main():
     p.add_argument("--log-every", type=int, default=20)
     p.add_argument("--metrics-out", default=None)
     args = p.parse_args()
-    train(args.episodes, args.lr, args.out, args.seed, args.warm_start,
-          args.log_every, args.metrics_out)
+    train(
+        args.episodes,
+        args.lr,
+        args.out,
+        args.seed,
+        args.warm_start,
+        args.log_every,
+        args.metrics_out,
+    )
 
 
 if __name__ == "__main__":
