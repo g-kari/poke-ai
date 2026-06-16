@@ -89,7 +89,8 @@ CLAUDE.md             Claude Code 向け開発メモ
 | 500ep + Pokemon-aware 特徴 (36-d / 36-d) | 23-1 (24 戦) | PR #2 |
 | 2000ep warm-start | 34-6 (40 戦, 85%) | A/B で 500ep の 31-9 を上回り |
 | 5000ep cumulative | 36-4 (40 戦, 90%) | 2000ep からの warm-start |
-| **2000ep + ATTACK dmg/cost 特徴 (36-d / 40-d)** | **65-15 (80 戦, 81%)** | 5000ep を 2.5x 少ない episode で同等。新 features で baseline 上書き |
+| 2000ep + ATTACK dmg/cost 特徴 (36-d / 40-d) | 65-15 (80 戦, 81%) | 5000ep を 2.5x 少ない episode で同等 |
+| **5000ep cumulative + ATTACK 特徴** | **70-10 (80 戦, 87.5%)** | 新特徴量で warm-start 続行 |
 
 ## 環境
 
