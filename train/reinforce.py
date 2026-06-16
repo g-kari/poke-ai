@@ -109,24 +109,38 @@ def run_episode(policy: LinearPolicy, rng: np.random.Generator):
     return trace0, trace1, r0, r1
 
 
-def reinforce_update(policy: LinearPolicy, trace: list[Step], reward: float, lr: float) -> None:
-    """One on-policy gradient step over all decisions in `trace`."""
-    if not trace or reward == 0:
+def reinforce_update(
+    policy: LinearPolicy,
+    trace: list[Step],
+    reward: float,
+    lr: float,
+    lr_value: float = 0.0,
+) -> None:
+    """One on-policy gradient step over all decisions in `trace`.
+
+    When `lr_value > 0`, also fits the value head w_value via MSE on the
+    tanh-bounded prediction: target is `reward` for every state the player
+    saw during the episode."""
+    if not trace:
         return
     g_state = np.zeros(STATE_DIM, dtype=np.float32)
     g_opt = np.zeros(OPTION_DIM, dtype=np.float32)
+    g_value = np.zeros(STATE_DIM, dtype=np.float32)
     for s in trace:
-        # grad log p(i|s) for option features = of_picked - E_p[of]
-        expected_of = s.probs @ s.of_all
-        g_opt += reward * (s.of_picked - expected_of)
-        # state features are shared by all options so their gradient under
-        # a softmax over options is zero. We still let the bias-on-order
-        # term drift via a tiny gradient on b_order through option ordering.
-    # No per-step state-feature update under this parameterization; rely on
-    # option features. (If you add per-option state-conditioned terms,
-    # update g_state here.)
+        if reward != 0:
+            # grad log p(i|s) for option features = of_picked - E_p[of]
+            expected_of = s.probs @ s.of_all
+            g_opt += reward * (s.of_picked - expected_of)
+        if lr_value > 0:
+            # MSE on tanh(s.sf @ w_value) with target = reward.
+            pred = float(np.tanh(s.sf @ policy.w_value))
+            # d/dw 0.5 * (pred - target)^2 = (pred - target) * (1 - pred^2) * sf
+            err = pred - float(reward)
+            g_value += err * (1 - pred * pred) * s.sf
     policy.w_state += lr * g_state / max(1, len(trace))
     policy.w_opt += lr * g_opt / max(1, len(trace))
+    if lr_value > 0:
+        policy.w_value -= lr_value * g_value / max(1, len(trace))
 
 
 def train(
@@ -137,6 +151,7 @@ def train(
     start_from: str | None = None,
     log_every: int = 20,
     metrics_out: str | None = None,
+    lr_value: float = 0.0,
 ) -> None:
     if log_every <= 0:
         raise ValueError("log_every must be > 0")
@@ -163,9 +178,9 @@ def train(
         # rejected by the C side (status=INVALID/ERROR). Skip the gradient
         # for that player so the run keeps going.
         if r0 is not None:
-            reinforce_update(policy, trace0, float(r0), lr)
+            reinforce_update(policy, trace0, float(r0), lr, lr_value)
         if r1 is not None:
-            reinforce_update(policy, trace1, float(r1), lr)
+            reinforce_update(policy, trace1, float(r1), lr, lr_value)
         if r0 == 1:
             wins += 1
         elif r0 == -1:
@@ -186,6 +201,7 @@ def train(
                 "win_rate_recent": round(win_rate_recent, 3),
                 "w_opt_norm": round(float(np.linalg.norm(policy.w_opt)), 4),
                 "w_state_norm": round(float(np.linalg.norm(policy.w_state)), 4),
+                "w_value_norm": round(float(np.linalg.norm(policy.w_value)), 4),
                 "elapsed_s": round(dt, 1),
             }
             metrics.append(row)
@@ -208,6 +224,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--episodes", type=int, default=100)
     p.add_argument("--lr", type=float, default=0.05)
+    p.add_argument("--lr-value", type=float, default=0.0)
     p.add_argument("--out", default=DEFAULT_PATH)
     p.add_argument("--warm-start", default=None)
     p.add_argument("--seed", type=int, default=0)
@@ -222,6 +239,7 @@ def main():
         args.warm_start,
         args.log_every,
         args.metrics_out,
+        args.lr_value,
     )
 
 

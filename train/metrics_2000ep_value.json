@@ -1,0 +1,112 @@
+[
+  {
+    "ep": 200,
+    "wins": 116,
+    "losses": 84,
+    "draws": 0,
+    "win_rate_recent": 0.58,
+    "w_opt_norm": 0.4074,
+    "w_state_norm": 0.0,
+    "w_value_norm": 2.5827,
+    "elapsed_s": 41.9
+  },
+  {
+    "ep": 400,
+    "wins": 211,
+    "losses": 189,
+    "draws": 0,
+    "win_rate_recent": 0.475,
+    "w_opt_norm": 0.9644,
+    "w_state_norm": 0.0,
+    "w_value_norm": 3.0567,
+    "elapsed_s": 82.5
+  },
+  {
+    "ep": 600,
+    "wins": 329,
+    "losses": 271,
+    "draws": 0,
+    "win_rate_recent": 0.59,
+    "w_opt_norm": 1.25,
+    "w_state_norm": 0.0,
+    "w_value_norm": 3.5358,
+    "elapsed_s": 122.5
+  },
+  {
+    "ep": 800,
+    "wins": 448,
+    "losses": 352,
+    "draws": 0,
+    "win_rate_recent": 0.595,
+    "w_opt_norm": 1.5719,
+    "w_state_norm": 0.0,
+    "w_value_norm": 3.9259,
+    "elapsed_s": 160.6
+  },
+  {
+    "ep": 1000,
+    "wins": 564,
+    "losses": 436,
+    "draws": 0,
+    "win_rate_recent": 0.58,
+    "w_opt_norm": 1.7827,
+    "w_state_norm": 0.0,
+    "w_value_norm": 4.2121,
+    "elapsed_s": 197.7
+  },
+  {
+    "ep": 1200,
+    "wins": 677,
+    "losses": 523,
+    "draws": 0,
+    "win_rate_recent": 0.565,
+    "w_opt_norm": 1.9591,
+    "w_state_norm": 0.0,
+    "w_value_norm": 4.3843,
+    "elapsed_s": 236.5
+  },
+  {
+    "ep": 1400,
+    "wins": 804,
+    "losses": 596,
+    "draws": 0,
+    "win_rate_recent": 0.635,
+    "w_opt_norm": 2.0233,
+    "w_state_norm": 0.0,
+    "w_value_norm": 4.6295,
+    "elapsed_s": 272.2
+  },
+  {
+    "ep": 1600,
+    "wins": 923,
+    "losses": 677,
+    "draws": 0,
+    "win_rate_recent": 0.595,
+    "w_opt_norm": 2.2087,
+    "w_state_norm": 0.0,
+    "w_value_norm": 4.9328,
+    "elapsed_s": 304.7
+  },
+  {
+    "ep": 1800,
+    "wins": 1030,
+    "losses": 770,
+    "draws": 0,
+    "win_rate_recent": 0.535,
+    "w_opt_norm": 2.3871,
+    "w_state_norm": 0.0,
+    "w_value_norm": 5.1919,
+    "elapsed_s": 337.1
+  },
+  {
+    "ep": 2000,
+    "wins": 1152,
+    "losses": 848,
+    "draws": 0,
+    "win_rate_recent": 0.61,
+    "w_opt_norm": 2.6279,
+    "w_state_norm": 0.0,
+    "w_value_norm": 5.4957,
+    "elapsed_s": 369.4
+  }
+]

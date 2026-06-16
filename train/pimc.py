@@ -120,13 +120,11 @@ def pick_best_option(
 
 
 def _value_of(obs: dict[str, Any], policy, my_index: int) -> float:
-    """Heuristic value of `obs` from `my_index`'s perspective in [-1, 1].
+    """Value of `obs` from `my_index`'s perspective in roughly [-1, 1].
 
-    The linear policy's option logits are NOT calibrated values across
-    states (they encode relative preference within a single state), so we
-    cannot use policy.logits as a value function. Use simple board
-    heuristics instead: prize differential dominates because taking all
-    prizes wins, with HP / bench / hand as tiebreakers.
+    Uses the trained value head (policy.value) when available, falling
+    back to a board-heuristic value if the value head is uninitialized
+    (||w_value|| ≈ 0). Terminal states short-circuit to the actual reward.
     """
     cur = obs.get("current")
     if cur is None:
@@ -140,23 +138,42 @@ def _value_of(obs: dict[str, Any], policy, my_index: int) -> float:
             return -1.0
         return 0.0  # draw
 
+    # Use the value head if it's been trained.
+    if _value_head_trained(policy):
+        v = policy.value(obs)
+        # policy.value evaluates from the perspective of the player about to
+        # choose (which is cur.yourIndex), so flip if that's not us.
+        next_index = cur.get("yourIndex", my_index)
+        if next_index != my_index:
+            return -v
+        return v
+
+    return _heuristic_value(cur, my_index)
+
+
+def _value_head_trained(policy) -> bool:
+    """True if w_value has been updated away from its zero init."""
+    import numpy as np  # noqa: PLC0415
+
+    w = getattr(policy, "w_value", None)
+    if w is None:
+        return False
+    return float(np.linalg.norm(w)) > 1e-3
+
+
+def _heuristic_value(cur: dict[str, Any], my_index: int) -> float:
     me = cur["players"][my_index]
     opp = cur["players"][1 - my_index]
 
-    # Prize differential: smaller my_prize_count = closer to winning.
     my_prize = len(me.get("prize", []))
     opp_prize = len(opp.get("prize", []))
     prize_term = (opp_prize - my_prize) / 6.0
 
-    # Active HP ratios.
     my_act = (me.get("active") or [None])[0]
     opp_act = (opp.get("active") or [None])[0]
     hp_term = _hp_ratio(my_act) - _hp_ratio(opp_act)
 
-    # Aggregate bench HP, normalized to a typical max.
     bench_term = (_total_hp(me.get("bench") or []) - _total_hp(opp.get("bench") or [])) / 1000.0
-
-    # Hand-size differential (slight signal — having more cards is better).
     hand_term = (me.get("handCount", 0) - opp.get("handCount", 0)) / 10.0
 
     return float(prize_term + 0.5 * hp_term + 0.3 * bench_term + 0.1 * hand_term)
