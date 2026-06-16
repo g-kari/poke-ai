@@ -14,6 +14,22 @@
 - **コミット前?** `pre-commit install` 必須 (deck/main/bundle/ruff の品質ゲート)
 - **次の打ち手?** §"次の打ち手" を見るべし
 
+## 運用ルール (`.claude/rules/`)
+
+具体的な「やる/やらない」のルールは `.claude/rules/*.md` に分離している。
+作業前に該当ファイルを開いて読むこと。
+
+| ファイル | いつ読む |
+|---|---|
+| [`submission-format.md`](.claude/rules/submission-format.md) | `main.py` / `deck.csv` / `make_submission.sh` を編集するとき |
+| [`deck-rules.md`](.claude/rules/deck-rules.md) | `deck.csv` を変更するとき |
+| [`python-env.md`](.claude/rules/python-env.md) | Python を起動するとき (素の `python3` を打つ前に) |
+| [`vendored-cg.md`](.claude/rules/vendored-cg.md) | `cg/` 配下に触れるとき (= 触らない方針の確認) |
+| [`engine-quirks.md`](.claude/rules/engine-quirks.md) | エージェント関数 / 学習ループを書くとき |
+| [`cg-api-priorities.md`](.claude/rules/cg-api-priorities.md) | ABI を調べるとき (pip 版・docs・cg/ の優先順) |
+| [`commit-gate.md`](.claude/rules/commit-gate.md) | `git commit` する前 |
+| [`rule-maintenance.md`](.claude/rules/rule-maintenance.md) | ルール自体を編集するとき |
+
 ## プロジェクト概要
 
 Kaggle コンペ **「ポケモンカードゲーム AI Battle Challenge (PTCGABC / ポケカABC)」** のシミュレーション部門への提出エージェント。
