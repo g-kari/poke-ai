@@ -1276,6 +1276,57 @@ mixed ft (lr=1e-4 50/50)       : 15→5%
 - **PIMC でのルックアヘッド**: Crustle のような hp 大量の defensive deck は
   search で「TKO までのターン数」を読めば 1-2-ply でも判断改善できる
 
+### Iono 専用 ft が初めて solo 改善 (2026-06-18)
+
+Iono は 3-MLP @ 80g で 11.2% と最大の弱点。seed=0 (base mlp_policy.pt) を
+warm-start に置き、Iono を opponent に pure mode (opp-prob=1.0)、
+lr=3e-4 で 1000ep fine-tune。
+
+  seed=0 base solo  @ 40g vs Iono: 2-38-0 ( 5.0%)
+  seed=0 iono_ft    @ 40g vs Iono: 4-36-0 (10.0%)  ← **+5.0pp**
+
+Crustle ft は全て solo を悪化させた (15→12.5%、15→5%) が、Iono は
+solo で初めて改善。仮説: Iono は「打点を出してくる active deck」なので
+reward 分散が Crustle ほど偏らず、policy gradient が機能する。
+
+ただし 40g なので noise floor ±15pp 内。本判定には 80g 必須。
+
+5-MLP (3-MLP + iono_ft + duplicate) のクイック bench (40g):
+  vs Iono            : 17.5% (3-MLP 11.2% → +6.3pp)
+  vs Crustle Dashimaki: 12.5% (3-MLP 23.8% → -11.3pp)
+
+トレードオフ顕在化:
+- Iono 改善 +6.3pp
+- Crustle Dashimaki 悪化 -11.3pp
+- net 効果は overall 80g bench でないと判定不可
+
+次サイクル: 重複なし 4-MLP (3-MLP + seed0_iono_ft) で全 6 opp @ 80g
+bench を取り、overall 改善があれば LB submit する。
+現在 iono_ft policy は `train/archive/mlp_policy_seed0_iono_ft.pt` に
+退避済み (次サイクルで `train/` に戻して 4-MLP 化する)。
+
+## 現状サマリ (2026-06-18 evening)
+
+### Submission 状況
+- 最新 LB スコア: **666.3** (53778627, 3-MLP)
+- 次回提出は Iono ft メンバー追加版を 80g 検証してから判断
+
+### Crustle 対策の総括 (4 連敗)
+| 試行 | 手法 | solo (40g) | 結果 |
+|---|---|---|---|
+| seed=7 | random init 2000ep | 未計測 | 4-MLP @ Crustle 6.2% (-17.6pp) |
+| seed=11 crustle | random init 2000ep targeted | 未計測 | 4-MLP @ Crustle 10.0% (-13.8pp) |
+| seed=100 ft | warm-start 1000ep pure lr=3e-4 | 12.5% (元 15.0%) | archive |
+| seed=100 mix | warm-start 1000ep mixed lr=1e-4 | 5.0% (元 15.0%) | archive |
+
+→ pure REINFORCE では Crustle dashimaki 改善は実現できない。
+方向転換が必要 (Crustle 検出切替 / value baseline 正規化 / PIMC)。
+
+### 学習インフラ (積み上げ済み)
+- `train/mlp_train.py --opponent <module_name>`: rule-based 相手の targeted self-play
+- `train/mlp_train.py --opponent-prob <0..1>`: mixed-mode self-play
+- 学習履歴は `train/metrics_*.json` に保存、過去 policy は `train/archive/`
+
 ## Open items
 
 - `_try_load_policy()` silently swallows exceptions to keep the Kaggle
