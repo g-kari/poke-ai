@@ -231,8 +231,20 @@ Running tally:
   seed=1024:                     45%   vs linear   ← rejected
   seed=100:                      52.5% vs linear   ← included (3-MLP)
   seed=200:                      47.5% vs linear   ← rejected
+  seed=500:                      42.5% vs linear   ← rejected
 
-So 2 of 4 new candidates passed. The bench is a noisy 40-game proxy
+So 1 of 4 new candidates passed after the initial pair. The pass rate
+is lower than 50/50; either random self-play training really is that
+sensitive to seed, or the 50% threshold is too tight (Wilson CI at
+40 games is roughly ±15pp, so 47.5% rejection is within noise of
+50%). Either way, the filter is doing its job — every rejected seed
+matched the seed=1024 failure pattern (sub-50% solo, would drag the
+ensemble down by 5-15pp).
+
+Future seed candidates probably need either (a) more training
+episodes per seed (3000-5000) so the noisy 40-game bench has a
+cleaner signal, or (b) a different bench protocol (e.g., 80 games
+solo) for tighter CIs. The bench is a noisy 40-game proxy
 but it's cheap to run and matches our "submission-budget" risk
 appetite — we'd rather hold a verified-strong ensemble than gamble
 slots on an untested candidate.
