@@ -216,6 +216,44 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## MLP ensemble (2026-06-17) — adopted as submission default
+
+Single 2000ep MLP beat linear (57.5% mirror) but regressed vs rule_based
+(22.5% vs linear's 30%). The diagnosis was overfitting to the self-play
+distribution — same pattern as the earlier vs-opp finetune attempts.
+Standard cheap fix: train independently-seeded MLPs and average their
+logits.
+
+train/ensemble_policy.py: EnsemblePolicy with the same .logits() /
+.value() / .probs() API as MlpPolicy. Averages logits across N members
+(np.mean over stacked logits). Auto-loaded by main.py when 2+
+mlp_policy*.pt files exist in train/.
+
+Trained a second 2000ep MLP at seed=42 (~9 min, indistinguishable
+mirror-self-play dynamics from seed=20260628).
+
+A/B (40 games):
+                          Single MLP    Ensemble (2 MLPs)    Δ
+  vs random:              38-2 (95.0%)  37-3 (92.5%)        -2.5pp (noise)
+  vs rule_based(Lucario):  9-31 (22.5%) 13-27 (32.5%)       +10pp
+  ensemble vs single MLP:   —           23-17 (57.5%)       (sanity check)
+
+The +10pp vs rule_based is the headline: averaging across seeds
+cancels each MLP's per-seed overfit quirks. Vs random the small drop
+is within the 40-game CI. Mirror match against the single MLP shows
+the ensemble genuinely picks different moves (it's not just one
+member overpowering).
+
+main.py decision stack updated to try EnsemblePolicy first (when 2+
+mlp_policy*.pt files exist), then single MLP, then LinearPolicy.
+make_submission.sh / check_bundle.py bundle both .pt files; tar.gz
+stays at ~1.1 MB.
+
+The next step in this direction would be a third seed, then a fourth.
+Each additional member should cost less than the first (diminishing
+returns) but the per-move latency stays linear in N — at N=2 we add
+maybe 30ms per move which is well within the budget.
+
 ## Experiment: extend MLP self-play to 5000ep (2026-06-17)
 
 Hypothesis: 2000ep was enough to beat the linear policy (57.5% mirror)

@@ -38,11 +38,26 @@ _DECK = _read_deck()
 
 
 def _try_load_policy():
-    """Try MLP policy first (more capacity), fall back to LinearPolicy.
+    """Decision stack (top wins, falls through on failure):
 
-    The MLP needs PyTorch at runtime; if torch isn't available in the
-    submission environment, the linear policy still works on numpy alone.
+    1. EnsemblePolicy if 2+ mlp_policy*.pt checkpoints exist
+    2. Single MlpPolicy if only train/mlp_policy.pt is present
+    3. LinearPolicy if PyTorch isn't available
     """
+    here = os.path.dirname(os.path.abspath(__file__))
+    train_dir = os.path.join(here, "train")
+    try:
+        import glob  # noqa: PLC0415
+
+        paths = sorted(glob.glob(os.path.join(train_dir, "mlp_policy*.pt")))
+        if len(paths) >= 2:
+            from train.ensemble_policy import EnsemblePolicy  # noqa: PLC0415
+
+            ens = EnsemblePolicy.try_load(paths)
+            if ens is not None:
+                return ens
+    except Exception:
+        pass
     try:
         from train.mlp_policy import MlpPolicy  # noqa: PLC0415
 

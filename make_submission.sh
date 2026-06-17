@@ -36,6 +36,7 @@ require train/__init__.py
 require train/policy.py
 require train/features.py
 require train/mlp_policy.py
+require train/ensemble_policy.py
 
 deck_count=$(grep -c . deck.csv)
 if [ "$deck_count" -ne 60 ]; then
@@ -61,8 +62,9 @@ tar --owner=0 --group=0 \
     train/policy.py \
     train/features.py \
     train/mlp_policy.py \
+    train/ensemble_policy.py \
     $( [ -e train/policy.npz ] && echo train/policy.npz ) \
-    $( [ -e train/mlp_policy.pt ] && echo train/mlp_policy.pt )
+    $(ls train/mlp_policy*.pt 2>/dev/null)
 
 echo
 echo "wrote: $OUT  ($(du -h "$OUT" | cut -f1))"

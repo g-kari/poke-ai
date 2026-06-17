@@ -92,7 +92,8 @@ CLAUDE.md             Claude Code 向け開発メモ
 | 2000ep + ATTACK dmg/cost 特徴 (36-d / 40-d) | 65-15 (80 戦, 81%) | 5000ep を 2.5x 少ない episode で同等 |
 | 5000ep cumulative + ATTACK 特徴 | 70-10 (80 戦, 87.5%) | 新特徴量で warm-start 続行 |
 | 5000ep + super-effective / retreat 特徴 (40-d / 40-d) | 72-8 (80 戦, 90.0%) | 線形 100-game 91% で飽和 |
-| **PyTorch MLP (64→32) + 2000ep self-play** | **38-2 (40 戦, 95%)** | 線形に mirror match で 23-17 (57.5%) 勝利。default の policy |
+| PyTorch MLP (64→32) + 2000ep self-play | 38-2 (40 戦, 95%) | 線形に mirror match で 23-17 (57.5%) 勝利 |
+| **2-MLP ensemble (異 seed, 各 2000ep)** | **37-3 (40 戦, 92.5%)** | vs rule_based +10pp (22.5→32.5%)。default の policy |
 
 ## 環境
 
