@@ -254,6 +254,48 @@ Each additional member should cost less than the first (diminishing
 returns) but the per-move latency stays linear in N — at N=2 we add
 maybe 30ms per move which is well within the budget.
 
+## Experiment: 3-MLP ensemble (2026-06-17) — seed 3 dragged the ensemble down
+
+Hypothesis: 2-MLP ensemble already gave +10pp vs rule_based; a third
+seed should add a touch more variance reduction.
+
+Trained a third 2000ep MLP at seed=1024 (9 min on RTX 3070 Ti). The
+training metrics looked identical to the other two (mirror winrate
+0.55-0.62, no apparent overfitting).
+
+3-MLP ensemble bench (40 games each):
+                           2-MLP         3-MLP        Δ
+  vs random:               92.5%         90.0%       -2.5pp
+  vs rule_based(Lucario):  32.5%         17.5%       -15.0pp  ← worse than single MLP
+  ensemble vs main.agent:    —           50.0%       (mirror, expected)
+
+The 3-member ensemble actually fared WORSE vs rule_based than the
+2-member ensemble. To diagnose, ran the seed-3 MLP alone on 20 games:
+  seed-3 alone vs linear:        45%   (seed-1 alone was 57.5%)
+  seed-3 alone vs rule_based:    20%
+  seed-3 alone vs random:        95%
+
+Seed 3 is a genuinely weaker model — its mirror winrate is below
+50% against the linear policy. Adding a weak model to the average
+pulled the ensemble's choices toward its biases.
+
+Diminishing returns turned out to be a misdiagnosis; the issue is
+selection bias. The 2-MLP ensemble worked because BOTH members were
+above-average. Random seed 1024 happened to give a below-average
+member, and naive averaging let it vote.
+
+Moved train/mlp_policy_seed3.pt out of train/ so main.py keeps the
+2-MLP setup. The metrics file stays in tree as the experiment record.
+
+Lessons:
+  - When training ensemble members, validate each member's individual
+    strength before including it.
+  - Future ensemble work should consider weighted averaging (members
+    weighted by their solo win rate) or member dropout (remove the
+    weakest at eval time).
+  - Or the simpler version: train N seeds, keep the top K by solo
+    mirror winrate against the linear baseline.
+
 ## Experiment: extend MLP self-play to 5000ep (2026-06-17)
 
 Hypothesis: 2000ep was enough to beat the linear policy (57.5% mirror)
