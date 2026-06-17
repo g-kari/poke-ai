@@ -216,6 +216,50 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## Wider MLP arch (128/64/32 + 64/32) — rejected (2026-06-18)
+
+Hypothesis: the standard 64/32 + 32 MLP might be too small to learn
+robust play patterns; a wider policy head (128, 64, 32) with a
+wider value head (64, 32) could absorb more state-feature
+combinations. Trained at lr=1e-3 seed=7 for 2000ep.
+
+Added two CLI args to train.mlp_train for the experiment:
+  --hidden-pi  comma-separated policy widths
+  --hidden-v   comma-separated value widths
+
+Solo bench (40 games):
+  wide vs linear:        21-19 (52.5%)  ← passes solo threshold
+  wide vs random:        40-0  (100%)   ← actually perfect, narrow MLPs hit 95%
+  wide vs rule_based:    5-35  (12.5%)
+
+The 100% vs random is encouraging — the wider head packs more
+distinctions into the engine-prior-augmented logits. Tried it both
+solo on bench_meta and as a 4th member of the heterogeneous ensemble:
+
+  wide solo (150 games):           25-125 (16.7%) overall
+  3-MLP narrow (baseline):         33-117 (22.0%) overall
+  4-MLP heterogeneous (3 narrow + 1 wide): 27-123 (18.0%)
+
+So the wider arch is WORSE both alone and in the mix. Hypotheses:
+
+  - With 2000ep of self-play we don't have enough samples to populate
+    the larger parameter space. The optimizer might be settling on
+    a local minimum that wins one specific archetype (Mega Abomasnow
+    went 26.7% in the ensemble vs 23.3% for 3-MLP — Crustle gained
+    too) at the cost of others (Iono dropped from 6.7% to 3.3%).
+  - Different MLP widths produce different logit scales. Averaging
+    a wide and narrow set in EnsemblePolicy.logits gives the wide
+    member disproportionate influence on options where its logits
+    are sharper, blurring the consensus we wanted.
+
+50% vs linear is necessary but NOT sufficient. The cheap solo bench
+is a noisy filter for outright-bad seeds, not for ranking borderline
+acceptable candidates. The comprehensive bench_meta is the truth.
+
+Wider MLP discarded. /tmp/wide_demoted.pt has the file. metrics
+JSON kept as the experiment record. The CLI args stay in
+train.mlp_train.py as infrastructure for future architecture probes.
+
 ## Adding Crustle Wall to bench_meta (2026-06-18)
 
 The LB replay analysis flagged AM (LOSS) as a Crustle Wall archetype

@@ -152,16 +152,24 @@ def train(
     start_from: str | None = None,
     log_every: int = 100,
     metrics_out: str | None = None,
+    hidden_pi: tuple[int, ...] | None = None,
+    hidden_v: tuple[int, ...] | None = None,
 ) -> None:
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
-    policy = MlpPolicy()
+    kwargs = {}
+    if hidden_pi is not None:
+        kwargs["hidden_pi"] = hidden_pi
+    if hidden_v is not None:
+        kwargs["hidden_v"] = hidden_v
+    policy = MlpPolicy(**kwargs)
     if start_from and os.path.exists(start_from):
         try:
             policy = MlpPolicy.load(start_from, device=policy.device)
             print(f"loaded warm start from {start_from}")
         except Exception as exc:
             print(f"warm-start load failed ({exc}); training from scratch")
+    print(f"policy: pi={policy.hidden_pi} v={policy.hidden_v} device={policy.device}")
     policy.train()
     optimizer = torch.optim.Adam(policy.parameters(), lr=lr)
 
@@ -218,7 +226,21 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--log-every", type=int, default=100)
     p.add_argument("--metrics-out", default=None)
+    p.add_argument(
+        "--hidden-pi",
+        default=None,
+        help="Comma-separated MLP policy widths, e.g. '128,64,32'",
+    )
+    p.add_argument(
+        "--hidden-v",
+        default=None,
+        help="Comma-separated MLP value-head widths, e.g. '64,32'",
+    )
     args = p.parse_args()
+
+    def _parse(spec):
+        return tuple(int(x) for x in spec.split(",")) if spec else None
+
     train(
         args.episodes,
         args.lr,
@@ -227,6 +249,8 @@ def main():
         args.warm_start,
         args.log_every,
         args.metrics_out,
+        _parse(args.hidden_pi),
+        _parse(args.hidden_v),
     )
 
 
