@@ -216,7 +216,47 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
-## MLP ensemble (2026-06-17) — adopted as submission default
+## 3-MLP ensemble adoption (2026-06-17) — current submission default
+
+Added a third MLP member to the ensemble. Per the lesson from the
+earlier failed seed=1024 attempt (which had solo mirror winrate
+9-11 = 45% vs linear and dragged the ensemble down), this time we
+benched the new seed alone first.
+
+Trained 2000ep self-play at --lr 1e-3, seed=100, ~9 min on RTX 3070 Ti.
+
+Solo bench (40 games):
+  seed=100 vs linear:        21-19 (52.5%)  — passes the >50% threshold
+  seed=100 vs random:        37-3  (92.5%)
+  seed=100 vs rule_based:    7-33  (17.5%)  — single MLPs are bad here
+
+Marginal but above-average; kept the seed in. 3-MLP ensemble bench
+across all 4 Kiyota meta agents (30 games each, larger sample than
+the 2-MLP 20-game baseline):
+
+                       2-MLP (20 games)    3-MLP (30 games)    Δ
+  vs Mega Lucario:     35.0% (7-13)        20.0% (6-24)        -15pp
+  vs Dragapult:        15.0% (3-17)        33.3% (10-20)       +18.3pp
+  vs Iono's:           10.0% (2-18)        13.3% (4-26)        +3.3pp
+  vs Mega Abomasnow:   30.0% (6-14)        40.0% (12-18)       +10pp
+  overall:             22.5% (18-62)       26.7% (32-88)       +4.2pp
+
+Wilson 95% CIs still overlap (22.5% [15-33] vs 26.7% [19-35]) so this
+isn't statistically conclusive, but the point estimate trends up
+across 3 of 4 match-ups. The Mega Lucario regression makes sense —
+seed=100 doesn't share whatever quirk made the 2-MLP ensemble peak at
+35% there, so its inclusion pulls the average down on that one
+match-up while pulling the other three up.
+
+main.py picks up all mlp_policy*.pt files via glob, so the addition
+needs no code change. Submission tar.gz adds 39 KB; verification by
+the new check_main_exec hook passes.
+
+Not yet submitted — saving the remaining Kaggle daily slots for a
+clearer signal. Current LB submission (53776818) is the 2-MLP and
+sits at score ~633 after 4 PUBLIC episodes (2W/2L).
+
+## MLP ensemble (2026-06-17) — earlier 2-MLP iteration
 
 Single 2000ep MLP beat linear (57.5% mirror) but regressed vs rule_based
 (22.5% vs linear's 30%). The diagnosis was overfitting to the self-play
