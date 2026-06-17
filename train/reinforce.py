@@ -32,11 +32,21 @@ sys.modules.setdefault("litellm", type(sys)("litellm"))
 
 from kaggle_environments import make
 
-# avoid circular import; only need DECK
-from agent import DECK
-
 from .features import OPTION_DIM, STATE_DIM, option_features, state_features
 from .policy import DEFAULT_PATH, LinearPolicy
+
+
+def _read_deck():
+    """Read deck.csv from the repo root."""
+    import os  # noqa: PLC0415
+
+    here = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(os.path.dirname(here), "deck.csv")
+    with open(path) as f:
+        return [int(line.strip()) for line in f if line.strip()]
+
+
+DECK = _read_deck()
 
 
 @dataclass

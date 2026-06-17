@@ -216,6 +216,35 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## Experiment: train our linear policy on Mega Lucario deck (2026-06-17)
+
+Hypothesis: the rule-based + Mega Lucario combo beats us partly because
+the deck is just stronger; if we retrain our linear policy on that same
+deck we should at least catch up.
+
+Setup: swapped deck.csv to deck_mega_lucario.csv (60 cards, card 6 x13
+basic Fighting energy), updated train/reinforce.py to read deck.csv at
+import time instead of importing DECK from agent.py, and trained
+3000ep from scratch (--lr 0.05 --lr-value 0.05, seed 20260624).
+17 minutes wall-clock; |w_opt| 0 -> 1.67.
+
+Result (40 games):
+  new linear(Lucario) vs rule_based(Lucario): 15-25 (37.5%)
+  new linear(Lucario) vs random:               30-10 (75.0%)
+  old linear(our deck) vs random:              91% (100-game definitive)
+
+Net: the deck swap regressed our vs-random win rate by ~16pp at the same
+episode count. Mega Lucario games are visibly longer (per-step bottleneck
+visible in the 17-min training time vs ~6-9 min for our deck), and the
+extra play depth probably means 3000ep isn't enough to converge with
+this feature space. The rule-based agent's hand-coded card knowledge
+remains the strong baseline for this deck.
+
+Rolled back deck.csv and policy.npz to the previous configuration. Kept
+train/metrics_3000ep_lucario.json in tree as the experiment record. The
+reinforce.py refactor to read deck.csv at runtime stays — it makes
+future deck experiments mechanically simpler.
+
 ## External baselines we benchmarked
 
 `scripts/rule_based_agent.py` and `deck_mega_lucario.csv` are vendored from
