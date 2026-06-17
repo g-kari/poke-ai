@@ -11,34 +11,34 @@ This module assumes the opponent's deck composition is identical to ours
 works as a reasonable prior for self-play and against random_agent. A
 multi-world extension would average across several opponent deck samples.
 
-Status (2026-06-17): Three PIMC backends benchmarked. Multi-world IS-MCTS
-is the first to beat the engine-prior baseline (vs random) but still loses
-in the mirror match and against the always-pick-zero first_agent.
+Status (2026-06-17): Definitive 100-game benches show PIMC-ON and
+PIMC-OFF are statistically equivalent at this configuration. All
+earlier "PIMC wins" / "PIMC loses" results at 20-40 games were
+variance.
 
-  Backend A (1-ply + trained linear value head):
-    PIMC-ON vs PIMC-OFF mirror:   10-30 (25%)
-    PIMC-ON vs first_agent:       15-25 (37.5%)
-    PIMC-ON vs random:            75%   (OFF: 92.5%)
+  Definitive 100-game results (multi-world N=2, linear rollout):
+    PIMC-ON vs PIMC-OFF mirror:  51-49 (51%) — Wilson 95% CI [41%, 61%]
+    PIMC-ON vs random:           92-8  (92%) — Wilson 95% CI [85%, 96%]
+    PIMC-OFF vs random:          91-9  (91%) — Wilson 95% CI [84%, 95%]
 
-  Backend B (rollout-to-terminal, single-world):
-    PIMC-ON vs PIMC-OFF mirror:   4-16  (20%)
-    PIMC-ON vs random:            80%   (OFF: 92.5%)
+So PIMC-ON adds no measurable strength but costs ~24x more per move
+(2.86s vs 0.12s on this image). Earlier backend explorations were
+not actually picking better moves; they were producing different but
+equivalent-quality move distributions, within the noise of small
+sample sizes.
 
-  Backend C (this file: multi-world IS-MCTS, N=2 sampled hidden states):
-    PIMC-ON vs PIMC-OFF mirror:   7-13  (35%)
-    PIMC-ON vs first_agent:       8-12  (40%)
-    PIMC-ON vs random:            95%   (OFF: 92.5%)  ← beats baseline
+The framework remains as infrastructure for future experiments
+(better rollout policy, sharper opponent priors, MLP value head).
+Don't expect default-ON status until a configuration shows >= 60%
+mirror-match winrate on 100+ games.
 
-So multi-world helps everywhere over single-world and finally beats OFF
-in the vs-random bench. The remaining gap on mirror / first_agent
-suggests strategy fusion isn't fully resolved at N=2 — N=4 was tried
-but its rollouts blow the 500ms budget and get truncated mid-game,
-which gives noisier estimates than N=2 with complete rollouts.
-
-Kept enabled via POKEAI_PIMC=1. Default OFF in main.py is conservative:
-the +2.5pp vs random doesn't outweigh the mirror-match risk against
-similar-skill TrueSkill opponents. Re-test when the rollout policy
-improves or when we can budget for more worlds.
+Backend history (kept for reference; superseded by the 100-game
+runs above):
+  Backend A (1-ply + trained linear value head): all benches in 20-40 game
+    range; concluded PIMC-ON loses to OFF. Likely variance, not signal.
+  Backend B (single-world rollout-to-terminal): same. Likely variance.
+  Backend C (this file, multi-world N=2 linear rollout): definitive
+    tie at 100 games against both OFF and random.
 """
 
 from __future__ import annotations
