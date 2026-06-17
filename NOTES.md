@@ -216,6 +216,39 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## seed=8 @ lr=8e-4 / 2500ep — rejected, but Crustle specialist (2026-06-18)
+
+Lowered the lr (1e-3 -> 8e-4) and bumped episodes (2000 -> 2500) for
+slightly slower / longer training. seed=8 standard architecture.
+
+Solo bench (40 games):
+  seed=8 vs linear:        21-19 (52.5%)  ← passes solo
+  seed=8 vs random:        40-0  (100%)
+  seed=8 vs rule_based:    9-31  (22.5%)  ← best single-MLP solo we've seen
+                                            against rule_based
+
+4-MLP ensemble (3-MLP + seed=8) bench_meta (150 games):
+
+                       3-MLP    4-MLP(+seed8)  Δ
+  Mega Lucario:        26.7%    26.7%          0pp
+  Dragapult:           20.0%    13.3%          -6.7pp
+  Iono:                 6.7%     6.7%          0pp
+  Mega Abomasnow:      23.3%    13.3%          -10pp
+  Crustle Wall:        33.3%    43.3%          +10pp
+  overall:             22.0%    20.7%          -1.3pp
+
+Interesting trade-off: seed=8 lifts Crustle by 10pp (the archetype
+that beat us on LB) but drags Dragapult and Abomasnow down by
+similar amounts. Net -1.3pp.
+
+Given how variance-laden 30-game bench_meta is (we've seen the same
+3-MLP land at 18% / 22% / 26.7% across runs), -1.3pp could be noise.
+But the cost-benefit isn't compelling enough to swap in.
+
+Discarded. The seed=8 file stays in /tmp/ and the metrics JSON is
+committed. Worth coming back to if we want to build a Crustle-focused
+variant ensemble for a separate submission.
+
 ## Wider MLP arch (128/64/32 + 64/32) — rejected (2026-06-18)
 
 Hypothesis: the standard 64/32 + 32 MLP might be too small to learn
