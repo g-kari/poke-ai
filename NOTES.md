@@ -216,6 +216,31 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## External baselines we benchmarked
+
+`scripts/rule_based_agent.py` and `deck_mega_lucario.csv` are vendored from
+the Kaggle reference notebooks (see file header for source URLs). They
+were saved to give us a concrete strong-baseline opponent for our own
+work. 40-game results on 2026-06-17:
+
+  rule_based(Mega Lucario) vs linear(ours, our deck):  28-12 (70%) ← rule-based wins
+  rule_based(Mega Lucario) vs random_agent:             40-0  (100%)
+  linear(ours, our deck) vs random_agent:               34-6  (85%)
+  linear(ours, Mega Lucario deck) vs random_agent:      29-11 (72.5%)
+
+Two takeaways:
+  - Just swapping our deck to Mega Lucario degrades our linear policy
+    (72.5% vs 85%) because the policy was trained on a different deck and
+    its option-side features don't generalize to the new card pool.
+  - Rule-based + Mega Lucario beats our entire pipeline. For a stronger
+    submission we'd need either to wrap the rule-based agent (cheap; loses
+    our learning infrastructure) or to retrain the linear policy on the
+    Mega Lucario deck (medium effort; uncertain gain).
+
+These resources stay in tree as reference / opponent. We aren't shipping
+the rule-based code as our submission yet — see commit message for the
+decision rationale.
+
 ## Open items
 
 - `_try_load_policy()` silently swallows exceptions to keep the Kaggle
