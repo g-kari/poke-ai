@@ -6,4 +6,5 @@ __pycache__/
 pokemon-tcg-ai-battle.zip
 kaggle_data/
 submission.tar.gz
+submission_rule_based.tar.gz
 episode-*.json

@@ -1344,6 +1344,53 @@ bench を取り、overall 改善があれば LB submit する。
 5 連敗。**シングル MLP ensemble に新メンバーを追加するアプローチは行き詰まり**。
 方向転換が必要 (Crustle 検出切替 / value baseline 正規化 / PIMC / デッキ変更)。
 
+## 衝撃の発見: rule-based(Mega Lucario) は overall 46.5% (2026-06-18)
+
+`scripts/bench_rule_based_lucario.py` を新規作成し、Kiyota の rule-based
+Mega Lucario agent (`scripts/rule_based_agent.py`) を主役にして 6 opp @ 80g
+で測定。
+
+| matchup | rule_based(Lucario) | 3-MLP (我々の LB 666.3) | delta |
+|---|---|---|---|
+| Mega Lucario (mirror) | 46.2% | 25.0% | +21.2pp |
+| Dragapult ex          | 53.8% | 20.0% | +33.8pp |
+| **Iono's**            | **83.8%** | 11.2% | **+72.6pp** |
+| Mega Abomasnow        | 47.5% | 21.2% | +26.3pp |
+| Crustle Wall (haru)   | 25.0% | 38.8% | -13.8pp |
+| Crustle Dashimaki     | 22.5% | 23.8% | -1.3pp (互角) |
+| **overall**           | **46.5%** | 23.3% | **+23.2pp** |
+
+つまり、これまで何十時間も注いだ MLP 学習路線より、**Kiyota 公式 sample
+agent + Mega Lucario deck を素で提出する方が約 2 倍強い**。
+特に Iono **+72.6pp** は致命的: 我々の MLP は Iono に対して全く機能してない。
+
+### LB submit 切替の準備済み
+
+1. `main_rule_based.py` — Kaggle exec() shape に対応した wrapper
+   (`__file__` 罠は前回と同じ `contextlib.suppress(NameError)` 対処)
+2. `make_submission_rule_based.sh` — `main_rule_based.py` → `main.py`、
+   `deck_mega_lucario.csv` → `deck.csv` にリネームしてバンドルする
+3. `scripts/check_main_exec.py --no-policy` — 非 MLP submission の sandbox 検証
+4. ローカル build & verify は完了 (`submission_rule_based.tar.gz`)
+
+### 切替 submit する場合のコマンド
+
+```bash
+./make_submission_rule_based.sh
+.venv/bin/kaggle competitions submit -c pokemon-tcg-ai-battle \
+    -f submission_rule_based.tar.gz \
+    -m "Switch to rule-based Mega Lucario (lab 46.5% vs 3-MLP 23.3%)"
+```
+
+### user 確認待ち事項
+
+- **submit する/しない判断はユーザに委ねる** (LB スコア 666.3 を
+  上書きするアクション)
+- rule-based(Lucario) の Crustle Wall 25% (- 13.8pp) は注意点。LB 上の
+  Crustle 比率が高いと overall 効果が変わる可能性あり (ただし 3-MLP の
+  Crustle 38.8% も実 LB プレイヤー (dashimaki 派) では 22.5% 相当)
+- ストラテジー部門 (締切 9/14) は別途、MLP 学習の知見は残しておく
+
 ## 現状サマリ (2026-06-18 evening)
 
 ### Submission 状況

@@ -45,6 +45,14 @@ def main() -> int:
             "one with make_submission.sh into a temp directory."
         ),
     )
+    parser.add_argument(
+        "--no-policy",
+        action="store_true",
+        help=(
+            "Skip the _POLICY presence check. Use for non-MLP bundles "
+            "(e.g. rule-based submissions) where agent doesn't expose _POLICY."
+        ),
+    )
     args = parser.parse_args()
 
     with tempfile.TemporaryDirectory(prefix="poke_ai_exec_test_") as tmp:
@@ -108,16 +116,19 @@ def main() -> int:
                 print("after exec, agent is not callable in the namespace", file=sys.stderr)
                 return 1
 
-            policy = ns.get("_POLICY")
-            if policy is None:
-                print(
-                    "after exec, _POLICY is None — bundle is missing the MLP and "
-                    "the linear fallback. Submission would run on the engine-prior "
-                    "baseline only.",
-                    file=sys.stderr,
-                )
-                return 1
-            print(f"  exec OK; agent loaded, _POLICY type = {type(policy).__name__}")
+            if args.no_policy:
+                print("  exec OK; agent loaded (--no-policy: _POLICY check skipped)")
+            else:
+                policy = ns.get("_POLICY")
+                if policy is None:
+                    print(
+                        "after exec, _POLICY is None — bundle is missing the MLP and "
+                        "the linear fallback. Submission would run on the engine-prior "
+                        "baseline only.",
+                        file=sys.stderr,
+                    )
+                    return 1
+                print(f"  exec OK; agent loaded, _POLICY type = {type(policy).__name__}")
 
             deck = agent({"select": None, "logs": [], "current": None})
             if not isinstance(deck, list) or len(deck) != 60:
