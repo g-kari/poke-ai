@@ -1,14 +1,16 @@
-"""Bench the Kiyota rule-based Mega Lucario agent against the meta deck pool.
+"""Bench an arbitrary rule-based agent (subject) against the full meta pool.
 
-Why: our 3-MLP submission (LB 666.3) gets crushed vs Crustle Dashimaki (23.8%)
-and Iono (11.2%). The rule-based Mega Lucario agent was previously measured
-to beat the 4-Kiyota-meta lineup at ~70% (vs random; from NOTES.md). If it
-also handles Crustle Dashimaki and Iono well, switching the submission from
-"our deck + 3-MLP" to "Mega Lucario deck + rule-based" could be a major
-LB jump.
+Why: 2026-06-18 bench discovered rule_based(Mega Lucario) gets 46.5% overall
+across the 6-opp meta pool (vs our 3-MLP submission at 23.3%). This script
+lets us test alternate "subject" agents (rule_based_dragapult,
+rule_based_iono, etc.) to find which deck/bot pair gives the strongest
+overall lab score — that becomes the next LB submit candidate.
 
 Usage:
-    scripts/run.sh python3 scripts/bench_rule_based_lucario.py [N_per_side]
+    scripts/run.sh python3 scripts/bench_rule_based_lucario.py [N_per_side] [subject]
+
+subject = lucario | dragapult | iono | abomasnow | crustle | crustle_dashimaki
+(default: lucario)
 """
 
 from __future__ import annotations
@@ -23,6 +25,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
+# rule_based_agent (Mega Lucario) reads RULE_DECK_PATH; the other Kiyota
+# bots each set their own deck path via env vars defined in their modules
+# (e.g. RULE_DECK_PATH_DRAGAPULT). Setting all of them up-front lets us
+# load every subject from the same process without re-importing.
 os.environ["RULE_DECK_PATH"] = str(ROOT / "deck_mega_lucario.csv")
 sys.modules.setdefault("litellm", types.ModuleType("litellm"))
 
@@ -68,19 +74,36 @@ def matchup(a, b, n: int, la: str, lb: str):
     return a_wins, b_wins, draws
 
 
-def main_bench(n: int = 10):
+SUBJECTS = {
+    "lucario": ("rule_based(Lucario)", rule_based_agent.agent),
+    "dragapult": ("rule_based(Dragapult)", rule_based_dragapult.agent),
+    "iono": ("rule_based(Iono)", rule_based_iono.agent),
+    "abomasnow": ("rule_based(Abomasnow)", rule_based_abomasnow.agent),
+    "crustle": ("rule_based(CrustleWall)", rule_based_crustle.agent),
+    "crustle_dashimaki": (
+        "rule_based(CrustleDashimaki)",
+        rule_based_crustle_dashimaki.agent,
+    ),
+}
+
+
+def main_bench(n: int = 10, subject_key: str = "lucario"):
+    if subject_key not in SUBJECTS:
+        print(f"unknown subject {subject_key!r}; pick one of {list(SUBJECTS)}", file=sys.stderr)
+        sys.exit(2)
+    subject_label, subject_fn = SUBJECTS[subject_key]
     opps = [
-        ("Mega Lucario (mirror)", rule_based_agent.agent),
+        ("Mega Lucario", rule_based_agent.agent),
         ("Dragapult ex", rule_based_dragapult.agent),
         ("Iono's", rule_based_iono.agent),
         ("Mega Abomasnow", rule_based_abomasnow.agent),
         ("Crustle Wall", rule_based_crustle.agent),
         ("Crustle Dashimaki", rule_based_crustle_dashimaki.agent),
     ]
-    print(f"rule_based(Mega Lucario) vs Kiyota meta opponents ({2 * n} games each)\n")
+    print(f"{subject_label} vs Kiyota meta opponents ({2 * n} games each)\n")
     rows: list[tuple[str, int, int, int]] = []
     for label, opp in opps:
-        a_w, b_w, d = matchup(rule_based_agent.agent, opp, n, "rule_based(Lucario)", label)
+        a_w, b_w, d = matchup(subject_fn, opp, n, subject_label, label)
         rows.append((label, a_w, b_w, d))
     total_w = sum(r[1] for r in rows)
     total_l = sum(r[2] for r in rows)
@@ -90,4 +113,5 @@ def main_bench(n: int = 10):
 
 if __name__ == "__main__":
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 10
-    main_bench(n)
+    subject = sys.argv[2] if len(sys.argv) > 2 else "lucario"
+    main_bench(n, subject)

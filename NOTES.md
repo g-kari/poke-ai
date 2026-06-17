@@ -1391,6 +1391,46 @@ agent + Mega Lucario deck を素で提出する方が約 2 倍強い**。
   Crustle 38.8% も実 LB プレイヤー (dashimaki 派) では 22.5% 相当)
 - ストラテジー部門 (締切 9/14) は別途、MLP 学習の知見は残しておく
 
+## さらに強い候補発見: rule_based(Iono) 64.0% (2026-06-18)
+
+`scripts/bench_rule_based_lucario.py` を generalize して
+`--subject {lucario, dragapult, iono, abomasnow, crustle, crustle_dashimaki}`
+を切替えられるようにし、各 rule-based agent を主役にして 80g/opp で総当り。
+
+### 候補ランキング @ 80g
+
+| subject | overall | Mega Luc | Drag | Iono | Aboma | Crustle Wall | Crustle Dashi |
+|---|---|---|---|---|---|---|---|
+| **Iono** | **64.0%** | 21.2% | 46.2% | 57.5% | 68.8% | **97.5%** | **92.5%** |
+| Dragapult | 48.1% | 51.2% | 56.2% | 70.0% | 52.5% | 58.8% | 0.0% |
+| Lucario | 46.5% | 46.2% | 53.8% | 83.8% | 47.5% | 25.0% | 22.5% |
+| Abomasnow | 40.0% | 31.2% | 46.2% | 28.7% | 50.0% | 67.5% | 16.2% |
+| 3-MLP (我々) | 23.3% | 25.0% | 20.0% | 11.2% | 21.2% | 38.8% | 23.8% |
+
+### rule_based(Iono) の特徴
+
+- **Crustle 系を完封**: Crustle Wall 97.5% / Crustle Dashimaki 92.5%
+  (= LB の dashimaki 派 AM, sbite0138, PavelLiashkov を 90%+ で殺せる)
+- Aboma 68.8%, Iono mirror 57.5%, Dragapult 46.2% で堅実
+- **唯一の弱点は Mega Lucario @ 21.2%** (Wattrel/Lightning は Fighting 弱点なし
+  ではあるが、Mega Lucario の打点が高すぎて押し切られる)
+- overall 64.0% は Lucario より **+17.5pp**、3-MLP より **+40.7pp**
+
+### Dragapult との比較
+
+- Dragapult @ 48.1% は Crustle Dashimaki に **0% 全敗** (致命的)
+- Iono @ 64.0% は弱点が Mega Lucario 単一なので分散が低い
+- LB の deck 分布が読めない以上、**全 matchup で 21% を下回らない Iono の方が安全**
+
+### 次サイクル予定
+
+1. `main_rule_based_iono.py` + `make_submission_rule_based_iono.sh` を構築
+2. `submission_rule_based_iono.tar.gz` を build & sandbox verify
+3. user に「Iono 切替で submit?」を問う (LB 666.3 → 期待大幅向上)
+
+候補比較メモは `train/` には触らず、`submission_rule_based.tar.gz` (Lucario 版)
+と並ぶ第 2 候補として位置づける。
+
 ## 現状サマリ (2026-06-18 evening)
 
 ### Submission 状況
