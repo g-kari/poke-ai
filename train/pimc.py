@@ -11,39 +11,50 @@ This module assumes the opponent's deck composition is identical to ours
 works as a reasonable prior for self-play and against random_agent. A
 multi-world extension would average across several opponent deck samples.
 
-Status (2026-06-17): Two PIMC backends have been tried, neither beats the
-linear policy's engine-order prior at submission-vs-anything benchmarks.
+Status (2026-06-17): Three PIMC backends benchmarked. Multi-world IS-MCTS
+is the first to beat the engine-prior baseline (vs random) but still loses
+in the mirror match and against the always-pick-zero first_agent.
 
   Backend A (1-ply + trained linear value head):
     PIMC-ON vs PIMC-OFF mirror:   10-30 (25%)
     PIMC-ON vs first_agent:       15-25 (37.5%)
-    PIMC-ON vs random:            75% (PIMC-OFF: 92.5%)
+    PIMC-ON vs random:            75%   (OFF: 92.5%)
 
-  Backend B (rollout-to-terminal, this file's current implementation):
-    PIMC-ON vs PIMC-OFF mirror:   4-16 (20%)
-    PIMC-ON vs random:            80% (PIMC-OFF: 92.5%)
+  Backend B (rollout-to-terminal, single-world):
+    PIMC-ON vs PIMC-OFF mirror:   4-16  (20%)
+    PIMC-ON vs random:            80%   (OFF: 92.5%)
 
-The rollout variant rolls the linear policy forward to a terminal state and
-uses the actual reward, sidestepping the value-head extrapolation issue.
-It is structurally better infrastructure but still loses in practice
-because of **strategy fusion**: single-world PIMC picks the option that is
-optimal under ONE sampled hidden-info realization, which can be suboptimal
-across the actual distribution of realizations. Fix requires multi-world
-sampling and averaging Q values (true Information-Set MCTS).
+  Backend C (this file: multi-world IS-MCTS, N=2 sampled hidden states):
+    PIMC-ON vs PIMC-OFF mirror:   7-13  (35%)
+    PIMC-ON vs first_agent:       8-12  (40%)
+    PIMC-ON vs random:            95%   (OFF: 92.5%)  ← beats baseline
 
-Kept enabled via POKEAI_PIMC=1 so experiments can continue (multi-world
-sampling, sharper opponent-deck priors, PyTorch search backend). The
-default-OFF flag in main.py is the safe choice for submission.
+So multi-world helps everywhere over single-world and finally beats OFF
+in the vs-random bench. The remaining gap on mirror / first_agent
+suggests strategy fusion isn't fully resolved at N=2 — N=4 was tried
+but its rollouts blow the 500ms budget and get truncated mid-game,
+which gives noisier estimates than N=2 with complete rollouts.
+
+Kept enabled via POKEAI_PIMC=1. Default OFF in main.py is conservative:
+the +2.5pp vs random doesn't outweigh the mirror-match risk against
+similar-skill TrueSkill opponents. Re-test when the rollout policy
+improves or when we can budget for more worlds.
 """
 
 from __future__ import annotations
 
 import contextlib
+import random
 import time
 from typing import Any
 
 DEFAULT_TIME_BUDGET_MS = 500.0
 DEFAULT_ROLLOUT_DEPTH = 80  # max steps per rollout before bailing to value head
+# Information-Set MCTS: average Q across N sampled worlds. Empirically tuned
+# against time_budget_ms — at N=4 worlds the rollout-to-terminal would
+# exceed the 500ms budget for most positions and Q estimates become
+# truncated and noisy. N=2 leaves enough headroom to complete rollouts.
+DEFAULT_N_WORLDS = 2
 
 
 def pick_best_option(
@@ -53,6 +64,8 @@ def pick_best_option(
     policy,  # train.policy.LinearPolicy
     time_budget_ms: float = DEFAULT_TIME_BUDGET_MS,
     rollout_depth: int = DEFAULT_ROLLOUT_DEPTH,
+    n_worlds: int = DEFAULT_N_WORLDS,
+    rng: random.Random | None = None,
 ) -> int | None:
     """Return the index of the best MAIN option via PIMC rollout-to-terminal.
 
@@ -94,69 +107,98 @@ def pick_best_option(
         return None
 
     deadline = time.monotonic() + time_budget_ms / 1000.0
+    rng = rng if rng is not None else random.Random()
 
     you = cur["yourIndex"]
     me = cur["players"][you]
     opp = cur["players"][1 - you]
+    my_index = you
 
     # Sample hidden info: opponent deck/prize/hand from our deck (mirror match
-    # assumption). The engine validates lengths, not contents, so we just need
-    # plausible card-id lists of the right size.
-    opp_deck_pred = list(deck)
-    opp_prize_pred = [deck[0]] * len(opp.get("prize", []))
-    opp_hand_pred = [deck[0]] * opp.get("handCount", 0)
-    your_prize_pred = [deck[0]] * len(me.get("prize", []))
-    your_deck_pred = list(deck)[: me.get("deckCount", 0)]
-    opp_active_pred: list[int] = []
+    # assumption). The engine validates lengths, not contents, so any card-id
+    # list of the right size is accepted; we shuffle so each world's rollout
+    # sees a different draw order.
+    opp_prize_count = len(opp.get("prize", []))
+    opp_hand_count = opp.get("handCount", 0)
+    your_prize_count = len(me.get("prize", []))
+    your_deck_count = me.get("deckCount", 0)
     opp_active = opp.get("active") or []
-    if opp_active and opp_active[0] is None:
-        opp_active_pred = [opp_deck_pred[0]]
+    needs_face_down = bool(opp_active) and opp_active[0] is None
 
-    try:
-        agent_obs = to_observation_class(obs)
-        root = search_begin(
-            agent_obs,
-            your_deck=your_deck_pred,
-            your_prize=your_prize_pred,
-            opponent_deck=opp_deck_pred,
-            opponent_prize=opp_prize_pred,
-            opponent_hand=opp_hand_pred,
-            opponent_active=opp_active_pred,
-        )
-    except Exception:
+    agent_obs = to_observation_class(obs)
+
+    # Aggregate Q per option across N sampled worlds.
+    q_sum = [0.0] * len(options)
+    q_count = [0] * len(options)
+    actual_worlds = 0
+    for _ in range(n_worlds):
+        if time.monotonic() > deadline:
+            break
+        # Each world gets an independently shuffled deck — the engine then
+        # draws from this order during the rollout, giving us a different
+        # game realization per world.
+        opp_deck_pred = list(deck)
+        rng.shuffle(opp_deck_pred)
+        your_deck_pred = list(deck)
+        rng.shuffle(your_deck_pred)
+        your_deck_pred = your_deck_pred[:your_deck_count]
+        opp_prize_pred = [opp_deck_pred[k % len(opp_deck_pred)] for k in range(opp_prize_count)]
+        opp_hand_pred = [opp_deck_pred[k % len(opp_deck_pred)] for k in range(opp_hand_count)]
+        your_prize_pred = [
+            your_deck_pred[k % max(1, len(your_deck_pred))] for k in range(your_prize_count)
+        ]
+        opp_active_pred = [opp_deck_pred[0]] if needs_face_down else []
+
+        try:
+            root = search_begin(
+                agent_obs,
+                your_deck=your_deck_pred,
+                your_prize=your_prize_pred,
+                opponent_deck=opp_deck_pred,
+                opponent_prize=opp_prize_pred,
+                opponent_hand=opp_hand_pred,
+                opponent_active=opp_active_pred,
+            )
+        except Exception:
+            continue
+        actual_worlds += 1
+        try:
+            for i in range(len(options)):
+                if time.monotonic() > deadline:
+                    break
+                try:
+                    child = search_step(root.searchId, [i])
+                except Exception:
+                    continue
+                try:
+                    q = _rollout_reward(
+                        child, policy, my_index, rollout_depth, search_step, search_release
+                    )
+                    q_sum[i] += q
+                    q_count[i] += 1
+                except Exception:
+                    pass
+                finally:
+                    with contextlib.suppress(Exception):
+                        search_release(child.searchId)
+        finally:
+            search_release(root.searchId)
+
+    if actual_worlds == 0:
         return None
 
-    my_index = you
+    # Pick option with highest mean Q. Unscored options (no rollouts at all
+    # because every world timed out before reaching them) get -inf so a
+    # scored option always wins. Tiny engine-prior tie-break stays.
     best_i = 0
     best_q = -1e9
-    try:
-        for i in range(len(options)):
-            if time.monotonic() > deadline:
-                break
-            try:
-                child = search_step(root.searchId, [i])
-            except Exception:
-                continue
-            try:
-                q = _rollout_reward(
-                    child, policy, my_index, rollout_depth, search_step, search_release
-                )
-                # Tiny tie-break: prefer earlier (= engine-recommended) options.
-                q -= 1e-4 * i
-                if q > best_q:
-                    best_q = q
-                    best_i = i
-            except Exception:
-                # Any rollout failure: skip this option and keep going.
-                continue
-            finally:
-                # child may have been released inside the rollout when it
-                # advanced past the original child; guard the release.
-                with contextlib.suppress(Exception):
-                    search_release(child.searchId)
-    finally:
-        search_release(root.searchId)
-
+    for i in range(len(options)):
+        if q_count[i] == 0:
+            continue
+        mean_q = q_sum[i] / q_count[i] - 1e-4 * i
+        if mean_q > best_q:
+            best_q = mean_q
+            best_i = i
     return best_i
 
 

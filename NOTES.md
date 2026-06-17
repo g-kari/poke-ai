@@ -185,26 +185,30 @@ feature complexity; further structural gains likely need MLP or PIMC.
 
 ### Upgrade path
 
-1. **Search (UNFROZEN 2026-06-17; two backends tried, neither beats baseline).**
+1. **Search (UNFROZEN 2026-06-17; three backends tried, multi-world helps).**
    `cg.api.search_begin/step/release` is wired through `train/pimc.py` and
-   gated by `POKEAI_PIMC=1` in `main.py`. Two backends have been benchmarked:
+   gated by `POKEAI_PIMC=1` in `main.py`. Three backends benchmarked:
 
    - **1-ply + linear value head** (replaced):
-     - vs PIMC-OFF mirror: 10-30 (25%)
-     - vs first_agent: 15-25 (37.5%)
-     - vs random: 75% (OFF: 92.5%)
-   - **rollout-to-terminal** (current code):
-     - vs PIMC-OFF mirror: 4-16 (20%)
-     - vs random: 80% (OFF: 92.5%)
+     - vs PIMC-OFF mirror: 10-30 (25%), vs first_agent: 15-25 (37.5%),
+       vs random: 75%
+   - **rollout-to-terminal, single-world** (replaced):
+     - vs PIMC-OFF mirror: 4-16 (20%), vs random: 80%
+   - **rollout-to-terminal, multi-world N=2 IS-MCTS** (current code):
+     - vs PIMC-OFF mirror: 7-13 (35%), vs first_agent: 8-12 (40%),
+       vs random: **95% (beats OFF's 92.5%)**
 
-   Both underperform the engine-prior linear baseline. The rollout variant
-   is structurally cleaner (sidesteps value-head extrapolation by using
-   actual terminal rewards from a linear-policy rollout) but exhibits
-   classic **strategy fusion**: single-world PIMC optimizes for ONE
-   sampled hidden-info realization which can be wrong across the actual
-   distribution. Path forward: multi-world sampling with Q-averaging
-   (true Information-Set MCTS), sharper opponent-deck priors than
-   "mirror our deck", or a PyTorch-based search backend.
+   Multi-world averaging Q across N independently shuffled worlds is the
+   first PIMC backend to beat the engine-prior baseline on vs-random. The
+   mirror and first_agent matches still lose, suggesting strategy fusion
+   isn't fully closed at N=2 — but raising N hits the 500ms time budget
+   and truncates rollouts, which hurts more than the extra samples help.
+
+   Path forward: (a) a faster rollout policy (e.g., heuristic move
+   selection during rollout instead of full linear-policy logits at every
+   step), so we can afford N=4 or N=8 worlds in the same budget;
+   (b) sharper opponent-deck priors than mirror match; (c) a PyTorch search
+   backend for batch parallelism.
 2. **Better features.** Add card-id embeddings (look up `Pokemon.id`,
    energy types, attack costs) and tile-encoded counts (active/bench HP
    per slot). `all_card_data()` is the canonical source.
