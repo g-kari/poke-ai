@@ -216,6 +216,39 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## Experiment: extend MLP self-play to 5000ep (2026-06-17)
+
+Hypothesis: 2000ep was enough to beat the linear policy (57.5% mirror)
+but maybe more episodes would consolidate the win and push vs-random
+higher. Warm-started from the 2000ep MLP, +3000ep self-play, --lr 5e-4
+(half of the original to limit drift), seed 20260630, 13.5 min on RTX
+3070 Ti. Self-play winrate stayed in the 0.55-0.65 band (healthy mirror
+dynamics, no extreme P0 takeover).
+
+A/B (40 games each):
+                                  2000ep MLP    5000ep MLP    Δ
+  vs linear(ours):                23-17 (57.5%) 16-24 (40.0%) -17.5pp
+  vs rule_based(Lucario):          9-31 (22.5%)  6-34 (15.0%) -7.5pp
+  vs random:                      38-2  (95.0%) 39-1  (97.5%) +2.5pp
+
+Wilson 95% CIs do overlap pairwise (small sample), but the point
+estimates move uniformly in the wrong direction for the two stronger
+opponents while gaining tiny ground vs random. That's the classic
+overfit signature: more episodes squeezed marginal vs-random
+performance at the cost of the generalization that beat linear.
+
+Rolled back to 2000ep MLP. metrics_mlp_5000ep.json stays as the
+experiment record so future iterations don't re-run the same loop.
+
+Implication for the linear-style "more training is always better"
+mindset: with an MLP, more episodes are not free — the policy
+distribution narrows toward whatever pattern wins self-play, and
+that pattern stops being robust to opponents off the self-play
+distribution. The fix is exposure to different opponents during
+training (something rule-based finetune tries but its V-head OOD
+problem ate the gains), or KL regularization back to an earlier
+checkpoint.
+
 ## Experiment: MLP vs-rule-based fine-tune with advantage baseline (2026-06-17)
 
 Hypothesis: the MLP regressed against rule_based (22.5% vs linear's 30%)
