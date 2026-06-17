@@ -284,6 +284,7 @@ Running tally:
   seed=100:                      52.5% vs linear   ← included (3-MLP)
   seed=200:                      47.5% vs linear   ← rejected
   seed=500:                      42.5% vs linear   ← rejected
+  seed=300 @ 3000ep:             50.0% vs linear   ← rejected (borderline)
 
 So 1 of 4 new candidates passed after the initial pair. The pass rate
 is lower than 50/50; either random self-play training really is that
@@ -304,6 +305,20 @@ slots on an untested candidate.
 Discarded seeds are stored in /tmp/ (not in train/) so the ensemble
 glob loader doesn't pick them up. The metrics JSON is committed so
 the failure record is preserved.
+
+**Tested hypothesis (a) — longer training**: trained seed=300 at 3000ep
+(50% more episodes than the usual 2000ep). It landed at exactly 50.0%
+solo vs linear, right on the threshold. Added it to the ensemble for a
+4-MLP bench_meta test anyway:
+
+  3-MLP overall: 26.7% (Lucario 20% / Drag 33% / Iono 13% / Abom 40%)
+  4-MLP overall: 25.8% (Lucario 17% / Drag 23% / Iono 17% / Abom 47%)
+
+Net -0.9pp; the borderline candidate did not help. The 50% solo cut
+is correctly calibrated: borderline cases drag at least one matchup
+even if they help another. seed=300 also rejected. Conclusion:
+longer training doesn't fix the seed-quality issue; the random init
+really is the dominant factor.
 
 ## 3-MLP ensemble adoption (2026-06-17) — current submission default
 
