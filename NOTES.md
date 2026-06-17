@@ -1305,6 +1305,45 @@ bench を取り、overall 改善があれば LB submit する。
 現在 iono_ft policy は `train/archive/mlp_policy_seed0_iono_ft.pt` に
 退避済み (次サイクルで `train/` に戻して 4-MLP 化する)。
 
+### 4-MLP (3-MLP + Iono ft) 80g 結果 — 採用見送り (2026-06-18)
+
+重複なしで `train/` に戻し、全 6 opp @ 80g で本判定:
+
+| matchup | 3-MLP @ 80g | 4-MLP @ 80g | delta |
+|---|---|---|---|
+| Mega Lucario       | 25.0% | 22.5% | -2.5pp |
+| Dragapult ex       | 20.0% | 15.0% | -5.0pp |
+| **Iono's**         | 11.2% |  8.8% | **-2.4pp** ← 期待は +6pp、80g で逆転 |
+| Mega Abomasnow     | 21.2% | 28.7% | +7.5pp |
+| Crustle Wall (haru)| 38.8% | 28.7% | -10.1pp |
+| Crustle Dashimaki  | 23.8% |  6.2% | **-17.6pp** |
+| **overall**        | **23.3%** | **18.3%** | **-5.0pp** |
+
+つまり 40g クイック結果 (Iono +6.3pp / Crustle -11.3pp) は両方向で誤り:
+80g 真実は Iono **-2.4pp** / Crustle Dashimaki **-17.6pp**。
+
+判定: LB submit せず、`train/archive/` 戻し。
+
+**今サイクルの教訓 (= seed=7 サイクルから 2 回目の再演)**:
+- **40g クイック bench は完全に信頼できない**。±15pp の noise が
+  実質的に「逆方向の結果」を返す
+- **新候補メンバーは ALWAYS 80g full bench から始める** (40g スキップ)
+- solo bench の改善 (Iono: 5→10%) も ensemble 平均では別物。
+  **solo positive は ensemble positive を保証しない**
+
+## 失敗試行サマリ (2026-06-18)
+
+| 試行 | 学習設定 | solo @ 40g | 4-MLP @ 80g vs 該当 opp | 採用? |
+|---|---|---|---|---|
+| seed=7 | random 2000ep mirror | - | Crustle Dashi -17.6pp | No |
+| seed=11_crustle | random 2000ep pure | - | Crustle Dashi -13.8pp | No |
+| seed=100_crustle_ft | warm-start 1000ep pure lr=3e-4 | 12.5% (元 15%) | - | No |
+| seed=100_crustle_mix | warm-start 1000ep mixed lr=1e-4 | 5.0% (元 15%) | - | No |
+| seed=0_iono_ft | warm-start 1000ep pure lr=3e-4 | 10.0% (元 5%) ← solo + | overall -5.0pp | No |
+
+5 連敗。**シングル MLP ensemble に新メンバーを追加するアプローチは行き詰まり**。
+方向転換が必要 (Crustle 検出切替 / value baseline 正規化 / PIMC / デッキ変更)。
+
 ## 現状サマリ (2026-06-18 evening)
 
 ### Submission 状況
