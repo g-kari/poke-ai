@@ -260,6 +260,44 @@ Kept train/metrics_{3000,6000}ep_lucario.json as experiment records.
 The reinforce.py refactor to read deck.csv at runtime stays — it's
 independently useful.
 
+## Experiment: REINFORCE vs the rule-based agent as opponent (2026-06-17)
+
+Hypothesis: self-play converges to mirror-match equilibrium with no
+incentive to learn moves that beat a different opponent. Training
+against the strong rule-based agent should force the policy to learn
+moves that punish its mistakes.
+
+Setup: scripts/train_vs_opponent.py runs REINFORCE where only our side
+is recorded and updated; opponent is a fixed black-box agent (rule_based
+or random). Warm-started from the 5000ep policy, 2000ep vs the rule-based
+Mega Lucario agent (--lr 0.05 --lr-value 0.05, seed 20260626, 7 min).
+
+Result (40 games):
+  warm-start linear vs rule_based:    28-12 lose (was 30%, became 6-34 = 15%)
+  vs-rule-trained linear vs rule_based: 6-34 (15%)  ← worse
+  vs-rule-trained linear vs random:     35-5 (87.5%) ← slight regression
+
+So training against a strictly stronger opponent made us **worse**, not
+better. Cumulative rule_based training showed 380 wins / 1619 losses =
+19% — most episodes ended with reward = -1.
+
+Root cause: reinforce_update has no advantage baseline. The gradient is
+`reward * (of_picked - expected_of)`. When reward = -1 dominates (as it
+does against a strong opp), every update pushes the policy away from the
+move it just sampled, toward uniform. The policy regresses toward
+maximum-entropy babble, not toward the rare winning moves.
+
+Fix would be to use advantage `(reward - V(state))` instead of raw reward,
+which `policy.value(state)` from the value head naturally supplies. Held
+off implementing because the experiment also revealed that even at 380
+wins out of 2000 episodes the signal-per-state is too sparse for this
+linear-feature setup to actually learn a winning strategy against a
+hand-coded card-aware agent.
+
+Rolled back the policy. scripts/train_vs_opponent.py and the metrics file
+stay in tree as infrastructure for the next attempt (which needs the
+advantage baseline before re-running this loop).
+
 ## External baselines we benchmarked
 
 `scripts/rule_based_agent.py` and `deck_mega_lucario.csv` are vendored from
