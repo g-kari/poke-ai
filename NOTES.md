@@ -224,26 +224,41 @@ deck we should at least catch up.
 
 Setup: swapped deck.csv to deck_mega_lucario.csv (60 cards, card 6 x13
 basic Fighting energy), updated train/reinforce.py to read deck.csv at
-import time instead of importing DECK from agent.py, and trained
-3000ep from scratch (--lr 0.05 --lr-value 0.05, seed 20260624).
-17 minutes wall-clock; |w_opt| 0 -> 1.67.
+import time instead of importing DECK from agent.py, and trained on the
+Lucario deck.
 
-Result (40 games):
+### Run 1: 3000ep from scratch (--lr 0.05, --lr-value 0.05, seed 20260624)
+17 min wall-clock; |w_opt| 0 -> 1.67.
+
   new linear(Lucario) vs rule_based(Lucario): 15-25 (37.5%)
   new linear(Lucario) vs random:               30-10 (75.0%)
   old linear(our deck) vs random:              91% (100-game definitive)
 
-Net: the deck swap regressed our vs-random win rate by ~16pp at the same
-episode count. Mega Lucario games are visibly longer (per-step bottleneck
-visible in the 17-min training time vs ~6-9 min for our deck), and the
-extra play depth probably means 3000ep isn't enough to converge with
-this feature space. The rule-based agent's hand-coded card knowledge
-remains the strong baseline for this deck.
+### Run 2: +3000ep warm-start (--lr 0.03, --lr-value 0.05, seed 20260625)
+17 min wall-clock; |w_opt| 1.67 -> 2.26. Cumulative 6000ep.
 
-Rolled back deck.csv and policy.npz to the previous configuration. Kept
-train/metrics_3000ep_lucario.json in tree as the experiment record. The
-reinforce.py refactor to read deck.csv at runtime stays — it makes
-future deck experiments mechanically simpler.
+  6000ep linear(Lucario) vs rule_based(Lucario): 13-27 (32.5%) (regressed from 37.5%)
+  6000ep linear(Lucario) vs random:               25-15 (62.5%) (regressed from 75%)
+
+So MORE training on Mega Lucario actually made things WORSE on the
+40-game vs-random bench. Possible reasons:
+  - The features we built for our deck (option's attack damage / cost,
+    super-effective matchups using card_data) don't capture the
+    play-pattern of Mega Lucario (which leans hard on evolution chains
+    and tool / supporter combos that our policy can't represent).
+  - Mega Lucario games are visibly longer (2x training time) and the
+    REINFORCE terminal-reward signal gets noisier per step.
+  - lr=0.03 in the warm-start may have been too small to keep moving
+    after the initial 3000ep already converged into a local optimum
+    that the new feature basis can't escape.
+
+Net: Mega Lucario direction is a dead end for our linear policy at
+this feature complexity. Rolled back to old deck + old policy.npz
+(95% vs random on 20 games, matching the 91% on the 100-game baseline).
+
+Kept train/metrics_{3000,6000}ep_lucario.json as experiment records.
+The reinforce.py refactor to read deck.csv at runtime stays — it's
+independently useful.
 
 ## External baselines we benchmarked
 
