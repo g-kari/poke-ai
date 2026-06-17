@@ -216,6 +216,41 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## Solo @ 80 games: members have complementary specialties (2026-06-18)
+
+Until now we'd never benched each ensemble member solo at the tight
+80-game-per-opp setting. Doing that reveals real per-seed specialties
+that explain how the ensemble lifts overall by +4.5pp.
+
+Per-opp solo bench @ 80 games (400 total):
+
+  Opponent          seed=20260628    seed=100    3-MLP ensemble
+  Mega Lucario:     25.0%            25.0%       36.2%   (+11pp from ensemble)
+  Dragapult:        25.0%            16.2%       20.0%   (ensemble drags 25%->20%)
+  Iono:             7.5%             10.0%       17.5%   (+9pp from ensemble)
+  Mega Abomasnow:   27.5%            31.2%       31.2%   (~match)
+  Crustle Wall:     28.7%            38.8%       31.2%   (ensemble drags 38.8%->31.2%)
+  overall:          22.8%            24.2%       27.3%   (+4.5pp ensemble lift)
+
+Notable specialties:
+  - seed=20260628 owns Dragapult (25.0% vs seed=100's 16.2%)
+  - seed=100 owns Crustle (38.8% vs seed=20260628's 28.7%)
+  - both join forces on Mega Lucario, where averaging lifts both to 36%
+  - both struggle on Iono, but averaging still adds +9pp
+
+So the ensemble does its job — it dampens each member's individual
+weakness — but at the cost of capping each member's specialty
+strength. seed=100's 38.8% on Crustle gets averaged down to 31.2%
+because the other members vote differently there.
+
+This suggests weighted / opponent-conditioned averaging could help:
+detect Crustle and weight seed=100 higher. But that requires runtime
+opponent detection, which is hard from the obs (opp's hand is hidden).
+Probably not worth the effort vs other directions.
+
+Submission stays at 3-MLP — the unweighted average is the best we can
+do without per-opp detection.
+
 ## Tight bench (80 games/opp) reveals seed=8 was noise (2026-06-18)
 
 Took the noise-floor commit's prescription seriously and re-benched
