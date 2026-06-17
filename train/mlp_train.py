@@ -82,16 +82,27 @@ def make_training_agent(policy: MlpPolicy, rng: np.random.Generator, trace: list
     return _agent
 
 
-def run_episode(policy: MlpPolicy, rng: np.random.Generator):
+def run_episode(policy: MlpPolicy, rng: np.random.Generator, opponent=None):
+    """Self-play one episode. If opponent is given, policy is always seat 0
+    and only its trace is returned for REINFORCE updates (we don't train the
+    rule-based opponent). Seats alternate randomly to keep symmetry."""
     trace0: list[Step] = []
-    trace1: list[Step] = []
     a0 = make_training_agent(policy, rng, trace0)
-    a1 = make_training_agent(policy, rng, trace1)
     env = make("cabt")
-    env.run([a0, a1])
-    r0 = env.steps[-1][0].reward
-    r1 = env.steps[-1][1].reward
-    return trace0, trace1, r0, r1
+    if opponent is None:
+        trace1: list[Step] = []
+        a1 = make_training_agent(policy, rng, trace1)
+        env.run([a0, a1])
+        r0 = env.steps[-1][0].reward
+        r1 = env.steps[-1][1].reward
+        return trace0, trace1, r0, r1
+    if rng.random() < 0.5:
+        env.run([a0, opponent])
+        r0 = env.steps[-1][0].reward
+        return trace0, [], r0, None
+    env.run([opponent, a0])
+    r0 = env.steps[-1][1].reward
+    return trace0, [], r0, None
 
 
 def reinforce_update(
@@ -144,6 +155,22 @@ def reinforce_update(
     )
 
 
+def _load_opponent(name: str):
+    """Resolve an opponent agent callable by name. Returns None for mirror selfplay."""
+    if name in ("", "mirror", "self"):
+        return None
+    import importlib
+    import sys
+    from pathlib import Path
+
+    here = Path(__file__).resolve().parent
+    scripts_dir = here.parent / "scripts"
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+    mod = importlib.import_module(name)
+    return mod.agent
+
+
 def train(
     episodes: int,
     lr: float,
@@ -154,6 +181,7 @@ def train(
     metrics_out: str | None = None,
     hidden_pi: tuple[int, ...] | None = None,
     hidden_v: tuple[int, ...] | None = None,
+    opponent: str = "",
 ) -> None:
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
@@ -170,6 +198,8 @@ def train(
         except Exception as exc:
             print(f"warm-start load failed ({exc}); training from scratch")
     print(f"policy: pi={policy.hidden_pi} v={policy.hidden_v} device={policy.device}")
+    opp_fn = _load_opponent(opponent)
+    print(f"opponent: {opponent or 'mirror selfplay'}")
     policy.train()
     optimizer = torch.optim.Adam(policy.parameters(), lr=lr)
 
@@ -178,7 +208,7 @@ def train(
     recent: list[int] = []
     metrics: list[dict] = []
     for ep in range(1, episodes + 1):
-        trace0, trace1, r0, r1 = run_episode(policy, rng)
+        trace0, trace1, r0, r1 = run_episode(policy, rng, opp_fn)
         if r0 is not None:
             reinforce_update(policy, optimizer, trace0, float(r0))
         if r1 is not None:
@@ -236,6 +266,12 @@ def main():
         default=None,
         help="Comma-separated MLP value-head widths, e.g. '64,32'",
     )
+    p.add_argument(
+        "--opponent",
+        default="",
+        help="Opponent module name from scripts/ (e.g. 'rule_based_crustle_dashimaki'). "
+        "Empty/mirror = standard self-play.",
+    )
     args = p.parse_args()
 
     def _parse(spec):
@@ -251,6 +287,7 @@ def main():
         args.metrics_out,
         _parse(args.hidden_pi),
         _parse(args.hidden_v),
+        args.opponent,
     )
 
 
