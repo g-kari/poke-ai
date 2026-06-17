@@ -216,6 +216,42 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## Adding Crustle Wall to bench_meta (2026-06-18)
+
+The LB replay analysis flagged AM (LOSS) as a Crustle Wall archetype
+that wasn't in our local opponent set. Pulled
+harukiharada/crustle-wall-mirror-ok via the kaggle CLI and added it
+as the 5th rule-based opponent.
+
+Per-opponent 30-game bench against 3-MLP:
+
+  vs Mega Lucario:    8-22 (26.7%)
+  vs Dragapult ex:    6-24 (20.0%)
+  vs Iono's:          2-28 (6.7%)
+  vs Mega Abomasnow:  7-23 (23.3%)
+  vs Crustle Wall:    10-20 (33.3%)  ← actually our second-best!
+  overall (150 games): 33-117 (22.0%)
+
+Surprise: Crustle Wall is one of our easier match-ups in lab. The
+single-LB-episode AM loss was just a noisy sample, not evidence that
+Crustle counters our deck. (The AM submission may also be a tuned
+variant we haven't reproduced exactly.)
+
+Comparing 4-opp vs 5-opp benches at the same sample size:
+  4-opp (30 games each, 120 total): 26.7% overall
+  5-opp (30 games each, 150 total): 22.0% overall
+
+The per-opp numbers between runs shifted by 6-17pp without any policy
+change, so the "26.7% > 22.5%" gap I'd been treating as the 3-MLP
+improvement signal was only marginally above noise. The LB
++109pt gap remains the real signal — lab benches are too small to
+distinguish marginal gains.
+
+scripts/bench_meta.py now runs the 5-opp version by default.
+scripts/rule_based_crustle.py is vendored with attribution (Apache 2.0
+inherited from the source kernel). deck_crustle.csv has the 60-card
+list. pyproject.toml excludes the new rule-based file from ruff.
+
 ## LB replay analysis (2026-06-17 / 18)
 
 Downloaded the 5 PUBLIC episode replays of the 3-MLP submission

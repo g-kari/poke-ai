@@ -9,6 +9,7 @@ exclude = [
     "scripts/rule_based_dragapult.py", # vendored Kiyota Dragapult
     "scripts/rule_based_iono.py",      # vendored Kiyota Iono
     "scripts/rule_based_abomasnow.py", # vendored Kiyota Mega Abomasnow
+    "scripts/rule_based_crustle.py",   # vendored harukiharada Crustle Wall
 ]
 
 [tool.ruff.lint]
