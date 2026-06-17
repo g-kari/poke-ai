@@ -7,4 +7,5 @@ pokemon-tcg-ai-battle.zip
 kaggle_data/
 submission.tar.gz
 submission_rule_based.tar.gz
+submission_rule_based_iono.tar.gz
 episode-*.json

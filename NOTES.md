@@ -1431,6 +1431,34 @@ agent + Mega Lucario deck を素で提出する方が約 2 倍強い**。
 候補比較メモは `train/` には触らず、`submission_rule_based.tar.gz` (Lucario 版)
 と並ぶ第 2 候補として位置づける。
 
+### Iono submission build 完了 (2026-06-18)
+
+`main_rule_based_iono.py` と `make_submission_rule_based_iono.sh` を作成、
+`submission_rule_based_iono.tar.gz` (1.06MB) を build & sandbox verify 完了。
+deck = `[265, 265, 265, ...]` (Iono deck head) で正常起動を確認。
+
+### 現在 user 判断待ちの提出候補 3 つ
+
+| 候補 | tar.gz | overall (lab 80g) | deck |
+|---|---|---|---|
+| 現状 (3-MLP) | submission.tar.gz | 23.3% (= LB 666.3) | 我々のオリジナル |
+| Lucario | submission_rule_based.tar.gz | 46.5% | deck_mega_lucario.csv |
+| **Iono** | **submission_rule_based_iono.tar.gz** | **64.0%** | deck_iono.csv |
+
+submit コマンド (どちらか選択):
+
+```bash
+# Iono 案 (最有力、lab 64.0%)
+.venv/bin/kaggle competitions submit -c pokemon-tcg-ai-battle \
+    -f submission_rule_based_iono.tar.gz \
+    -m "Switch to rule-based Iono (lab 64.0%, Crustle 97.5/92.5%)"
+
+# Lucario 案 (lab 46.5%)
+.venv/bin/kaggle competitions submit -c pokemon-tcg-ai-battle \
+    -f submission_rule_based.tar.gz \
+    -m "Switch to rule-based Mega Lucario (lab 46.5%)"
+```
+
 ## 現状サマリ (2026-06-18 evening)
 
 ### Submission 状況
