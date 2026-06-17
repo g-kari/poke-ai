@@ -9,6 +9,7 @@ Decision stack (top wins, falls through on failure):
 
 from __future__ import annotations
 
+import contextlib
 import os
 import random
 from typing import Any
@@ -37,6 +38,21 @@ def _read_deck() -> list[int]:
 _DECK = _read_deck()
 
 
+def _resolve_train_dir() -> str:
+    """Pick the first existing train/ directory. Kaggle env exec()s this
+    file rather than importing it, so __file__ is not always defined —
+    we have to try common roots manually."""
+    candidates = []
+    with contextlib.suppress(NameError):
+        candidates.append(os.path.dirname(os.path.abspath(__file__)))
+    candidates.extend([os.getcwd(), "/kaggle_simulations/agent"])
+    for root in candidates:
+        candidate = os.path.join(root, "train")
+        if os.path.isdir(candidate):
+            return candidate
+    return os.path.join(candidates[0], "train")
+
+
 def _try_load_policy():
     """Decision stack (top wins, falls through on failure):
 
@@ -44,8 +60,7 @@ def _try_load_policy():
     2. Single MlpPolicy if only train/mlp_policy.pt is present
     3. LinearPolicy if PyTorch isn't available
     """
-    here = os.path.dirname(os.path.abspath(__file__))
-    train_dir = os.path.join(here, "train")
+    train_dir = _resolve_train_dir()
     try:
         import glob  # noqa: PLC0415
 
