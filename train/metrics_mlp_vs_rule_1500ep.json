@@ -1,0 +1,122 @@
+[
+  {
+    "ep": 100,
+    "wins": 19,
+    "losses": 81,
+    "draws": 0,
+    "win_rate_recent": 0.19,
+    "elapsed_s": 24.4
+  },
+  {
+    "ep": 200,
+    "wins": 43,
+    "losses": 157,
+    "draws": 0,
+    "win_rate_recent": 0.24,
+    "elapsed_s": 54.9
+  },
+  {
+    "ep": 300,
+    "wins": 65,
+    "losses": 235,
+    "draws": 0,
+    "win_rate_recent": 0.22,
+    "elapsed_s": 84.0
+  },
+  {
+    "ep": 400,
+    "wins": 91,
+    "losses": 309,
+    "draws": 0,
+    "win_rate_recent": 0.26,
+    "elapsed_s": 113.4
+  },
+  {
+    "ep": 500,
+    "wins": 116,
+    "losses": 384,
+    "draws": 0,
+    "win_rate_recent": 0.25,
+    "elapsed_s": 142.0
+  },
+  {
+    "ep": 600,
+    "wins": 140,
+    "losses": 460,
+    "draws": 0,
+    "win_rate_recent": 0.24,
+    "elapsed_s": 172.4
+  },
+  {
+    "ep": 700,
+    "wins": 161,
+    "losses": 539,
+    "draws": 0,
+    "win_rate_recent": 0.21,
+    "elapsed_s": 201.0
+  },
+  {
+    "ep": 800,
+    "wins": 176,
+    "losses": 624,
+    "draws": 0,
+    "win_rate_recent": 0.15,
+    "elapsed_s": 228.2
+  },
+  {
+    "ep": 900,
+    "wins": 197,
+    "losses": 703,
+    "draws": 0,
+    "win_rate_recent": 0.21,
+    "elapsed_s": 257.5
+  },
+  {
+    "ep": 1000,
+    "wins": 218,
+    "losses": 782,
+    "draws": 0,
+    "win_rate_recent": 0.21,
+    "elapsed_s": 283.6
+  },
+  {
+    "ep": 1100,
+    "wins": 242,
+    "losses": 858,
+    "draws": 0,
+    "win_rate_recent": 0.24,
+    "elapsed_s": 310.4
+  },
+  {
+    "ep": 1200,
+    "wins": 262,
+    "losses": 938,
+    "draws": 0,
+    "win_rate_recent": 0.2,
+    "elapsed_s": 337.6
+  },
+  {
+    "ep": 1300,
+    "wins": 291,
+    "losses": 1009,
+    "draws": 0,
+    "win_rate_recent": 0.29,
+    "elapsed_s": 365.0
+  },
+  {
+    "ep": 1400,
+    "wins": 309,
+    "losses": 1091,
+    "draws": 0,
+    "win_rate_recent": 0.18,
+    "elapsed_s": 393.3
+  },
+  {
+    "ep": 1500,
+    "wins": 331,
+    "losses": 1169,
+    "draws": 0,
+    "win_rate_recent": 0.22,
+    "elapsed_s": 422.6
+  }
+]

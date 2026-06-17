@@ -216,6 +216,43 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## Experiment: MLP vs-rule-based fine-tune with advantage baseline (2026-06-17)
+
+Hypothesis: the MLP regressed against rule_based (22.5% vs linear's 30%)
+because it overfits to the self-play state distribution. Fine-tuning
+against rule_based with the advantage baseline (which we proved fixes
+the linear regression) should close the gap.
+
+Setup: scripts/train_mlp_vs_opponent.py wraps the MLP REINFORCE update
+with a fixed opponent and the advantage baseline. Warm-started from
+the 2000ep self-play MLP, 1500ep vs rule_based, --lr 5e-4 (lower than
+self-play's 1e-3 to slow drift), seed 20260629, 7 min wall-clock.
+Cumulative training winrate: 331/1500 = 22%.
+
+A/B (40 games):
+                              pre-finetune    post-finetune
+  mlp vs linear:              23-17 (57.5%)  21-19 (52.5%)  -5pp
+  mlp vs rule_based(Lucario): 9-31  (22.5%)  8-32  (20.0%)  -2.5pp
+  mlp vs random:              38-2  (95.0%)  36-4  (90.0%)  -5pp
+
+All three benches regressed. The MLP got slightly worse vs rule_based
+(the target), and noticeably worse vs random and vs the linear policy.
+
+Interpretation: fine-tuning against the strong opponent moved the
+policy AWAY from the self-play equilibrium it was strong at, without
+finding a robust strategy against rule_based. The MLP's value head was
+trained on self-play states, so V(state) during the rule_based games
+is unreliable — the advantage subtraction is mostly working with the
+raw -1 signal, the same failure mode the linear policy showed.
+
+Rolled back to the pre-finetune MLP. scripts/train_mlp_vs_opponent.py
+and the metrics file stay in tree. The next attempt to close the
+rule_based gap probably needs a two-stage fine-tune: (a) freeze the
+policy head and train the value head on vs-rule-based rollouts until
+V(state) is calibrated, then (b) unfreeze and apply policy gradient.
+Or simpler: just accept that vs strong opponents we'll lose 70-80%
+and focus on the rating math (more wins vs weak opponents).
+
 ## PyTorch MLP policy (2026-06-17) — adopted as submission default
 
 Built `train/mlp_policy.MlpPolicy`, a small Adam-trained MLP with the
