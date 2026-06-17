@@ -50,11 +50,17 @@ from typing import Any
 
 DEFAULT_TIME_BUDGET_MS = 500.0
 DEFAULT_ROLLOUT_DEPTH = 80  # max steps per rollout before bailing to value head
-# Information-Set MCTS: average Q across N sampled worlds. Empirically tuned
-# against time_budget_ms — at N=4 worlds the rollout-to-terminal would
-# exceed the 500ms budget for most positions and Q estimates become
-# truncated and noisy. N=2 leaves enough headroom to complete rollouts.
+# Information-Set MCTS: average Q across N sampled worlds. Empirically
+# tuned — N=2 with the full linear rollout policy lands at 95% vs random;
+# N=8 with the engine-prior rollout policy drops to 80% even though more
+# samples should help, because engine-prior moves stall games and rollouts
+# hit DEFAULT_ROLLOUT_DEPTH instead of reaching a terminal state.
 DEFAULT_N_WORLDS = 2
+# Linear policy rollout (default) gives cleaner terminal rewards than the
+# engine-prior rollout. The engine_prior_rollout option in pick_best_option
+# is kept as infrastructure for experiments (e.g., to model PIMC-OFF
+# opponents in the mirror match more faithfully).
+DEFAULT_ROLLOUT_ENGINE_PRIOR = False
 
 
 def pick_best_option(
@@ -66,6 +72,7 @@ def pick_best_option(
     rollout_depth: int = DEFAULT_ROLLOUT_DEPTH,
     n_worlds: int = DEFAULT_N_WORLDS,
     rng: random.Random | None = None,
+    engine_prior_rollout: bool = DEFAULT_ROLLOUT_ENGINE_PRIOR,
 ) -> int | None:
     """Return the index of the best MAIN option via PIMC rollout-to-terminal.
 
@@ -172,7 +179,13 @@ def pick_best_option(
                     continue
                 try:
                     q = _rollout_reward(
-                        child, policy, my_index, rollout_depth, search_step, search_release
+                        child,
+                        policy,
+                        my_index,
+                        rollout_depth,
+                        search_step,
+                        search_release,
+                        engine_prior_rollout,
                     )
                     q_sum[i] += q
                     q_count[i] += 1
@@ -209,18 +222,21 @@ def _rollout_reward(
     max_depth: int,
     search_step,
     search_release,
+    engine_prior_rollout: bool = False,
 ) -> float:
-    """Roll the linear policy forward from `state` until termination or
-    max_depth selects. Returns the terminal reward in [-1, 1] from
-    `my_index`'s perspective. Falls back to the value head when the rollout
-    runs out of depth before reaching a terminal state.
+    """Roll forward from `state` until termination or max_depth selects.
+    Returns the terminal reward in [-1, 1] from `my_index`'s perspective.
+
+    When `engine_prior_rollout` is True, every action picks the first
+    `k` options the engine offers (= "first_agent" / engine prior). This
+    is ~10x faster than the linear-policy rollout and matches the
+    behavior of PIMC-OFF opponents in the mirror match. Otherwise picks
+    argmax of the linear policy logits.
 
     `state` is owned by the caller and never released here; intermediate
     SearchStates created during the rollout are tracked and released in
     a finally block to avoid leaking when the loop exits early.
     """
-    import numpy as np  # noqa: PLC0415
-
     intermediates: list[int] = []
     current = state
     try:
@@ -248,10 +264,16 @@ def _rollout_reward(
                 return _value_of(obs, policy, my_index)
             k = max(min_c, 1) if max_c >= 1 else min_c
             k = min(k, max_c, len(opts))
-            # Greedy linear-policy rollout: argmax of logits, no sampling.
-            logits = policy.logits(obs, sel)
-            order = np.argsort(-logits)
-            choice = [int(x) for x in order[:k].tolist()]
+            if engine_prior_rollout:
+                # Engine prior: just take the first k options the engine offered.
+                choice = list(range(k))
+            else:
+                # Greedy linear-policy rollout: argmax of logits, no sampling.
+                import numpy as np  # noqa: PLC0415
+
+                logits = policy.logits(obs, sel)
+                order = np.argsort(-logits)
+                choice = [int(x) for x in order[:k].tolist()]
             try:
                 next_state = search_step(current.searchId, choice)
             except Exception:
