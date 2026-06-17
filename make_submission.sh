@@ -71,3 +71,19 @@ echo "wrote: $OUT  ($(du -h "$OUT" | cut -f1))"
 echo
 echo "contents:"
 tar -tzf "$OUT"
+
+# Verify the tar.gz loads under the same exec()-based call shape Kaggle
+# uses (catches __file__ / sys.path bugs that import-based checks miss).
+# Skip when SKIP_VERIFY=1 — useful for iteration during dev when torch
+# isn't available in the calling shell.
+if [ "${SKIP_VERIFY:-0}" != "1" ]; then
+    echo
+    echo "verifying with scripts/check_main_exec.py..."
+    if "$ROOT/scripts/run.sh" python3 "$ROOT/scripts/check_main_exec.py" --tar-gz "$OUT"; then
+        echo "verification: OK"
+    else
+        rc=$?
+        echo "verification FAILED; tar.gz is at $OUT but should NOT be submitted" >&2
+        exit $rc
+    fi
+fi

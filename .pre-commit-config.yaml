@@ -53,3 +53,10 @@ repos:
         language: system
         files: '^(cg/|train/|main\.py|deck\.csv|make_submission\.sh)'
         pass_filenames: false
+
+      - id: check-main-exec
+        name: main.py loads under Kaggle exec() shape (no __file__, sandbox path)
+        entry: scripts/run.sh python3 scripts/check_main_exec.py
+        language: system
+        files: '^(main\.py|deck\.csv|train/.*\.(py|pt|npz)|make_submission\.sh|scripts/check_main_exec\.py)$'
+        pass_filenames: false
