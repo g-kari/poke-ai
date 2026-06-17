@@ -519,6 +519,35 @@ Kept the 5000ep self-play policy as the submission default.
 Future fix: pre-train V(state) on vs-rule-based rollouts before
 running the policy gradient loop, or use a deeper (MLP) value head.
 
+## Meta-deck matchup table (2026-06-17)
+
+Added three more Kiyota meta-deck rule-based agents alongside the
+existing Mega Lucario: Dragapult ex, Iono, Mega Abomasnow. Each is the
+same shape as scripts/rule_based_agent.py (vendored from a Kaggle
+notebook with attribution in the file header, ruff-excluded). Each has
+its own deck under deck_<name>.csv and reads it via a per-agent
+RULE_DECK_PATH_<NAME> env var (default falls back to the .csv next to
+the script's parent directory).
+
+scripts/bench_meta.py runs the current submission against all four
+agents. 20-game results:
+
+  main.agent vs Mega Lucario:   7-13 (35.0%)
+  main.agent vs Mega Abomasnow: 6-14 (30.0%)
+  main.agent vs Dragapult ex:   3-17 (15.0%)
+  main.agent vs Iono's:         2-18 (10.0%)
+  overall (80 games):           18-62 (22.5%)
+
+The 95% vs random and 57.5% mirror-vs-linear numbers we'd been
+tracking were misleading: against the actual meta agents the
+2-MLP ensemble loses overall ~77%. Mega Lucario is the matchup we
+do best in; Iono's deck (heavy Lightning-energy spam with Wattrel
+chains) is the worst.
+
+This is the rating-relevant evaluation table. Future strength
+benches should run scripts/bench_meta.py at higher game counts
+(40-80) instead of just vs random / vs single rule-based.
+
 ## External baselines we benchmarked
 
 `scripts/rule_based_agent.py` and `deck_mega_lucario.csv` are vendored from

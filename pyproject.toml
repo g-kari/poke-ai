@@ -4,8 +4,11 @@ line-length = 100
 exclude = [
     ".venv",
     "kaggle_data",
-    "cg",                          # vendored from sample_submission
-    "scripts/rule_based_agent.py", # vendored from kiyotah's Kaggle notebook
+    "cg",                              # vendored from sample_submission
+    "scripts/rule_based_agent.py",     # vendored Kiyota Mega Lucario
+    "scripts/rule_based_dragapult.py", # vendored Kiyota Dragapult
+    "scripts/rule_based_iono.py",      # vendored Kiyota Iono
+    "scripts/rule_based_abomasnow.py", # vendored Kiyota Mega Abomasnow
 ]
 
 [tool.ruff.lint]
