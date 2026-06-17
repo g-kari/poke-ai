@@ -20,6 +20,7 @@ REQUIRED = [
     "train/__init__.py",
     "train/policy.py",
     "train/features.py",
+    "train/mlp_policy.py",
     "make_submission.sh",
 ]
 

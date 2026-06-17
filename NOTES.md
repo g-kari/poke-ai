@@ -216,6 +216,46 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## PyTorch MLP policy (2026-06-17) — adopted as submission default
+
+Built `train/mlp_policy.MlpPolicy`, a small Adam-trained MLP with the
+same .logits() / .value() / .probs() API as LinearPolicy:
+
+  policy head: concat(state, option) -> Linear(80, 64) -> ReLU
+                                     -> Linear(64, 32) -> ReLU -> Linear(32, 1)
+  value head:  state -> Linear(40, 32) -> ReLU -> Linear(32, 1) -> tanh
+  param count: 8642
+  device:      cuda when available, else cpu
+
+Engine-order bias preserved (`b_order * (n-1-i)/(n-1)` per option) so
+an untrained MlpPolicy still matches first_agent.
+
+train/mlp_train.py wraps the REINFORCE + value MSE update with PyTorch
+autograd. Always uses the advantage baseline. Trained 2000ep self-play
+(--lr 1e-3, seed 20260628, 9 min on RTX 3070 Ti).
+
+A/B (40 games each):
+  mlp vs linear(ours):        23-17 (57.5%) ← MLP beats linear in mirror
+  mlp vs random:               38-2 (95.0%) (linear baseline: 91% over 100 games)
+  mlp vs rule_based(Lucario):  9-31 (22.5%) (linear baseline: 30%)
+
+So the MLP is strictly stronger than the linear policy at self-play
+mirror, marginally better vs random, and worse vs rule_based. The mirror
+result is the most reliable: 57.5% on 40 games has Wilson 95% CI
+[42%, 71%], just above 50% which means the MLP genuinely picks
+better moves than the linear policy can express.
+
+The rule_based regression mirrors what we saw with vs-opp training: a
+more expressive model overfits to self-play distribution and gets
+confidently-wrong on out-of-distribution states. Future work could
+warm-start the MLP from vs-rule-based rollouts, or use a deeper value
+head to detect uncertain states.
+
+main.py tries `MlpPolicy.try_load()` first, falls back to
+`LinearPolicy.try_load()` if torch is unavailable or the .pt file is
+missing. The submission tarball now bundles both train/policy.npz and
+train/mlp_policy.pt (+38 KB to the 1.06 MB submission).
+
 ## Experiment: train our linear policy on Mega Lucario deck (2026-06-17)
 
 Hypothesis: the rule-based + Mega Lucario combo beats us partly because

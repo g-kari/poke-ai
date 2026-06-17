@@ -38,6 +38,19 @@ _DECK = _read_deck()
 
 
 def _try_load_policy():
+    """Try MLP policy first (more capacity), fall back to LinearPolicy.
+
+    The MLP needs PyTorch at runtime; if torch isn't available in the
+    submission environment, the linear policy still works on numpy alone.
+    """
+    try:
+        from train.mlp_policy import MlpPolicy  # noqa: PLC0415
+
+        p = MlpPolicy.try_load()
+        if p is not None:
+            return p
+    except Exception:
+        pass
     try:
         from train.policy import LinearPolicy  # noqa: PLC0415
 

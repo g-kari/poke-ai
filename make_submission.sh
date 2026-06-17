@@ -6,7 +6,8 @@
 #   main.py            entrypoint with agent()
 #   deck.csv           60 card IDs
 #   cg/                engine wrappers + libcg.so + cg.dll
-#   train/             policy.npz + features.py + policy.py (for the linear policy)
+#   train/             policy.npz + mlp_policy.pt + .py modules
+#                      (main.py tries MLP first, falls back to LinearPolicy)
 #
 # Usage:
 #   ./make_submission.sh                  # -> submission.tar.gz
@@ -34,6 +35,7 @@ require cg/cg.dll
 require train/__init__.py
 require train/policy.py
 require train/features.py
+require train/mlp_policy.py
 
 deck_count=$(grep -c . deck.csv)
 if [ "$deck_count" -ne 60 ]; then
@@ -58,7 +60,9 @@ tar --owner=0 --group=0 \
     train/__init__.py \
     train/policy.py \
     train/features.py \
-    $( [ -e train/policy.npz ] && echo train/policy.npz )
+    train/mlp_policy.py \
+    $( [ -e train/policy.npz ] && echo train/policy.npz ) \
+    $( [ -e train/mlp_policy.pt ] && echo train/mlp_policy.pt )
 
 echo
 echo "wrote: $OUT  ($(du -h "$OUT" | cut -f1))"
