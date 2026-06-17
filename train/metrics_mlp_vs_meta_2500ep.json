@@ -1,0 +1,277 @@
+[
+  {
+    "ep": 100,
+    "recent_overall": 0.29,
+    "per_opp": {
+      "mega_lucario": 0.6,
+      "dragapult": 0.143,
+      "iono": 0.071,
+      "abomasnow": 0.355
+    },
+    "elapsed_s": 26.7
+  },
+  {
+    "ep": 200,
+    "recent_overall": 0.25,
+    "per_opp": {
+      "mega_lucario": 0.479,
+      "dragapult": 0.167,
+      "iono": 0.054,
+      "abomasnow": 0.345
+    },
+    "elapsed_s": 58.8
+  },
+  {
+    "ep": 300,
+    "recent_overall": 0.23,
+    "per_opp": {
+      "mega_lucario": 0.466,
+      "dragapult": 0.149,
+      "iono": 0.118,
+      "abomasnow": 0.282
+    },
+    "elapsed_s": 90.5
+  },
+  {
+    "ep": 400,
+    "recent_overall": 0.25,
+    "per_opp": {
+      "mega_lucario": 0.45,
+      "dragapult": 0.175,
+      "iono": 0.102,
+      "abomasnow": 0.28
+    },
+    "elapsed_s": 124.3
+  },
+  {
+    "ep": 500,
+    "recent_overall": 0.32,
+    "per_opp": {
+      "mega_lucario": 0.47,
+      "dragapult": 0.2,
+      "iono": 0.1,
+      "abomasnow": 0.27
+    },
+    "elapsed_s": 157.9
+  },
+  {
+    "ep": 600,
+    "recent_overall": 0.35,
+    "per_opp": {
+      "mega_lucario": 0.54,
+      "dragapult": 0.29,
+      "iono": 0.1,
+      "abomasnow": 0.24
+    },
+    "elapsed_s": 191.3
+  },
+  {
+    "ep": 700,
+    "recent_overall": 0.24,
+    "per_opp": {
+      "mega_lucario": 0.57,
+      "dragapult": 0.27,
+      "iono": 0.08,
+      "abomasnow": 0.23
+    },
+    "elapsed_s": 224.0
+  },
+  {
+    "ep": 800,
+    "recent_overall": 0.32,
+    "per_opp": {
+      "mega_lucario": 0.62,
+      "dragapult": 0.29,
+      "iono": 0.09,
+      "abomasnow": 0.24
+    },
+    "elapsed_s": 255.1
+  },
+  {
+    "ep": 900,
+    "recent_overall": 0.24,
+    "per_opp": {
+      "mega_lucario": 0.64,
+      "dragapult": 0.22,
+      "iono": 0.08,
+      "abomasnow": 0.22
+    },
+    "elapsed_s": 286.3
+  },
+  {
+    "ep": 1000,
+    "recent_overall": 0.31,
+    "per_opp": {
+      "mega_lucario": 0.6,
+      "dragapult": 0.22,
+      "iono": 0.1,
+      "abomasnow": 0.24
+    },
+    "elapsed_s": 320.6
+  },
+  {
+    "ep": 1100,
+    "recent_overall": 0.29,
+    "per_opp": {
+      "mega_lucario": 0.51,
+      "dragapult": 0.21,
+      "iono": 0.12,
+      "abomasnow": 0.29
+    },
+    "elapsed_s": 352.7
+  },
+  {
+    "ep": 1200,
+    "recent_overall": 0.18,
+    "per_opp": {
+      "mega_lucario": 0.45,
+      "dragapult": 0.21,
+      "iono": 0.11,
+      "abomasnow": 0.27
+    },
+    "elapsed_s": 381.9
+  },
+  {
+    "ep": 1300,
+    "recent_overall": 0.28,
+    "per_opp": {
+      "mega_lucario": 0.43,
+      "dragapult": 0.22,
+      "iono": 0.09,
+      "abomasnow": 0.28
+    },
+    "elapsed_s": 414.2
+  },
+  {
+    "ep": 1400,
+    "recent_overall": 0.23,
+    "per_opp": {
+      "mega_lucario": 0.38,
+      "dragapult": 0.22,
+      "iono": 0.09,
+      "abomasnow": 0.26
+    },
+    "elapsed_s": 445.4
+  },
+  {
+    "ep": 1500,
+    "recent_overall": 0.24,
+    "per_opp": {
+      "mega_lucario": 0.42,
+      "dragapult": 0.21,
+      "iono": 0.07,
+      "abomasnow": 0.24
+    },
+    "elapsed_s": 479.8
+  },
+  {
+    "ep": 1600,
+    "recent_overall": 0.29,
+    "per_opp": {
+      "mega_lucario": 0.5,
+      "dragapult": 0.16,
+      "iono": 0.09,
+      "abomasnow": 0.25
+    },
+    "elapsed_s": 512.4
+  },
+  {
+    "ep": 1700,
+    "recent_overall": 0.26,
+    "per_opp": {
+      "mega_lucario": 0.5,
+      "dragapult": 0.16,
+      "iono": 0.1,
+      "abomasnow": 0.29
+    },
+    "elapsed_s": 542.6
+  },
+  {
+    "ep": 1800,
+    "recent_overall": 0.27,
+    "per_opp": {
+      "mega_lucario": 0.52,
+      "dragapult": 0.17,
+      "iono": 0.09,
+      "abomasnow": 0.29
+    },
+    "elapsed_s": 576.4
+  },
+  {
+    "ep": 1900,
+    "recent_overall": 0.27,
+    "per_opp": {
+      "mega_lucario": 0.54,
+      "dragapult": 0.22,
+      "iono": 0.08,
+      "abomasnow": 0.29
+    },
+    "elapsed_s": 608.1
+  },
+  {
+    "ep": 2000,
+    "recent_overall": 0.24,
+    "per_opp": {
+      "mega_lucario": 0.53,
+      "dragapult": 0.26,
+      "iono": 0.08,
+      "abomasnow": 0.26
+    },
+    "elapsed_s": 639.9
+  },
+  {
+    "ep": 2100,
+    "recent_overall": 0.32,
+    "per_opp": {
+      "mega_lucario": 0.5,
+      "dragapult": 0.28,
+      "iono": 0.1,
+      "abomasnow": 0.22
+    },
+    "elapsed_s": 672.1
+  },
+  {
+    "ep": 2200,
+    "recent_overall": 0.26,
+    "per_opp": {
+      "mega_lucario": 0.49,
+      "dragapult": 0.29,
+      "iono": 0.08,
+      "abomasnow": 0.22
+    },
+    "elapsed_s": 701.2
+  },
+  {
+    "ep": 2300,
+    "recent_overall": 0.31,
+    "per_opp": {
+      "mega_lucario": 0.52,
+      "dragapult": 0.3,
+      "iono": 0.08,
+      "abomasnow": 0.24
+    },
+    "elapsed_s": 731.6
+  },
+  {
+    "ep": 2400,
+    "recent_overall": 0.3,
+    "per_opp": {
+      "mega_lucario": 0.53,
+      "dragapult": 0.28,
+      "iono": 0.08,
+      "abomasnow": 0.31
+    },
+    "elapsed_s": 759.4
+  },
+  {
+    "ep": 2500,
+    "recent_overall": 0.33,
+    "per_opp": {
+      "mega_lucario": 0.52,
+      "dragapult": 0.25,
+      "iono": 0.07,
+      "abomasnow": 0.32
+    },
+    "elapsed_s": 788.1
+  }
+]

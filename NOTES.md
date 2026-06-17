@@ -519,6 +519,55 @@ Kept the 5000ep self-play policy as the submission default.
 Future fix: pre-train V(state) on vs-rule-based rollouts before
 running the policy gradient loop, or use a deeper (MLP) value head.
 
+## Experiment: multi-opponent training across 4 meta decks (2026-06-17)
+
+Hypothesis: single-opp finetune kept overfitting to one opponent's
+patterns. Sampling uniformly across the 4 Kiyota meta agents per
+episode should give a diverse-enough gradient signal that the policy
+can't collapse onto a single counter.
+
+scripts/train_mlp_vs_meta.py rotates Mega Lucario / Dragapult /
+Iono / Mega Abomasnow uniformly, always uses advantage baseline,
+gradient-clipped at 1.0. Per-opponent winrate logged so we can see
+which match-up is dragging the signal.
+
+Warm-started from the 2000ep self-play MLP, 2500ep multi-opp,
+--lr 5e-4, seed 20260701, 13 min. End-of-training recent winrates
+(last 100 episodes): mega=52, drag=25, iono=7, abom=32, overall ~33%.
+
+A/B with the meta-trained MLP ALONE (not in the ensemble) — 20 games
+per opponent:
+                       pre (orig 2-MLP)   post (meta-trained alone)
+  vs Mega Lucario:     35%               5%       -30pp
+  vs Dragapult:        15%               15%       0pp
+  vs Iono's:           10%               15%      +5pp
+  vs Mega Abomasnow:   30%               30%       0pp
+  overall:             22.5%             16.2%    -6pp
+
+Trying it inside a (meta-trained + seed2) ensemble:
+                       overall vs meta:  22.5% (no change from original)
+
+So meta finetune actively HURTS the policy on its own and gives zero
+ensemble lift either. The signal is too sparse (each opp only seen
+~625 times) and the policy can't simultaneously improve across all
+four match-ups with the same parameters — what helps Iono hurts Mega
+Lucario.
+
+Moved train/mlp_policy_meta.pt out of the train/ directory so the
+ensemble auto-loader picks up only the 2 healthy MLPs.
+metrics_mlp_vs_meta_2500ep.json stays as the experiment record.
+
+Failure modes encountered so far (all logged here for future
+iterations): single-opp finetune (overfit), 5000ep extension
+(self-play overfit), MLP vs-rule-based finetune (V-head OOD),
+3-MLP ensemble with bad seed (selection bias), and now uniform
+multi-opp training (signal too sparse to improve everywhere).
+
+Future direction probably needs either (a) MUCH more training
+data per opponent (10k+ episodes per opp), (b) opponent-conditioned
+policy (policy takes an opponent-id input so it can specialize per
+match-up), or (c) accept the 22.5% floor and ship.
+
 ## Meta-deck matchup table (2026-06-17)
 
 Added three more Kiyota meta-deck rule-based agents alongside the
