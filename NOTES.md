@@ -216,6 +216,41 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## bench_meta noise floor characterized (2026-06-18)
+
+Repeated bench_meta runs of the unchanged 3-MLP ensemble produced
+different numbers across days:
+
+  3-MLP run A: 32-88  (26.7%)
+  3-MLP run B: 33-117 (22.0%)
+  3-MLP run C: 34-116 (22.7%)
+
+Range 22.0-26.7%, ~5pp. With each run still at 30 games per opp /
+150 games total. So the 50% solo + bench_meta filter sees only
+ensemble changes >5pp as signal; everything smaller is variance.
+
+Recent candidate ensembles, recapped against this noise:
+
+  3-MLP base:                      22-27% (1-3 runs each)
+  4-MLP +seed=300 @ 3000ep:        25.8% (Δ within noise)
+  4-MLP +wide arch:                18.0% (Δ ~-7pp, below noise floor)
+  4-MLP +seed=8 @ lr=8e-4:         20.7% (Δ within noise)
+  3-MLP' (seed=100 -> seed=8):     19.3% (Δ ~-5pp, edge of noise)
+
+Only the wider-arch attempt is clearly outside the band, and it's
+clearly worse. The seed candidates all land in noise. So the 3-MLP
+default really is the local optimum at this evaluation precision.
+
+To distinguish candidates that look marginally better, we'd need
+either:
+  - much bigger bench (~150 games per opp = 750 total)
+  - or paired comparison protocol (same env seeds for both candidates,
+    not just bench-level seed=0)
+  - or measure on LB (cost: a daily submission slot per attempt)
+
+Saving the 2 remaining daily submission slots since none of the
+variants is confident enough to burn one on. Keep 3-MLP as default.
+
 ## seed=8 @ lr=8e-4 / 2500ep — rejected, but Crustle specialist (2026-06-18)
 
 Lowered the lr (1e-3 -> 8e-4) and bumped episodes (2000 -> 2500) for
