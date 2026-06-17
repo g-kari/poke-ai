@@ -1112,6 +1112,39 @@ These resources stay in tree as reference / opponent. We aren't shipping
 the rule-based code as our submission yet — see commit message for the
 decision rationale.
 
+## Day-1 #1 Crustle Dashimaki bench (2026-06-18)
+
+LB の Crustle Wall プレイヤー (AM / sbite0138 / PavelLiashkov) は
+dashimaki360 が公開した「Beating the Day-1 #1 Crustle bot」notebook の
+chip 派生を回している事を確認。これまで対戦相手として vendor していた
+harukiharada Crustle Wall とはデッキ構成も判断ロジックも別物。
+
+dashimaki デッキ (60 枚) を `deck_crustle_dashimaki.csv` に展開、agent を
+`scripts/rule_based_crustle_dashimaki.py` に vendor。`bench_meta.py` に
+6 番目の opponent として追加した。
+
+3-MLP @ 80 games (2026-06-18 計測):
+
+  vs Mega Lucario:        20-60 (25.0%)
+  vs Dragapult ex:        16-64 (20.0%)
+  vs Iono's:               9-71 (11.2%)
+  vs Mega Abomasnow:      17-63 (21.2%)
+  vs Crustle Wall (haru): 31-49 (38.8%)
+  vs Crustle Dashimaki:   19-61 (23.8%)  ← 新追加
+  overall:               112-368 (23.3%)
+
+考察:
+- dashimaki Crustle は harukiharada Crustle より **-15pp 強い** (38.8 → 23.8%)
+  → 後者は LB Crustle player の代理として **過大評価** していた
+- LB 0W-3L vs Crustle Wall は Wilson 95% upper CI ≈ 56%。lab 23.8% は
+  この CI 内なので「LB は変則的に弱い」のではなく「サンプル 3 試合の
+  通常分散内」。0% は引きが悪かっただけと解釈
+- 一方で dashimaki でも 23.8% は依然 overall (23.3%) 程度しかなく、
+  Crustle 対策の本命課題は変わらない (active ATK ロックの
+  「ふしぎなロックイン」抜けの手段が足りない)
+- Iono は 11.2%。前回 30 ゲーム計測で 17.5% だった事と整合せず、
+  ベンチノイズが顕在化。80 ゲームでも ±9pp 残るのを再確認
+
 ## Open items
 
 - `_try_load_policy()` silently swallows exceptions to keep the Kaggle

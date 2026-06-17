@@ -26,6 +26,7 @@ sys.modules.setdefault("litellm", types.ModuleType("litellm"))
 import rule_based_abomasnow  # noqa: E402
 import rule_based_agent  # noqa: E402  # Mega Lucario
 import rule_based_crustle  # noqa: E402  # harukiharada Crustle Wall
+import rule_based_crustle_dashimaki  # noqa: E402  # dashimaki Day-1 #1 Crustle bot
 import rule_based_dragapult  # noqa: E402
 import rule_based_iono  # noqa: E402
 from kaggle_environments import make  # noqa: E402
@@ -73,6 +74,7 @@ def main_bench(n: int = 10):
         ("Iono's", rule_based_iono.agent),
         ("Mega Abomasnow", rule_based_abomasnow.agent),
         ("Crustle Wall", rule_based_crustle.agent),
+        ("Crustle Dashimaki", rule_based_crustle_dashimaki.agent),
     ]
     print(f"main.agent vs Kiyota meta-deck rule-based agents ({2 * n} games each)\n")
     rows: list[tuple[str, int, int, int]] = []
