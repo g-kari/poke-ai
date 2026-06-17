@@ -216,6 +216,31 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## Seed-selection log for ensemble members (2026-06-17)
+
+To avoid the seed=1024 regression (a sub-50% solo member that dragged
+the ensemble down), every new candidate gets a 40-game solo bench
+vs the linear policy before being added to the ensemble. Above 50%:
+include. Below 50%: discard.
+
+Running tally:
+
+  seed=20260628 (first MLP):     ~57.5% vs linear  ← included
+  seed=42 (second MLP):          (in 2-MLP since first day, never solo-checked
+                                  but the 2-MLP ensemble strictly beat single)
+  seed=1024:                     45%   vs linear   ← rejected
+  seed=100:                      52.5% vs linear   ← included (3-MLP)
+  seed=200:                      47.5% vs linear   ← rejected
+
+So 2 of 4 new candidates passed. The bench is a noisy 40-game proxy
+but it's cheap to run and matches our "submission-budget" risk
+appetite — we'd rather hold a verified-strong ensemble than gamble
+slots on an untested candidate.
+
+Discarded seeds are stored in /tmp/ (not in train/) so the ensemble
+glob loader doesn't pick them up. The metrics JSON is committed so
+the failure record is preserved.
+
 ## 3-MLP ensemble adoption (2026-06-17) — current submission default
 
 Added a third MLP member to the ensemble. Per the lesson from the
