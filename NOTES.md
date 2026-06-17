@@ -185,22 +185,26 @@ feature complexity; further structural gains likely need MLP or PIMC.
 
 ### Upgrade path
 
-1. **Search (UNFROZEN 2026-06-17; 1-ply scaffold landed but not yet a win).**
+1. **Search (UNFROZEN 2026-06-17; two backends tried, neither beats baseline).**
    `cg.api.search_begin/step/release` is wired through `train/pimc.py` and
-   gated by `POKEAI_PIMC=1` in `main.py`. With either the heuristic value
-   or the trained linear value head, PIMC-ON UNDERPERFORMS the engine-prior
-   linear baseline. Diagnostic benches (40 games each):
-   - PIMC-ON vs PIMC-OFF mirror match: 10-30 (25%)
-   - PIMC-ON vs first_agent (engine-prior baseline): 15-25 (37.5%)
-   - PIMC-ON vs random: 75% (PIMC-OFF wins 92.5% on the same setup)
+   gated by `POKEAI_PIMC=1` in `main.py`. Two backends have been benchmarked:
 
-   Suspected reasons (un-fixed): the value head is trained on MAIN-state
-   features and gets evaluated on the children of search_step which can
-   land at CARD / ENERGY sub-selects where the head extrapolates; the
-   single-world mirror-deck sample biases the search; the value head
-   signal is too low-magnitude to override the engine-order bias. Path
-   forward: multi-world sampling, PyTorch MLP value head, or replacing
-   the entire flow with rollout-to-terminal IS-MCTS.
+   - **1-ply + linear value head** (replaced):
+     - vs PIMC-OFF mirror: 10-30 (25%)
+     - vs first_agent: 15-25 (37.5%)
+     - vs random: 75% (OFF: 92.5%)
+   - **rollout-to-terminal** (current code):
+     - vs PIMC-OFF mirror: 4-16 (20%)
+     - vs random: 80% (OFF: 92.5%)
+
+   Both underperform the engine-prior linear baseline. The rollout variant
+   is structurally cleaner (sidesteps value-head extrapolation by using
+   actual terminal rewards from a linear-policy rollout) but exhibits
+   classic **strategy fusion**: single-world PIMC optimizes for ONE
+   sampled hidden-info realization which can be wrong across the actual
+   distribution. Path forward: multi-world sampling with Q-averaging
+   (true Information-Set MCTS), sharper opponent-deck priors than
+   "mirror our deck", or a PyTorch-based search backend.
 2. **Better features.** Add card-id embeddings (look up `Pokemon.id`,
    energy types, attack costs) and tile-encoded counts (active/bench HP
    per slot). `all_card_data()` is the canonical source.

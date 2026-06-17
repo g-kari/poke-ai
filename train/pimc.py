@@ -11,31 +11,39 @@ This module assumes the opponent's deck composition is identical to ours
 works as a reasonable prior for self-play and against random_agent. A
 multi-world extension would average across several opponent deck samples.
 
-Status (2026-06-17): The look-ahead is NOT a win in practice yet. Against
-PIMC-OFF mirror match the PIMC-ON flavor loses 10-30 (25%), against
-first_agent (engine prior) it loses 15-25 (37.5%), against random it wins
-only 75% vs PIMC-OFF's 92.5%. Suspected root causes (none verified):
+Status (2026-06-17): Two PIMC backends have been tried, neither beats the
+linear policy's engine-order prior at submission-vs-anything benchmarks.
 
-  - The value head is trained on MAIN-state features; the children we
-    score after search_step may be at non-MAIN selects where the head
-    extrapolates poorly.
-  - Single-world sampling: assuming opp_deck == our_deck biases the search
-    when the opponent's actual deck differs.
-  - The value head's signal is too low-magnitude to override the engine
-    prior's strong ordering bias.
+  Backend A (1-ply + trained linear value head):
+    PIMC-ON vs PIMC-OFF mirror:   10-30 (25%)
+    PIMC-ON vs first_agent:       15-25 (37.5%)
+    PIMC-ON vs random:            75% (PIMC-OFF: 92.5%)
 
-Kept enabled via POKEAI_PIMC=1 so experiments can continue (longer value
-training, multi-world sampling, replacing the linear value head with a
-PyTorch MLP). The default-OFF flag in main.py is the safe choice for
-submission until one of those fixes lands.
+  Backend B (rollout-to-terminal, this file's current implementation):
+    PIMC-ON vs PIMC-OFF mirror:   4-16 (20%)
+    PIMC-ON vs random:            80% (PIMC-OFF: 92.5%)
+
+The rollout variant rolls the linear policy forward to a terminal state and
+uses the actual reward, sidestepping the value-head extrapolation issue.
+It is structurally better infrastructure but still loses in practice
+because of **strategy fusion**: single-world PIMC picks the option that is
+optimal under ONE sampled hidden-info realization, which can be suboptimal
+across the actual distribution of realizations. Fix requires multi-world
+sampling and averaging Q values (true Information-Set MCTS).
+
+Kept enabled via POKEAI_PIMC=1 so experiments can continue (multi-world
+sampling, sharper opponent-deck priors, PyTorch search backend). The
+default-OFF flag in main.py is the safe choice for submission.
 """
 
 from __future__ import annotations
 
+import contextlib
 import time
 from typing import Any
 
 DEFAULT_TIME_BUDGET_MS = 500.0
+DEFAULT_ROLLOUT_DEPTH = 80  # max steps per rollout before bailing to value head
 
 
 def pick_best_option(
@@ -44,11 +52,23 @@ def pick_best_option(
     deck: list[int],
     policy,  # train.policy.LinearPolicy
     time_budget_ms: float = DEFAULT_TIME_BUDGET_MS,
+    rollout_depth: int = DEFAULT_ROLLOUT_DEPTH,
 ) -> int | None:
-    """Return the index of the best MAIN option via 1-ply PIMC look-ahead.
+    """Return the index of the best MAIN option via PIMC rollout-to-terminal.
 
-    Returns None when PIMC cannot be used (search_begin fails, no search_input
-    in obs, etc.) — caller should fall back to the linear policy.
+    For each option:
+      1. search_step from the sampled root into the chosen option's child state
+      2. roll the linear policy from there to the terminal state (or until
+         rollout_depth selects, whichever comes first)
+      3. record the terminal reward from our perspective as the option's Q
+
+    The rollout uses the linear policy because it knows how to handle every
+    select type — not just MAIN. This sidesteps the value-head extrapolation
+    problem of the 1-ply variant.
+
+    Returns None when PIMC cannot be used (search_begin fails, no
+    search_begin_input in obs, only one option, etc.) — caller should fall
+    back to the linear policy.
     """
     if obs.get("search_begin_input") is None:
         return None
@@ -80,20 +100,16 @@ def pick_best_option(
     opp = cur["players"][1 - you]
 
     # Sample hidden info: opponent deck/prize/hand from our deck (mirror match
-    # assumption). Our remaining deck = full DECK minus known-visible cards.
-    # The engine validates lengths, not contents, so we just need plausible
-    # card-id lists of the right size.
+    # assumption). The engine validates lengths, not contents, so we just need
+    # plausible card-id lists of the right size.
     opp_deck_pred = list(deck)
     opp_prize_pred = [deck[0]] * len(opp.get("prize", []))
     opp_hand_pred = [deck[0]] * opp.get("handCount", 0)
     your_prize_pred = [deck[0]] * len(me.get("prize", []))
     your_deck_pred = list(deck)[: me.get("deckCount", 0)]
     opp_active_pred: list[int] = []
-    # Predict opponent's face-down active only if there is one.
     opp_active = opp.get("active") or []
     if opp_active and opp_active[0] is None:
-        # Pick the first Basic Pokemon in the predicted deck. Falls back to
-        # any deck card if no Basic Pokemon is identifiable.
         opp_active_pred = [opp_deck_pred[0]]
 
     try:
@@ -122,19 +138,94 @@ def pick_best_option(
             except Exception:
                 continue
             try:
-                child_obs = _child_to_dict(child.observation)
-                q = _value_of(child_obs, policy, my_index)
+                q = _rollout_reward(
+                    child, policy, my_index, rollout_depth, search_step, search_release
+                )
                 # Tiny tie-break: prefer earlier (= engine-recommended) options.
                 q -= 1e-4 * i
                 if q > best_q:
                     best_q = q
                     best_i = i
+            except Exception:
+                # Any rollout failure: skip this option and keep going.
+                continue
             finally:
-                search_release(child.searchId)
+                # child may have been released inside the rollout when it
+                # advanced past the original child; guard the release.
+                with contextlib.suppress(Exception):
+                    search_release(child.searchId)
     finally:
         search_release(root.searchId)
 
     return best_i
+
+
+def _rollout_reward(
+    state,
+    policy,
+    my_index: int,
+    max_depth: int,
+    search_step,
+    search_release,
+) -> float:
+    """Roll the linear policy forward from `state` until termination or
+    max_depth selects. Returns the terminal reward in [-1, 1] from
+    `my_index`'s perspective. Falls back to the value head when the rollout
+    runs out of depth before reaching a terminal state.
+
+    `state` is owned by the caller and never released here; intermediate
+    SearchStates created during the rollout are tracked and released in
+    a finally block to avoid leaking when the loop exits early.
+    """
+    import numpy as np  # noqa: PLC0415
+
+    intermediates: list[int] = []
+    current = state
+    try:
+        for _ in range(max_depth):
+            obs = _child_to_dict(current.observation)
+            cur = obs.get("current")
+            if cur is None:
+                return _value_of(obs, policy, my_index)
+            result = cur.get("result", -1)
+            if result != -1:
+                if result == my_index:
+                    return 1.0
+                if result == 1 - my_index:
+                    return -1.0
+                return 0.0
+            sel = obs.get("select")
+            if sel is None:
+                return _value_of(obs, policy, my_index)
+            opts = sel.get("option") or []
+            if not opts:
+                return _value_of(obs, policy, my_index)
+            max_c = int(sel.get("maxCount") or 0)
+            min_c = int(sel.get("minCount") or 0)
+            if max_c == 0:
+                return _value_of(obs, policy, my_index)
+            k = max(min_c, 1) if max_c >= 1 else min_c
+            k = min(k, max_c, len(opts))
+            # Greedy linear-policy rollout: argmax of logits, no sampling.
+            logits = policy.logits(obs, sel)
+            order = np.argsort(-logits)
+            choice = [int(x) for x in order[:k].tolist()]
+            try:
+                next_state = search_step(current.searchId, choice)
+            except Exception:
+                return _value_of(obs, policy, my_index)
+            if current is not state:
+                intermediates.append(current.searchId)
+            current = next_state
+        # Ran out of depth — fall back to value head / heuristic.
+        return _value_of(_child_to_dict(current.observation), policy, my_index)
+    finally:
+        if current is not state:
+            with contextlib.suppress(Exception):
+                search_release(current.searchId)
+        for sid in intermediates:
+            with contextlib.suppress(Exception):
+                search_release(sid)
 
 
 def _value_of(obs: dict[str, Any], policy, my_index: int) -> float:
