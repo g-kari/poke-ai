@@ -1209,6 +1209,34 @@ seed=11 で 2000ep 学習 (warm-start なし):
    ex かどうか、bench に non-ex がいるか等を feature 化
 3. **PIMC の rollout policy として既存 ensemble を使う** (NOTES の打ち手 #1)
 
+### 上記 #1 の追試 (2026-06-18)
+
+seed=100 (3-MLP の Crustle 友達, solo 15%) を warm-start に置いて、
+lr=3e-4 で 1000ep の Crustle dashimaki 専用 fine-tune を回した。
+
+  ep  100: 14%
+  ep  500: 7%
+  ep  800: 14%
+  ep 1000: 7%   ← recent 100ep 勝率 (mirror selfplay と単純比較不可)
+  solo @ 40g post-ft: 12.5%  (元 15.0%、ノイズ内、改善なし)
+
+考察:
+- lr=3e-4 でも catastrophic forgetting の影響あり (元 15% → 12.5%)
+- recent 勝率が振動 (7→14→7) で安定収束していない
+- 単一相手の rule-based に対する REINFORCE は **reward 分散が極大** で
+  policy gradient が安定化しないと思われる
+- 4-MLP として ensemble bench は割愛 (solo 12.5% は 3-MLP 平均 23.8% を
+  引き下げる方向で確定)
+
+次の改善案:
+- **mixed-mode opponent**: 50% mirror selfplay + 50% Crustle、reward 分散を
+  小さく保ちつつ Crustle 経験を増やす
+- **lr=1e-4 以下** でさらに低く設定し、Crustle gradient を小さい摂動として
+  既存 policy に加える
+- **value baseline** が tanh(V(s)) を返す現在の実装が、極端な hard matchup
+  (Crustle dashimaki, win rate 6-15%) では advantage 計算を崩している可能性。
+  reward を 0/1 scale で見直す
+
 ## Open items
 
 - `_try_load_policy()` silently swallows exceptions to keep the Kaggle
