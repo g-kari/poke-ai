@@ -216,6 +216,55 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## seed=42 is the hidden Mega Lucario / Iono specialist (2026-06-18)
+
+Completed the per-member solo bench at 80 games per opp. seed=42 looks
+weakest on paper but is the key ensemble member.
+
+  Opponent          seed=20260628  seed=42  seed=100  2-MLP w/o seed=42  3-MLP
+  Mega Lucario:     25.0%          18.8%    25.0%     16.2%              36.2%
+  Dragapult:        25.0%          20.0%    16.2%     31.2%              20.0%
+  Iono:             7.5%           6.2%     10.0%     6.2%               17.5%
+  Mega Abomasnow:   27.5%          22.5%    31.2%     23.8%              31.2%
+  Crustle Wall:     28.7%          20.0%    38.8%     38.8%              31.2%
+  overall:          22.8%          17.5%    24.2%     23.2%              27.3%
+
+seed=42 is the weakest single member (17.5% overall, last in every
+matchup). But removing it from the 3-MLP drops the overall ensemble
+from 27.3% to 23.2% — a -4.1pp regression.
+
+Per-opp impact of seed=42's presence in the ensemble:
+  Mega Lucario:  +20pp  (16.2 -> 36.2 with seed=42)
+  Iono:          +11.3pp (6.2 -> 17.5)
+  Mega Abomasnow:+7.4pp  (23.8 -> 31.2)
+  Dragapult:    -11.2pp (31.2 -> 20.0)  ← seed=42 hurts this one
+  Crustle:       -7.6pp  (38.8 -> 31.2)  ← also hurts
+
+So seed=42's ensemble role: lift the matchups where the other two
+members are similarly mediocre (Mega Lucario, Iono, Abomasnow). It
+drags down on the matchups where the other two are strong specialists
+(Dragapult on seed=20260628, Crustle on seed=100). Net +4.1pp.
+
+This is the classic "weak member doing valuable averaging" effect.
+Solo benches are misleading — they don't predict ensemble role.
+
+Complete specialty map:
+  seed=20260628: Dragapult solo specialist (25.0%)
+  seed=42:       Mega Lucario / Iono ensemble specialist (lifts via averaging)
+  seed=100:      Crustle solo specialist (38.8%)
+  shared gap:    Iono (all three score 6-10% solo, 17.5% ensemble)
+
+The only matchup without a specialist member is Iono. A genuine Iono
+specialist would need ≥25% solo on Iono, which none of our trained
+seeds hit. May be deck-architectural — Iono uses heavy Lightning
+energy and Wattrel chains that our card-pool features can't represent
+as well.
+
+Lesson: never solo-bench a seed and reject based on overall solo
+strength. Test in the actual ensemble context. seed=42 would have
+been rejected if solo-tested today (17.5% << seed=100's 24.2%) but
+it's actually critical.
+
 ## Solo @ 80 games: members have complementary specialties (2026-06-18)
 
 Until now we'd never benched each ensemble member solo at the tight
