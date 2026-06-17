@@ -216,6 +216,58 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## LB replay analysis (2026-06-17 / 18)
+
+Downloaded the 5 PUBLIC episode replays of the 3-MLP submission
+(53778627) and identified each opponent's deck from the
+`steps[0][0].visualize[0].action` field (which holds both players'
+60-card submissions).
+
+  Episode 80323200 / yu_gotou       / WIN / 27 steps  / (early KO)
+  Episode 80323539 / Ryota Matsuki  / WIN / 119 steps / (long mid-game)
+  Episode 80324055 / Hale Obernolte / WIN / 90 steps
+  Episode 80324410 / AM             / LOSS / 62 steps
+  Episode 80324949 / YT             / LOSS / 54 steps
+
+The two losses were the rating-relevant data points:
+
+  AM deck   : 344 Dwebble x4 + 345 Crustle x4 + 1147 Jumbo Ice Cream x4
+              + 1212 Cook x4 + heal-spam trainers + special energies.
+              "Crustle Wall" archetype (matches harukiharada's public
+              kernel). Crustle has Stage 1 150 HP with the ability
+              "Prevent all damage done to this Pokémon by attacks
+              from your opponent's Pokémon ex." Our deck has no ex
+              Pokémon so the wall doesn't directly fire, but the heal
+              spam (Jumbo Ice Cream heals 80, Cook heals 70) outpaces
+              our damage output.
+
+  YT deck   : 119 Dreepy x4 + 120 Drakloak x4 + 121 Dragapult ex x3
+              + standard Kiyota trainer suite (1086 Buddy-Buddy Poffin,
+              1121 Ultra Ball, 1182 Boss Orders, 1198 Crispin, 1227
+              Lillie's). Essentially the Kiyota Dragapult ex template.
+
+So 2/5 LB opponents matched our local meta-bench. We won the other
+3 — implying that the LB matchmaking is bi-modal: meta archetype
+opponents we struggle with, vs casual / under-developed opponents
+we beat. The realized win rate on LB (60%) is way better than the
+local meta bench (26.7%) because the LB pool is more varied than
+4 hand-tuned rule-based agents.
+
+Implication for next training: the Crustle Wall archetype is not in
+our local opponent set. If we expand the multi-opp training to
+include this archetype the policy might learn to break the heal
+spam (e.g., damage faster, target benched Crustle).
+
+LB tracking (live):
+  53778627 (3-MLP):  600 -> 695.5 over 5 PUBLIC episodes (3W/2L)
+                     matchmaking has slowed since 14:42 (typical
+                     TrueSkill σ shrink after rating stabilizes)
+  53776818 (2-MLP):  600 -> 732 -> 633 -> 586.2 over ~6 episodes
+                     (now ~110pts behind 3-MLP)
+
+So the +4.2pp lab gap between 2-MLP and 3-MLP translated to a
+sustained ~100pt LB gap. Lab signal IS predictive, just compressed.
+
 ## Seed-selection log for ensemble members (2026-06-17)
 
 To avoid the seed=1024 regression (a sub-50% solo member that dragged
