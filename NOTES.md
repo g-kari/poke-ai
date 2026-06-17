@@ -1145,6 +1145,31 @@ dashimaki デッキ (60 枚) を `deck_crustle_dashimaki.csv` に展開、agent 
 - Iono は 11.2%。前回 30 ゲーム計測で 17.5% だった事と整合せず、
   ベンチノイズが顕在化。80 ゲームでも ±9pp 残るのを再確認
 
+## seed=7 を archive 行きにした件 (2026-06-18)
+
+seed=7 で 2000ep の MLP を学習し、3-MLP に追加して 4-MLP として
+Crustle Dashimaki に対する性能を 80 games で測定:
+
+  3-MLP @ 80g vs Crustle Dashimaki: 19-61-0 (23.8%)
+  4-MLP @ 80g vs Crustle Dashimaki:  5-75-0 ( 6.2%)  ← -17.6pp
+
+solo bench は取っていないが、ensemble に入れた途端 Crustle Dashimaki
+matchup を **17.6pp** 引き落とすロジット平均を出している。これは
+seed=42 のような「solo は弱いが ensemble では補完」の逆パターン
+（"solo はそこそこだが ensemble に入ると毒"）に該当。
+
+40 games の sweep では:
+  vs Crustle Dashimaki: 4-MLP 27.5% / 3-MLP 23.8% で +3.7pp に見えた
+これは ±15pp の noise floor 内で誤誘導された数値。**candidate 評価は
+candidate を含む ensemble の組み合わせで 80 games 以上必須** をあらためて
+確認 (#noise-floor)。
+
+対応:
+- `train/mlp_policy_seed7.pt` を `train/archive/` に退避
+  (main.py の glob `train/mlp_policy*.pt` は浅いので拾わなくなる)
+- 学習履歴は `train/metrics_mlp_seed7.json` に残して再現可能性を確保
+- 一旦 3-MLP submission のまま維持
+
 ## Open items
 
 - `_try_load_policy()` silently swallows exceptions to keep the Kaggle
