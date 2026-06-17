@@ -216,6 +216,43 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## Tight bench (80 games/opp) reveals seed=8 was noise (2026-06-18)
+
+Took the noise-floor commit's prescription seriously and re-benched
+the two candidates at 80 games per opp (400 games total) instead of
+the default 30 (150 total). Wilson CI tightens from ~±15pp to ~±9pp.
+
+  3-MLP base:        109-291 (27.3%) Wilson [23%, 32%]
+  4-MLP +seed=8:     83-317  (20.8%) Wilson [17%, 25%]
+
+The CIs barely overlap, so the 4-MLP variant is statistically worse
+at the 95% confidence level. Per-opponent breakdown:
+
+  Opponent          3-MLP    4-MLP+seed8   Δ
+  Mega Lucario:     36.2%    26.2%         -10pp
+  Dragapult:        20.0%    20.0%          0pp
+  Iono:             17.5%    6.2%          -11.3pp
+  Mega Abomasnow:   31.2%    23.8%         -7.4pp
+  Crustle Wall:     31.2%    27.5%         -3.7pp
+
+The headline finding: seed=8's "Crustle specialist +10pp" property
+that we saw at 30 games per opp was ENTIRELY NOISE. At 80 games per
+opp seed=8 actually performs slightly WORSE on Crustle (-3.7pp). It's
+not a specialist; it's just a noisier member.
+
+So the previous commits that documented seed=8 as a Crustle counter
+were misleading. Updating this finding inline rather than rewriting
+those — the path of attempted experiments is itself useful.
+
+True 3-MLP strength on lab: 27.3% across 5 meta agents at 80 games
+per opp. The 22-27% range from 30-game runs was just bench noise;
+27% is closer to the truth.
+
+Recommendation going forward: 80 games per opp is the new minimum
+when evaluating ensemble candidates. The cost (~3 min per bench) is
+trivial compared to wasting a daily submission slot on a noise-level
+improvement.
+
 ## bench_meta noise floor characterized (2026-06-18)
 
 Repeated bench_meta runs of the unchanged 3-MLP ensemble produced
