@@ -216,6 +216,46 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## Re-tested rejected seeds in 4-MLP context (2026-06-18)
+
+Applied the seed=42 lesson — don't reject on solo alone. Re-benched
+the most-promising rejected seeds in 4-MLP context at 80 games per
+opp, focusing on whether any of them lifts Iono (our weakest matchup).
+
+  Opponent          3-MLP    4-MLP+seed=8  4-MLP+seed=300  4-MLP+seed=200
+  Mega Lucario:     36.2%    26.2%         18.8%           17.5%
+  Dragapult:        20.0%    20.0%         22.5%           22.5%
+  Iono:             17.5%    6.2%          15.0%           6.2%
+  Mega Abomasnow:   31.2%    23.8%         28.7%           25.0%
+  Crustle Wall:     31.2%    27.5%         40.0%           30.0%
+  overall:          27.3%    20.8%         25.0%           20.2%
+
+All three additions REGRESS overall, and crucially NONE improves
+Iono — most actually hurt it. The pattern:
+
+  - seed=300 lifts Crustle (+8.8pp) but tanks Mega Lucario (-17.4pp)
+  - seed=200 is a strict downgrade everywhere
+  - seed=8 has same issue as seed=300 but milder
+
+No Iono specialist exists in our candidate pool. Iono's 17.5% in the
+3-MLP is the floor — every additional member drags Iono toward its
+own solo Iono number (6-10%), and the 3-MLP's averaging already
+extracted the best possible Iono signal from these three.
+
+Pattern explains why most candidates fail in ensemble: a 4th member
+helps one matchup but adds a vote that pulls weak matchups (Iono,
+Mega Lucario) down. The 3-MLP's specific Mega Lucario boost (+20pp
+from seed=42 averaging) is fragile — any 4th member with a different
+Mega Lucario opinion erodes it.
+
+Iono is genuinely architecturally hard: Lightning + Wattrel chains
+match against our card features poorly. Probably requires either
+(a) deck change away from the Pokemon family we're using or (b) a
+richer feature representation that distinguishes Wattrel-chain
+states.
+
+Submission stays 3-MLP at LB 697.7.
+
 ## seed=42 is the hidden Mega Lucario / Iono specialist (2026-06-18)
 
 Completed the per-member solo bench at 80 games per opp. seed=42 looks
