@@ -216,6 +216,43 @@ feature complexity; further structural gains likely need MLP or PIMC.
    train against the league instead of only the current policy — prevents
    cycle-collapse where the agent over-fits to its own quirks.
 
+## LB matchup aggregate after 15 episodes (2026-06-18)
+
+Pulled the replays of every PUBLIC episode our submissions have
+played (2-MLP + 3-MLP combined) and classified opponents by deck
+archetype using card-ID signatures (e.g., 344+345 = Crustle,
+677+678 = Mega Lucario, 119+120+121 = Dragapult ex).
+
+  Archetype          LB record   vs lab bench (80 games)
+  Crustle Wall:      0W-3L  (0%)    31.2%  ← lab vastly overestimates
+  Mega Lucario:      1W-1L (50%)    36.2%  (in line)
+  Dragapult ex:      1W-2L (33%)    20.0%  (in line)
+  Casual (other):    6W-1L (86%)    n/a    (not in our bench set)
+  total:             8W-7L (53.3%)
+
+Our locally-vendored Crustle Wall rule-based agent (harukiharada's
+template) is not a faithful representation of the LB Crustle players.
+The 3 LB Crustle opponents (AM, sbite0138, PavelLiashkov) won all
+3 games. Either they run tuned variants or our lab agent isn't
+playing the wall pattern correctly.
+
+Dragapult and Mega Lucario LB record tracks lab. Casual opponents
+are our cushion (86% win rate).
+
+So our LB rating (676.2) is the right number given the matchmaking
+mix: ~3 Crustle games at 0%, ~3 Lucario/Dragapult at ~40%,
+~9 casual at ~86%. Weighted average ~50%, which is where we are.
+
+The improvement path here is matchup-specific:
+  - Crustle Wall counter: would need true LB Crustle replays to train
+    against, not the lab template
+  - Iono mystery: still no LB Iono opponent seen, can't validate the
+    6-17% lab number
+
+LB scores (10 episodes for 3-MLP, 6 for 2-MLP):
+  53778627 (3-MLP):  600 -> 695 -> 697 -> 676.2  (5W/5L)
+  53776818 (2-MLP):  600 -> 732 -> 586 -> 620.7  (3W/3L)
+
 ## Re-tested rejected seeds in 4-MLP context (2026-06-18)
 
 Applied the seed=42 lesson — don't reject on solo alone. Re-benched
