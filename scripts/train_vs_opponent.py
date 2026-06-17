@@ -121,6 +121,7 @@ def train(
     log_every: int,
     metrics_out: str | None,
     opponent_name: str,
+    use_advantage: bool,
 ) -> None:
     rng = np.random.default_rng(seed)
     policy = LinearPolicy()
@@ -138,7 +139,7 @@ def train(
         our_side = ep % 2  # alternate P0 / P1
         trace, r = run_episode_vs(policy, opp, rng, our_side)
         if r is not None:
-            reinforce_update(policy, trace, float(r), lr, lr_value)
+            reinforce_update(policy, trace, float(r), lr, lr_value, use_advantage=use_advantage)
         if r == 1:
             wins += 1
         elif r == -1:
@@ -187,6 +188,14 @@ def main():
     p.add_argument("--log-every", type=int, default=100)
     p.add_argument("--metrics-out", default=None)
     p.add_argument("--opponent", default="rule_based", choices=["rule_based", "random"])
+    p.add_argument(
+        "--use-advantage",
+        action="store_true",
+        default=True,
+        help="Subtract V(state) from reward before scaling the policy gradient. "
+        "Default on for vs-opponent training; pass --no-use-advantage to disable.",
+    )
+    p.add_argument("--no-use-advantage", dest="use_advantage", action="store_false")
     args = p.parse_args()
     train(
         args.episodes,
@@ -198,6 +207,7 @@ def main():
         args.log_every,
         args.metrics_out,
         args.opponent,
+        args.use_advantage,
     )
 
 

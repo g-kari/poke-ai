@@ -125,28 +125,37 @@ def reinforce_update(
     reward: float,
     lr: float,
     lr_value: float = 0.0,
+    use_advantage: bool = False,
 ) -> None:
     """One on-policy gradient step over all decisions in `trace`.
 
     When `lr_value > 0`, also fits the value head w_value via MSE on the
     tanh-bounded prediction: target is `reward` for every state the player
-    saw during the episode."""
+    saw during the episode.
+
+    When `use_advantage=True`, the policy gradient is scaled by
+    `advantage = reward - V(state)` instead of raw `reward`. Required for
+    training against a fixed opponent where most rewards skew one way —
+    raw reward would just push the policy toward uniform.
+    """
     if not trace:
         return
     g_state = np.zeros(STATE_DIM, dtype=np.float32)
     g_opt = np.zeros(OPTION_DIM, dtype=np.float32)
     g_value = np.zeros(STATE_DIM, dtype=np.float32)
     for s in trace:
-        if reward != 0:
-            # grad log p(i|s) for option features = of_picked - E_p[of]
-            expected_of = s.probs @ s.of_all
-            g_opt += reward * (s.of_picked - expected_of)
+        # MSE for value head — computed first so we can reuse `pred` as
+        # the advantage baseline.
+        pred = float(np.tanh(s.sf @ policy.w_value))
         if lr_value > 0:
-            # MSE on tanh(s.sf @ w_value) with target = reward.
-            pred = float(np.tanh(s.sf @ policy.w_value))
             # d/dw 0.5 * (pred - target)^2 = (pred - target) * (1 - pred^2) * sf
             err = pred - float(reward)
             g_value += err * (1 - pred * pred) * s.sf
+        # Policy gradient: scale by advantage if requested, else raw reward.
+        adv = (float(reward) - pred) if use_advantage else (float(reward) if reward != 0 else 0.0)
+        if adv != 0:
+            expected_of = s.probs @ s.of_all
+            g_opt += adv * (s.of_picked - expected_of)
     policy.w_state += lr * g_state / max(1, len(trace))
     policy.w_opt += lr * g_opt / max(1, len(trace))
     if lr_value > 0:

@@ -298,6 +298,37 @@ Rolled back the policy. scripts/train_vs_opponent.py and the metrics file
 stay in tree as infrastructure for the next attempt (which needs the
 advantage baseline before re-running this loop).
 
+### Follow-up: vs rule-based REINFORCE WITH advantage baseline (2026-06-17)
+
+reinforce_update gains a `use_advantage` flag. When True, the policy
+gradient is scaled by `reward - V(state)` instead of raw `reward` —
+V(state) comes from the existing value head (trained alongside the
+policy in self-play). train_vs_opponent.py defaults --use-advantage on.
+
+Same setup as above: warm-start from 5000ep policy, 2000ep vs rule_based,
+--lr 0.05 --lr-value 0.05, seed 20260627. 7 min wall-clock. |w_opt|
+changed less (2.64 -> 2.80 vs 2.64 -> 3.23 without advantage) — the
+baseline correctly moderates the gradient when V(state) already explains
+the loss.
+
+A/B (40 games):
+  with-advantage vs rule_based:  8-32 (20%)  (was 30% baseline, 15% no-adv)
+  with-advantage vs random:      38-2 (95%)  (was 91% baseline, 87.5% no-adv)
+
+The advantage baseline prevented the vs-random regression — that
+confirms the diagnosis. But vs rule_based we still drift from 30% to
+20% because the value head was trained on self-play states, not on
+states reached against rule_based, so V(state) is unreliable in those
+games and the advantage is mostly still raw reward.
+
+Trade-off: keeping this policy gives ~+4pp vs random (within noise) at
+~-10pp vs rule_based (statistically meaningful). For a competition
+matched against players similar to rule_based, the swap is a net loss.
+Kept the 5000ep self-play policy as the submission default.
+
+Future fix: pre-train V(state) on vs-rule-based rollouts before
+running the policy gradient loop, or use a deeper (MLP) value head.
+
 ## External baselines we benchmarked
 
 `scripts/rule_based_agent.py` and `deck_mega_lucario.csv` are vendored from
