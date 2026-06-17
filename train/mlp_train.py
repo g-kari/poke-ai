@@ -82,14 +82,24 @@ def make_training_agent(policy: MlpPolicy, rng: np.random.Generator, trace: list
     return _agent
 
 
-def run_episode(policy: MlpPolicy, rng: np.random.Generator, opponent=None):
-    """Self-play one episode. If opponent is given, policy is always seat 0
-    and only its trace is returned for REINFORCE updates (we don't train the
-    rule-based opponent). Seats alternate randomly to keep symmetry."""
+def run_episode(
+    policy: MlpPolicy,
+    rng: np.random.Generator,
+    opponent=None,
+    opponent_prob: float = 1.0,
+):
+    """Self-play one episode.
+
+    - opponent is None OR opponent_prob == 0: mirror selfplay (both seats use policy)
+    - else with probability `opponent_prob`: policy vs opponent (random seat),
+      only policy's trace returned
+    - else: mirror selfplay
+    """
     trace0: list[Step] = []
     a0 = make_training_agent(policy, rng, trace0)
     env = make("cabt")
-    if opponent is None:
+    use_opp = opponent is not None and rng.random() < opponent_prob
+    if not use_opp:
         trace1: list[Step] = []
         a1 = make_training_agent(policy, rng, trace1)
         env.run([a0, a1])
@@ -182,6 +192,7 @@ def train(
     hidden_pi: tuple[int, ...] | None = None,
     hidden_v: tuple[int, ...] | None = None,
     opponent: str = "",
+    opponent_prob: float = 1.0,
 ) -> None:
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
@@ -199,7 +210,11 @@ def train(
             print(f"warm-start load failed ({exc}); training from scratch")
     print(f"policy: pi={policy.hidden_pi} v={policy.hidden_v} device={policy.device}")
     opp_fn = _load_opponent(opponent)
-    print(f"opponent: {opponent or 'mirror selfplay'}")
+    eff_prob = opponent_prob if opp_fn is not None else 0.0
+    print(
+        f"opponent: {opponent or 'mirror selfplay'} "
+        f"(prob={eff_prob:.2f}, mix with mirror selfplay otherwise)"
+    )
     policy.train()
     optimizer = torch.optim.Adam(policy.parameters(), lr=lr)
 
@@ -208,7 +223,7 @@ def train(
     recent: list[int] = []
     metrics: list[dict] = []
     for ep in range(1, episodes + 1):
-        trace0, trace1, r0, r1 = run_episode(policy, rng, opp_fn)
+        trace0, trace1, r0, r1 = run_episode(policy, rng, opp_fn, eff_prob)
         if r0 is not None:
             reinforce_update(policy, optimizer, trace0, float(r0))
         if r1 is not None:
@@ -272,6 +287,13 @@ def main():
         help="Opponent module name from scripts/ (e.g. 'rule_based_crustle_dashimaki'). "
         "Empty/mirror = standard self-play.",
     )
+    p.add_argument(
+        "--opponent-prob",
+        type=float,
+        default=1.0,
+        help="Probability of facing --opponent per episode (else mirror selfplay). "
+        "0.5 = mixed mode (recommended for catastrophic-forgetting avoidance).",
+    )
     args = p.parse_args()
 
     def _parse(spec):
@@ -288,6 +310,7 @@ def main():
         _parse(args.hidden_pi),
         _parse(args.hidden_v),
         args.opponent,
+        args.opponent_prob,
     )
 
 

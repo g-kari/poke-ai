@@ -1237,6 +1237,45 @@ lr=3e-4 で 1000ep の Crustle dashimaki 専用 fine-tune を回した。
   (Crustle dashimaki, win rate 6-15%) では advantage 計算を崩している可能性。
   reward を 0/1 scale で見直す
 
+### 上記 #1 mixed-mode 追試 (2026-06-18)
+
+`run_episode` に `opponent_prob` 引数を追加し、エピソード単位で確率的に
+mirror selfplay / 対 Crustle dashimaki を切替えるように改造
+(`--opponent-prob 0.5`)。lr=1e-4 まで下げて 1000ep warm-start fine-tune。
+
+  ep  100 recent: 0.43 (mirror 含むため当然高い)
+  ep  500 recent: 0.37
+  ep 1000 recent: 0.29
+  solo @ 40g post-mix-ft vs Crustle Dashimaki: **5.0% (元 15.0%)**
+
+**さらに悪化。mixed-mode は Crustle 改善を生まなかった。**
+
+なぜ:
+- mirror selfplay は recent ~50% の高勝率 → gradient signal が大きい
+- Crustle 対戦は recent ~5-15% の低勝率 → gradient signal が薄い
+- 結果として policy gradient は mirror に最適化される方向に偏り、Crustle
+  特性 (warm-start 由来 15%) を**早く忘れる**
+
+pure ft (lr=3e-4 100% Crustle): 15→12.5%
+mixed ft (lr=1e-4 50/50)       : 15→5%
+→ **どちらの方向でも fine-tune で Crustle solo 性能を上げられず**
+
+総括: 単純な REINFORCE + 学習相手切替えでは Crustle dashimaki への
+特化は実現できない。理由として推定:
+1. value baseline tanh(V(s)) は ±1 で頭打ち、5-15% 勝率の hard matchup
+   では advantage がほぼ常に負 → policy gradient が全行動を一様に押し下げ
+2. fight-or-flight (=長引かせる) の Crustle 戦略は探索的に発見できる
+   水準を超えており、random init からの探索では到達しない局所最適
+
+次サイクル候補 (方向性転換):
+- **Crustle 検出 + 専用 agent 切替**: obs から相手 active が Crustle と
+  特定できれば、main.agent 内で rule-based のような heuristic に切替える。
+  Crustle の active card ID を identify するルートを `cg/api.py` から探す
+- **value baseline の reward 正規化**: 0/1 scale + EMA で baseline を作り、
+  hard matchup でも advantage が機能するように
+- **PIMC でのルックアヘッド**: Crustle のような hp 大量の defensive deck は
+  search で「TKO までのターン数」を読めば 1-2-ply でも判断改善できる
+
 ## Open items
 
 - `_try_load_policy()` silently swallows exceptions to keep the Kaggle
