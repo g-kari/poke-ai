@@ -2583,6 +2583,48 @@ V60 EXT3 submission が **Kaggle で動作失敗**。 publicScore 0、 ERROR。
 3. 必要なら **main_v60 を完全 PyTorch-free 化** (numpy のみで V60 推論)
    - mlp_policy_v60.py の forward を pure numpy 版にすれば torch 不要
 
+### ✅ Task #111 解決: numpy-only V60 で再 submit (2026-06-18 夜)
+
+torch 依存を完全排除した V60 を実装、 53810836 ERROR の根本原因と推定して
+回避策を実装:
+
+1. **`train/mlp_policy_v60_numpy.py`** 新規: pure-numpy 実装の `MlpPolicyV60Numpy`
+   - `_pi_forward`: matmul + ReLU 手書き
+   - `_v_forward`: 同様、 tanh も numpy.tanh
+   - `state_dict` 形式 ({pi.0.weight, pi.0.bias, ...}) を numpy 配列に変換
+2. **`scripts/extract_v60_weights.py`**: torch .pt → numpy .npz
+   - build time に走り、 torch dependency を build 環境に限定
+3. **`main_v60.py`** 改修: glob `mlp_policy_v60*.npz` を見て numpy 版を load
+4. **`make_submission_v60.sh`** 改修: .pt → .npz 抽出を bundle 化に統合、
+   ship する train/ には `mlp_policy_v60_numpy.py` + `.npz` のみ
+   (torch 系ファイルは除外)
+
+### Parity check
+
+  numpy logits: [-4.9971819 -2.6859689]
+  torch logits: [-4.9971814 -2.6859689]
+  max abs diff: 4.77e-07 (float32 精度内、 **実質一致**)
+
+### sandbox test
+
+  bundle contents: cg, deck.csv, main.py, train
+  train/: __init__.py, features.py, features_v60.py,
+          mlp_policy_v60_ext3.npz, mlp_policy_v60_numpy.py
+  _POLICY type: MlpPolicyV60Numpy
+  agent(select obs): [1] ← argmax 動作確認
+
+### Re-submit: 53812115
+
+```
+.venv/bin/kaggle competitions submit -c pokemon-tcg-ai-battle \
+    -f submission_v60.tar.gz \
+    -m "V60 EXT3 numpy-only (retry of 53810836 ERROR; pure-numpy inference, no torch needed)"
+```
+
+ref **53812115** PENDING、 評価結果は次サイクル以降。 これが COMPLETE して
+スコアが出れば「我々の deep-learning agent が Kaggle で動く」 ことを実証、
+torch 依存削除戦略の正しさを確認。
+
 ## GA loop 8g/eval × 20 gens 結果 — **構造的限界の再確認** (2026-06-18 夜)
 
 `data/sweep/ga_40g_v1.json` に persist。 376 秒 (6 分) で完了:

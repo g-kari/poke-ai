@@ -36,16 +36,25 @@ require cg/cg.dll
 require train/__init__.py
 require train/features.py
 require train/features_v60.py
-require train/mlp_policy.py
-require train/mlp_policy_v60.py
-require train/ensemble_policy_v60.py
+require train/mlp_policy_v60_numpy.py
+require scripts/extract_v60_weights.py
 
-# Need at least one V60 weight file.
-weights=$(ls train/mlp_policy_v60*.pt 2>/dev/null || true)
-if [ -z "$weights" ]; then
-    echo "no V60 weights found in train/" >&2
+# Need at least one V60 .pt weight file.
+pt_weights=$(ls train/mlp_policy_v60*.pt 2>/dev/null || true)
+if [ -z "$pt_weights" ]; then
+    echo "no V60 .pt weights found in train/" >&2
     exit 1
 fi
+
+# Convert each .pt to .npz so the bundle ships numpy-only weights.
+for pt in $pt_weights; do
+    npz="${pt%.pt}.npz"
+    if [ ! -e "$npz" ] || [ "$pt" -nt "$npz" ]; then
+        echo "extracting $pt -> $npz"
+        "$ROOT/scripts/run.sh" python3 "$ROOT/scripts/extract_v60_weights.py" \
+            --pt "$pt" --out "$npz"
+    fi
+done
 
 deck_count=$(grep -c . deck.csv)
 if [ "$deck_count" -ne 60 ]; then
@@ -62,12 +71,11 @@ mkdir -p "$STAGE/train"
 cp train/__init__.py "$STAGE/train/"
 cp train/features.py "$STAGE/train/"
 cp train/features_v60.py "$STAGE/train/"
-cp train/mlp_policy.py "$STAGE/train/"
-cp train/mlp_policy_v60.py "$STAGE/train/"
-cp train/ensemble_policy_v60.py "$STAGE/train/"
-# Ship all V60 weight files (main_v60 picks the newest).
-for w in $weights; do
-    cp "$w" "$STAGE/train/"
+cp train/mlp_policy_v60_numpy.py "$STAGE/train/"
+# Ship .npz files (numpy-only inference, no torch needed at runtime).
+for pt in $pt_weights; do
+    npz="${pt%.pt}.npz"
+    cp "$npz" "$STAGE/train/"
 done
 
 mkdir -p "$(dirname "$OUT")"
