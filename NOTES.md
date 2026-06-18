@@ -2777,6 +2777,51 @@ V60 ensemble 路線は dead-end と確定。 次の打ち手候補:
 4. **V60 EXT3 + 3-MLP のクロス ensemble**: features 不一致で結合不可、
    別 main.py が必要
 
+## V60 EXT3 真の lab 値 確定 (2026-06-19、 80g/opp = 560 games)
+
+正確な比較のため EXT3 を **80g/opp** で再 bench:
+
+  vs Mega Lucario:   21-59 (26.2%) ← 30g で 13% は noise だった
+  vs Dragapult ex:   20-60 (25.0%)
+  vs Iono:           10-70 (12.5%)
+  vs Mega Aboma:     15-65 (18.8%)
+  vs Crustle Wall:   23-57 (28.7%) ← 30g で 30% と整合
+  vs Crustle Dashi:   3-76 ( 3.8%) ← 持続
+  vs V6:             18-62 (22.5%)
+  **overall: 110-449 (19.7%) across 560g**
+
+### 3-MLP vs V60 EXT3 の正確な比較
+
+| metric | 3-MLP (LB 679.6) | V60 EXT3 (LB 523.1) |
+|---|---|---|
+| lab @ 80g | **23.3%** | **19.7%** |
+| LB | **679.6** | **523.1** |
+| 差 (lab) | - | **-3.6pp** |
+| 差 (LB) | - | **-156.5** |
+
+→ **lab 1pp ≈ LB 43 ポイント** の換算が成り立つ。
+
+含意:
+- V60 ensemble (= 18.6%) なら更に -1.1pp、 LB ~480 帯予想 (= EXT3 single
+  より弱い)
+- 3-MLP 並みの LB 680 に届くには lab 23%+ 必須
+- V6 (LB 926) に届くには lab ~30% 必要 = 振動制御 + features 強化必須
+
+### V6 deck warm-start 試行 (進行中)
+
+前回 V6 deck で fresh 4000ep = 13.9% で失敗。 今回は **EXT3 から warm-start**
+で V6 deck 学習を試みる:
+
+```bash
+POKE_AI_TRAIN_DECK=deck_romanrozen_v6.csv \\
+    train.mlp_train_v60 --episodes 5000 --lr 3e-4 --seed 1729 \\
+    --warm-start train/mlp_policy_v60_ext3.pt
+```
+
+期待: EXT3 (= 我々deck で蓄えた知識) + V6 deck の card-id fingerprint で、
+deck 切替えの shock を warm-start で緩和できるか。 完了後 V6 deck で bench、
+20% 以上なら deck.csv 入替えの submission 候補。 28 分予測。
+
 ### scripts/check_main_exec.py に --strict-cwd 追加
 
 今後の submission ERROR を **submit 前に local で検出** する体制:
