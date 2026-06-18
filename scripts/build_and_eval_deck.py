@@ -73,10 +73,32 @@ def _opp_has_crustle(obs: dict) -> bool:
     return False
 
 
+def _my_active_card_id(obs: dict) -> int | None:
+    """Return the card ID of our currently-active Pokemon, or None."""
+    cur = obs.get("current")
+    if not cur:
+        return None
+    you = cur.get("yourIndex", 0)
+    players = cur.get("players") or []
+    if you >= len(players):
+        return None
+    me = players[you]
+    active = me.get("active") or []
+    if not active or active[0] is None:
+        return None
+    p = active[0]
+    return p.get("id") if isinstance(p, dict) else getattr(p, "id", None)
+
+
 def make_generic_agent(deck: list[int], secondary_card_ids: set[int] | None = None):
     """Generic heuristic agent. With `secondary_card_ids`, switches to anti-
     Crustle routing when an opponent Crustle is detected: ATTACH / EVOLVE /
-    ATTACK options targeting a secondary-chain card jump to the top priority."""
+    ATTACK options targeting a secondary-chain card jump to the top priority.
+
+    v10 adds rotation routing: when opp has Crustle AND our active is NOT
+    a secondary-chain card, prefer RETREAT (option type 12) to swap in a
+    secondary attacker. On the follow-up "which bench to swap to" select,
+    prefer the option referencing a secondary card ID."""
     secondary_card_ids = secondary_card_ids or set()
 
     OPTION_PRIORITY = {
@@ -121,13 +143,32 @@ def make_generic_agent(deck: list[int], secondary_card_ids: set[int] | None = No
 
         if max_c == 1 and len(opts) > 1:
             crustle_mode = secondary_card_ids and _opp_has_crustle(obs)
+            # v10: rotation routing.
+            # If Crustle is up and our active is NOT a secondary-chain card,
+            # we want to RETREAT (option type 12) so we can swap a secondary
+            # attacker in on the next select.
+            rotation_needed = False
+            if crustle_mode:
+                my_active = _my_active_card_id(obs)
+                if my_active is not None and my_active not in secondary_card_ids:
+                    rotation_needed = True
 
             def _rank_key(kv):
                 idx, opt = kv
                 base = OPTION_PRIORITY.get(opt.get("type", -1), 99)
+                otype = opt.get("type", -1)
                 # Under Crustle, boost options that touch a secondary card.
                 if crustle_mode and _option_targets_secondary(opt, sel, obs):
-                    base -= 10  # lift above everything else
+                    base -= 10
+                # v10: when we need to rotate out of an ex into a non-ex,
+                # boost RETREAT (12) above ATTACK (13) and END (14). Still
+                # let ATTACH / EVOLVE / PLAY run first so we keep building.
+                if rotation_needed and otype == 12:
+                    base = 4  # between ABILITY (3) and ATTACK (4)
+                # Mirror: secondary-card CARD selections (option type 3) on
+                # the "swap-to bench" select are also boosted.
+                if rotation_needed and otype == 3 and _option_targets_secondary(opt, sel, obs):
+                    base -= 10
                 return (base, idx)
 
             ranked = sorted(enumerate(opts), key=_rank_key)

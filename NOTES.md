@@ -2374,6 +2374,51 @@ agent の改修が並行必要**。 これは大きな pivot point。
 - **路線の見直し**: rule-based submission 路線 (V6 LB 926.5) を強化する方が
   efficient な可能性
 
+## User 方針確定: (A) + (C) (2026-06-18)
+
+User 選択 = (A) deck-aware agent generator + (C) 深層学習路線。
+**(B) rule-based vendor 路線は採用しない** = 我々自身で agent を作り続ける。
+
+## v10 — Crustle 検出時 RETREAT rotation — **逆効果**
+
+`make_generic_agent` に v10 logic 追加:
+- Crustle 検出 AND 自分の active が secondary でない時
+- RETREAT (option type 12) priority を 4 に boost (= ABILITY と ATTACK の間)
+- 続く swap-to-bench select でも secondary を優先
+
+### v10 bench @ 30g/opp
+
+  vs Mega Lucario: 16.7% (v9 23.3% から -6.7pp)
+  vs Crustle Wall:  0.0% (v9  6.7% から -6.7pp!)
+  vs Crustle Dashi: 0.0% (持続)
+  vs V6:           20.0%
+  **overall: 5.7% (v9 7.1% から -1.4pp 悪化)**
+
+### 失敗原因の判明: reactive RETREAT は損失
+
+1. **RETREAT は energy cost** を要求 (1-2 energy 消費)
+2. RETREAT 中に **opp が attack して prize 取る**
+3. secondary も Stage 1 まで進化必要、 場に出てもすぐ attack できない
+
+V6 が成功する真の理由:
+- **proactive setup**: 初期 turn から secondary を bench に optimal 配置
+- Crustle 検出時には secondary が既に **ready (= Stage 1 になっている)**
+- 我々の generic_agent は OPTION_PRIORITY で **「常に primary を優先」**、
+  secondary は冷遇される
+- これは reactive vs proactive の根本差
+
+### v11 方針 (本サイクル末): proactive deploy
+
+- 初期 turn から secondary も **常時 bench に optimal 配置**
+- 「opp が Iono と分かるまで保険として setup」
+- 「Crustle と分かったら secondary 全力」
+- これは V6 の `CRUSTLE_AWARE=True` の核心ロジック
+
+generic_agent 改修:
+- `PLAY` option (= hand から bench に play) で secondary card を **常時最優先**
+- 「primary x4 が bench に出るまで secondary は不要」 ではなく
+  「secondary x1 が bench に出るまで primary x4 は出さない」
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
