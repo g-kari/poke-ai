@@ -29,22 +29,36 @@ from pathlib import Path
 def _candidate_roots() -> list[Path]:
     """All directories we'll try for deck.csv + train/ resolution.
 
-    Kaggle's runtime path layout is not always the same as our local sandbox,
-    so we test multiple candidates in order. The 3-MLP main.py uses the same
-    pattern and is known to work on LB (ref 53778627).
+    Kaggle's runtime path layout varies (the previous V60 ERRORs at
+    53810836 / 53812115 / 53812882 didn't have /kaggle_simulations/agent
+    accessible the way we expected). We aggressively scan: __file__ parent,
+    cwd, and any path we can find that contains a deck.csv.
     """
     roots: list[Path] = []
     with contextlib.suppress(NameError):
         roots.append(Path(__file__).resolve().parent)
     roots.append(Path.cwd().resolve())
-    roots.append(Path("/kaggle_simulations/agent"))
+    # Common Kaggle mounts.
+    for fixed in (
+        "/kaggle_simulations/agent",
+        "/kaggle_simulations",
+        "/kaggle/working",
+        "/kaggle/input",
+    ):
+        roots.append(Path(fixed))
+    # Walk sys.path for any entry that has a deck.csv (= our bundle).
+    for p in sys.path:
+        if not p:
+            continue
+        roots.append(Path(p))
     # Dedupe while preserving order.
     seen: set[Path] = set()
     out: list[Path] = []
     for r in roots:
-        if r not in seen:
-            seen.add(r)
-            out.append(r)
+        if r in seen:
+            continue
+        seen.add(r)
+        out.append(r)
     return out
 
 

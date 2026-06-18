@@ -53,6 +53,16 @@ def main() -> int:
             "(e.g. rule-based submissions) where agent doesn't expose _POLICY."
         ),
     )
+    parser.add_argument(
+        "--strict-cwd",
+        action="store_true",
+        help=(
+            "Simulate Kaggle runtime: do NOT chdir into the sandbox, and do "
+            "NOT add it to sys.path. main.py must resolve deck.csv / train/ "
+            "from absolute paths or via __file__-based discovery. This "
+            "catches the failure mode that produced 53810836 / 53812115 ERRORs."
+        ),
+    )
     args = parser.parse_args()
 
     with tempfile.TemporaryDirectory(prefix="poke_ai_exec_test_") as tmp:
@@ -94,10 +104,15 @@ def main() -> int:
         # env is a fresh dict with no __file__ key.
         original_cwd = os.getcwd()
         original_path = list(sys.path)
-        os.chdir(sandbox)
-        # The Kaggle runtime adds the bundle directory to sys.path so the
-        # bundled train/* modules can be imported. Simulate that.
-        sys.path.insert(0, str(sandbox))
+        if args.strict_cwd:
+            # Kaggle-strict simulation: cwd is some unrelated dir, sandbox
+            # is NOT on sys.path. main.py must self-discover its location.
+            os.chdir(tmpdir)  # parent of sandbox/, no deck.csv here
+        else:
+            os.chdir(sandbox)
+            # Permissive default: Kaggle-environments local sim adds the
+            # bundle dir to sys.path. Strict mode skips this.
+            sys.path.insert(0, str(sandbox))
         try:
             code = main_py.read_text()
             ns: dict = {}
