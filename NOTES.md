@@ -2014,6 +2014,43 @@ build_deck.py に `--no-stage2` flag も追加。
 - **GA loop**: top spec の deck を seed に carbon copy + 1 card 変更で
   fitness が上がるか測る
 
+### Snorunt + Mega Froslass ex 40g/opp 本格評価
+
+  vs Mega Lucario:   12-28 (30.0%)
+  vs Dragapult ex:   13-27 (32.5%)
+  vs Iono:            3-37 ( 7.5%)
+  vs Mega Aboma:      9-31 (22.5%)
+  vs Crustle Wall:    7-33 (17.5%)
+  vs Crustle Dashi:   0-40 ( 0.0%) ← ex 弱点 (ふしぎなロックイン)
+  vs V6:              5-35 (12.5%)
+  **overall: 49-231 (17.5%) across 280g**
+
+5g 評価 (18.0%) と 40g 評価 (17.5%) は **ほぼ一致** → fitness signal 自体は
+安定している。 ただし 17.5% は subjects 全体で見ると ZoliDragapult (17.1%)
+と同水準、 下から 2 位。 3-MLP (23.3%) より **-5.8pp 弱い** ため LB 提出候補
+にはならず。
+
+### 重要な含意
+
+1. **「短期 5g 評価で見えた強さ」 は relative ranking として有効** だが、
+   absolute winrate は overall 20% を超える deck の発見にはまだ届かない
+2. **build_deck.py の score 関数は弱い**:
+   - target_type='F' (Fighting) を指定しても無視され Water 系 ex が選ばれた
+   - 「HP / (retreat+1)」 が dominant な weight、 type effectiveness は後付
+   - 適切な weight 再設計が必要
+3. **Crustle Dashi に対する ex 弱点** は build_deck では構造的に解決不可
+   (Mega Froslass ex も ex なのでロックインで詰む)
+4. **deck-builder v4 の真の価値**: 80g 級でも anti-meta deck を発見する
+   ためには:
+   - score 関数で **「ex 以外」 のオプションを残す**
+   - V6 のような hybrid (ex + non-ex 攻め分け) を表現する
+
+### v5 への方針
+
+- score 関数の重み再設計 (type bonus を 30 → 100、 ex penalty を新設)
+- **non-ex Hariyama / Solrock 系の手書き spec** を candidate に加える
+- GA loop: best spec を seed に 1 card 変更で fitness 改善を測る
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
