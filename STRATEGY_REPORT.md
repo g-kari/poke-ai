@@ -234,6 +234,61 @@ LB 888 でも、 supervised cloning で学べる部分は 1/9 程度しか転写
 (c) 大量データ (10000+ games) で long-tail を網羅。 いずれも 1 サイクル
 30 分には収まらない。
 
+### 5.3c BCRL = BC warm-start + REINFORCE (= AlphaGo の縮小版)
+
+BC 単体の天井 ~10% を破るため、 V6 prior で初期化した policy を
+self-play で強化学習する hybrid を実行 (2026-06-19、 30 分サイクル内)。
+
+| 試行 | warm-start | episodes | lr | opp pool | lab winrate |
+|---|---|---|---|---|---|
+| BCRL1 | BC v2 (10.4%) | 2000 | 1e-4 | meta 5 | **12.1%** |
+| BCRL2 | BCRL1 (12.1%) | +5000 | 5e-5 | meta 5 + V6 | (進行中) |
+
+**BCRL1 観察**:
+- 強敵 (Mega Lucario 22.5%, Mega Aboma 27.5%) と
+  弱敵 (Iono 2.5%, Crustle Dashi 2.5%) の **二極化**
+- training trajectory: ep 1600 で recent peak 0.23、 ep 2000 ended 0.17
+  (= 振動収束していない)
+- REINFORCE は BC prior を保持できず、 一部相手のみ「最適化」しすぎた
+  結果、 別相手の knowledge を上書きする「catastrophic forgetting」
+
+**学び**:
+- V6 prior は **+~2pp 程度** の booster で済み、 BC alone (10.4%) →
+  BCRL (12.1%) の改善は誤差範囲
+- 5-deck pool の self-play では Iono / Crustle Dashi の特殊戦略を
+  学べない (= 報酬信号は累計勝敗だけ、 specific decision の
+  credit assignment 不可)
+- V60 EXT3 (10500ep, lab 20.5%) より BCRL1 (7000ep total, lab 12.1%)
+  が下回るのは、 BC prior が **方向性を歪めた** ことが原因の可能性
+
+### 5.3d Ensemble = EXT3 + BCRL1 logit 平均 (= 13.9%, 平均化負け)
+
+V60 EXT3 (lab 20.5%) と BCRL1 (lab 12.1%) を **logit 平均** で結合し、
+弱点補完を試行。 結果:
+
+| Matchup | EXT3 単体 | BCRL1 単体 | ensemble |
+|---|---|---|---|
+| Mega Lucario   | 22.5% | 22.5% | 22.5% |
+| Dragapult ex   | (~17%) | 7.5%  | 15.0% |
+| Iono           | (~22%) | 2.5%  | 10.0% |
+| Mega Abomasnow | (~25%) | 27.5% | **32.5%** |
+| Crustle Wall   | (~13%) | 7.5%  | 7.5% |
+| Crustle Dashi  | (~5%)  | 2.5%  | 0.0% |
+| V6             | (~15%) | 15.0% | 10.0% |
+| **overall**    | **20.5%** | **12.1%** | **13.9%** |
+
+**結論**: logit 平均は **弱い policy が混ざると平均化負け**。 EXT3 単体
+の 20.5% を BCRL1 のノイズが 6.6pp 引きずり下ろした。 唯一 Mega
+Abomasnow のみ ensemble が個別を上回った (+5pp boost)。
+
+実装すべき代替案:
+- **Weighted logit 平均** (= EXT3 を weight 2.0、 BCRL1 を 0.5 等)
+- **Matchup-specific 切替** (= obs から相手 deck を予測し、 最強 policy
+  を選ぶ)
+- **Mixture-of-Experts**: 状態を gate に通して per-state weight
+
+ただし いずれも追加 1-3 サイクルの投資、 lab 25%+ 目標達成は不確定。
+
 ### 5.4 Transformer features
 
 card-level representation (= 各カードを embedding、 self-attention で
