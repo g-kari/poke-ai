@@ -108,6 +108,18 @@ CLAUDE.md             Claude Code 向け開発メモ
 | PyTorch MLP (64→32) + 2000ep self-play | 38-2 (40 戦, 95%) | 線形に mirror match で 23-17 (57.5%) 勝利 |
 | 2-MLP ensemble (異 seed, 各 2000ep) | 37-3 (40 戦, 92.5%) | vs rule_based +10pp (22.5→32.5%) |
 | **3-MLP ensemble (seed=20260628 + 42 + 100, 各 2000ep)** | **vs 4 meta deck 32-88 (120 戦, 26.7%)** | 2-MLP の 22.5% から +4.2pp。default の policy |
+| V60 EXT3 (10500ep, features_v60 60-d) | 20.5% @ 30g/opp | LB 573.9 — 3-MLP (679.6) を下回り |
+
+### LB 履歴 (最新スナップショット 2026-06-19)
+
+| Submission | スコア | 種別 |
+|---|---|---|
+| V6 (Crustle+Lucario hybrid) | **888.2** | 🥇 rule-based ベスト |
+| CrustleDashimaki | 874.7 | rule-based |
+| Iono | 762.2 | rule-based |
+| 3-MLP ensemble (seeds 20260628 + 42 + 100) | **679.6** | 🥇 DL ベスト |
+| 2-MLP ensemble (fix-only) | 613.3 | DL |
+| V60 EXT3 (single 10500ep) | 573.9 | DL |
 
 ## 環境
 
