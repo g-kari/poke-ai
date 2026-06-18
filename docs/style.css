@@ -1,0 +1,295 @@
+:root {
+  --bg: #fafafa;
+  --bg-card: #ffffff;
+  --text: #222;
+  --text-mute: #666;
+  --accent: #d63c78;
+  --accent-mute: #f8d5e4;
+  --border: #e0e0e0;
+  --critical: #ff8a3d;
+  --shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP",
+               "Yu Gothic", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+body {
+  margin: 0 auto;
+  padding: 0 24px 60px;
+  max-width: 1100px;
+}
+
+header {
+  padding: 40px 0 20px;
+  border-bottom: 2px solid var(--accent);
+  margin-bottom: 28px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  color: var(--accent);
+}
+
+.subtitle {
+  margin: 0 0 6px;
+  color: var(--text-mute);
+}
+
+.updated {
+  margin: 4px 0 0;
+  color: var(--text-mute);
+  font-size: 13px;
+  font-style: italic;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent);
+}
+
+a:hover {
+  border-bottom-style: solid;
+}
+
+section {
+  margin: 36px 0;
+}
+
+h2 {
+  font-size: 22px;
+  color: var(--text);
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+/* ============================================================
+   Deck cards
+   ============================================================ */
+
+.deck-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.deck-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+
+.deck-card.highlighted {
+  border: 2px solid var(--accent);
+  background: var(--accent-mute);
+}
+
+.deck-card p {
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.deck-card .vendor {
+  font-size: 12px;
+  color: var(--text-mute);
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.deck-type-atk { background: #ffe1cc; color: #cc5500; }
+.deck-type-wall { background: #d4eaff; color: #265d99; }
+.deck-type-hybrid { background: #e8d4ff; color: #6a2299; }
+
+/* ============================================================
+   Heatmap table
+   ============================================================ */
+
+.table-wrap {
+  overflow-x: auto;
+  margin-top: 12px;
+}
+
+table.heatmap {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+}
+
+table.heatmap th, table.heatmap td {
+  padding: 8px 10px;
+  text-align: center;
+  border: 1px solid #e9e9e9;
+}
+
+table.heatmap thead th {
+  background: #efefef;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+table.heatmap tbody th {
+  background: #f5f5f5;
+  text-align: left;
+  white-space: nowrap;
+}
+
+table.heatmap td.critical {
+  outline: 2px solid var(--critical);
+  outline-offset: -3px;
+  font-weight: 700;
+}
+
+table.heatmap td.overall {
+  font-size: 14px;
+  background: #fafafa !important;
+}
+
+.highlighted-row th {
+  background: var(--accent-mute) !important;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.ours th {
+  background: #fff5cc !important;
+  font-style: italic;
+}
+
+/* ============================================================
+   Rivals (top 2 weakness)
+   ============================================================ */
+
+.rivals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.rival-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  box-shadow: var(--shadow);
+}
+
+.rival-card .weakness {
+  background: #ffe9d6;
+  border-left: 4px solid var(--critical);
+  padding: 8px 10px;
+  margin-top: 8px;
+}
+
+/* ============================================================
+   LB
+   ============================================================ */
+
+.lb-section h3 {
+  margin: 16px 0 6px;
+  color: var(--accent);
+}
+
+.lb-list {
+  margin: 8px 0;
+  padding-left: 28px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.badge {
+  display: inline-block;
+  background: var(--accent-mute);
+  color: var(--accent);
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+/* ============================================================
+   Submission history
+   ============================================================ */
+
+table.submission-history {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+  margin-top: 12px;
+}
+
+table.submission-history th, table.submission-history td {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+table.submission-history thead th {
+  background: #efefef;
+}
+
+table.submission-history tr.latest {
+  background: #fffacc;
+}
+
+table.submission-history tr.leader {
+  background: #d4ffe0;
+  font-weight: 600;
+}
+
+.reality-check {
+  margin-top: 18px;
+  background: var(--accent-mute);
+  border-left: 4px solid var(--accent);
+  padding: 12px 14px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+
+footer {
+  margin-top: 50px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--text-mute);
+  font-size: 12px;
+}

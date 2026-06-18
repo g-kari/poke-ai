@@ -2,6 +2,9 @@
 
 [PTCGABC / ポケカABC](https://ptcg-abc.pokemon.co.jp/) — [Kaggle: Pokémon TCG AI Battle Challenge](https://www.kaggle.com/competitions/pokemon-tcg-ai-battle) のシミュレーション部門に提出するエージェント。
 
+📊 **メタデッキ・ダッシュボード**: <https://g-kari.github.io/poke-ai/>
+(対戦相性表、LB 環境、提出履歴を視覚化。`docs/` 配下を GitHub Pages で配信)
+
 `obs` (`dict`) を受け取り option index のリストを返す `main.py` をエントリに、
 self-play REINFORCE で学習した numpy 線形ポリシー (`train/policy.npz`) を内蔵。
 

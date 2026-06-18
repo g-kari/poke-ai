@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PTCG AI Battle — meta-deck dashboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>PTCG ABC — meta-deck dashboard</h1>
+  <p class="subtitle">
+    Kaggle <a href="https://www.kaggle.com/competitions/pokemon-tcg-ai-battle" target="_blank" rel="noopener">Pokémon TCG AI Battle Challenge</a>
+    のシミュレーション部門で観測した「環境デッキ」とエージェントの相性表。
+    リポジトリは <a href="https://github.com/g-kari/poke-ai" target="_blank" rel="noopener">g-kari/poke-ai</a>。
+  </p>
+  <p class="updated">2026-06-18 計測 / 80 games per matchup (480 games per row)</p>
+</header>
+
+<section>
+  <h2>環境デッキ (rule-based bots) 一覧</h2>
+  <p>
+    Kaggle 公開 kernel から vendor したルールベースエージェント。 各「デッキ」は固有の戦略を持ち、
+    互いに天敵関係を構成しています。
+  </p>
+  <div class="deck-grid">
+    <div class="deck-card">
+      <h3>🥊 Mega Lucario</h3>
+      <p><span class="tag deck-type-atk">攻撃</span> Mega Lucario ex を主軸とした打点重視。
+      Hariyama / Solrock がサブアタッカー。</p>
+      <p class="vendor">Kiyota 公式サンプル / kojimar / pilkwang ほか</p>
+    </div>
+    <div class="deck-card">
+      <h3>👻 Dragapult ex</h3>
+      <p><span class="tag deck-type-atk">攻撃</span> 機動力と特殊状態を駆使したコントロール型。
+      tempo control 派生もあり。</p>
+      <p class="vendor">Kiyota 公式サンプル / zoli800 ほか</p>
+    </div>
+    <div class="deck-card">
+      <h3>⚡ Iono's deck</h3>
+      <p><span class="tag deck-type-atk">攻撃</span> 大量エネルギー付け + Wattrel chain で
+      Voltaic Chain ワザを連打。</p>
+      <p class="vendor">Kiyota 公式サンプル</p>
+    </div>
+    <div class="deck-card">
+      <h3>❄️ Mega Abomasnow</h3>
+      <p><span class="tag deck-type-atk">攻撃</span> 氷タイプの高HP兼ね揃えた中速 deck。</p>
+      <p class="vendor">Kiyota 公式サンプル</p>
+    </div>
+    <div class="deck-card">
+      <h3>🦀 Crustle Wall</h3>
+      <p><span class="tag deck-type-wall">壁</span> Crustle の特性「ふしぎなロックイン」で
+      ex ポケモンからのダメージを <strong>0 にロック</strong>。受け回し型。</p>
+      <p class="vendor">harukiharada / dashimaki360 (Day-1 #1)</p>
+    </div>
+    <div class="deck-card">
+      <h3>🦀 Crustle Dashimaki</h3>
+      <p><span class="tag deck-type-wall">壁</span> Crustle Wall の上位派生で、Jumbo Ice Cream
+      で回復しつつ Hero's Cape (ACE SPEC) で詰みを狙う。<strong>Day-1 #1 bot 派生</strong>。
+      LB の AM / sbite0138 / PavelLiashkov らが運用。</p>
+      <p class="vendor">dashimaki360</p>
+    </div>
+    <div class="deck-card highlighted">
+      <h3>⚔️ RomanrozenV6 (anti-Crustle hybrid)</h3>
+      <p><span class="tag deck-type-hybrid">ハイブリッド</span> Mega Lucario + Hariyama + Solrock。
+      <code>CRUSTLE_AWARE=True</code> で Crustle 検出時に <strong>non-ex の Hariyama</strong>
+      でロックインを抜けるルートに切替。author 自身は LB 860+ を主張。</p>
+      <p class="vendor">romanrozen (LB 860+)</p>
+    </div>
+    <div class="deck-card">
+      <h3>📋 Kojimar (validated Lucario)</h3>
+      <p><span class="tag deck-type-atk">攻撃</span> Lucario + Hariyama + Solrock のシンプル版。
+      Mega Lucario と Iono 相手に強い。anti-Crustle は薄い。</p>
+      <p class="vendor">kojimar</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>相性表 (overall lab winrate, 80g/matchup)</h2>
+  <p>各行がエージェント「主役」、列が対戦相手。セルは勝率 (%)、色は赤=低→緑=高。
+  右端の overall は 6 opp 平均。<strong>致命的弱点 (≤ 25%)</strong> をオレンジ枠で表示。</p>
+  <div class="table-wrap">
+  <table class="heatmap">
+    <thead>
+      <tr>
+        <th>subject \ opponent</th>
+        <th>Mega Lucario</th>
+        <th>Dragapult</th>
+        <th>Iono</th>
+        <th>Abomasnow</th>
+        <th>Crustle Wall</th>
+        <th>Crustle Dashi</th>
+        <th class="overall-h">overall</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><th>CrustleDashi</th>
+        <td data-pct="83.8">83.8</td>
+        <td data-pct="100">100</td>
+        <td data-pct="11.2" class="critical">11.2</td>
+        <td data-pct="73.8">73.8</td>
+        <td data-pct="85.0">85.0</td>
+        <td data-pct="50.0">50.0</td>
+        <td class="overall" data-pct="67.3"><strong>67.3</strong></td>
+      </tr>
+      <tr><th>Iono</th>
+        <td data-pct="21.2" class="critical">21.2</td>
+        <td data-pct="46.2">46.2</td>
+        <td data-pct="57.5">57.5</td>
+        <td data-pct="68.8">68.8</td>
+        <td data-pct="97.5">97.5</td>
+        <td data-pct="92.5">92.5</td>
+        <td class="overall" data-pct="64.0"><strong>64.0</strong></td>
+      </tr>
+      <tr class="highlighted-row"><th>RomanrozenV6</th>
+        <td data-pct="43.8">43.8</td>
+        <td data-pct="57.5">57.5</td>
+        <td data-pct="76.2">76.2</td>
+        <td data-pct="53.8">53.8</td>
+        <td data-pct="51.2">51.2</td>
+        <td data-pct="65.0">65.0</td>
+        <td class="overall" data-pct="57.9"><strong>57.9</strong></td>
+      </tr>
+      <tr><th>Kojimar</th>
+        <td data-pct="60.0">60.0</td>
+        <td data-pct="61.3">61.3</td>
+        <td data-pct="81.2">81.2</td>
+        <td data-pct="62.5">62.5</td>
+        <td data-pct="30.0">30.0</td>
+        <td data-pct="21.2" class="critical">21.2</td>
+        <td class="overall" data-pct="52.7"><strong>52.7</strong></td>
+      </tr>
+      <tr><th>Dragapult</th>
+        <td data-pct="51.2">51.2</td>
+        <td data-pct="56.2">56.2</td>
+        <td data-pct="70.0">70.0</td>
+        <td data-pct="52.5">52.5</td>
+        <td data-pct="58.8">58.8</td>
+        <td data-pct="0.0" class="critical">0.0</td>
+        <td class="overall" data-pct="48.1"><strong>48.1</strong></td>
+      </tr>
+      <tr><th>Mega Lucario</th>
+        <td data-pct="46.2">46.2</td>
+        <td data-pct="53.8">53.8</td>
+        <td data-pct="83.8">83.8</td>
+        <td data-pct="47.5">47.5</td>
+        <td data-pct="25.0" class="critical">25.0</td>
+        <td data-pct="22.5" class="critical">22.5</td>
+        <td class="overall" data-pct="46.5"><strong>46.5</strong></td>
+      </tr>
+      <tr><th>Abomasnow</th>
+        <td data-pct="31.2">31.2</td>
+        <td data-pct="46.2">46.2</td>
+        <td data-pct="28.7">28.7</td>
+        <td data-pct="50.0">50.0</td>
+        <td data-pct="67.5">67.5</td>
+        <td data-pct="16.2" class="critical">16.2</td>
+        <td class="overall" data-pct="40.0"><strong>40.0</strong></td>
+      </tr>
+      <tr><th>Crustle Wall (haru)</th>
+        <td data-pct="82.5">82.5</td>
+        <td data-pct="36.2">36.2</td>
+        <td data-pct="1.2" class="critical">1.2</td>
+        <td data-pct="38.8">38.8</td>
+        <td data-pct="52.5">52.5</td>
+        <td data-pct="10.0" class="critical">10.0</td>
+        <td class="overall" data-pct="36.9"><strong>36.9</strong></td>
+      </tr>
+      <tr class="ours"><th>3-MLP (our learned)</th>
+        <td data-pct="25.0">25.0</td>
+        <td data-pct="20.0">20.0</td>
+        <td data-pct="11.2" class="critical">11.2</td>
+        <td data-pct="21.2">21.2</td>
+        <td data-pct="38.8">38.8</td>
+        <td data-pct="23.8">23.8</td>
+        <td class="overall" data-pct="23.3"><strong>23.3</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>天敵関係 (top 2 subject の弱点)</h2>
+  <div class="rivals">
+    <div class="rival-card">
+      <h3>🦀 CrustleDashi (overall 67.3%, 1 位)</h3>
+      <p>強み: Dragapult を <strong>100%</strong>、Crustle Wall を <strong>85%</strong>、
+      Mega Lucario を <strong>84%</strong> で蹂躙。</p>
+      <p class="weakness">弱点: <strong>Iono に 11.2%</strong> — Lightning エネルギー攻めで
+      ロックインを通せず崩される。</p>
+    </div>
+    <div class="rival-card">
+      <h3>⚡ Iono (overall 64.0%, 2 位)</h3>
+      <p>強み: Crustle 系を <strong>92.5–97.5%</strong> で完封、Abomasnow を <strong>69%</strong>。</p>
+      <p class="weakness">弱点: <strong>Mega Lucario に 21.2%</strong> — 高打点の連撃に
+      エネルギー不足で押し切られる。</p>
+    </div>
+  </div>
+  <p>つまり LB 上の deck 分布次第で 1 位と 2 位が入れ替わる構造。
+  「Crustle vs Iono」がメタの中心、「Lucario vs Crustle」「Iono vs Lucario」の三すくみが存在。</p>
+</section>
+
+<section>
+  <h2>LB 環境調査 (2026-06-18)</h2>
+  <p>Kaggle 公式 LB の現状観察:</p>
+  <div class="lb-section">
+    <h3>トップ 20</h3>
+    <ol class="lb-list">
+      <li><strong>onechan1 — 1308.7</strong></li>
+      <li>DENPA92 — 1230.4</li>
+      <li>Kyo_s_s — 1211.6</li>
+      <li>くりたんとたけちゃん — 1179.9</li>
+      <li>YT — 1175.8</li>
+      <li>tubotu — 1174.6</li>
+      <li>Powerful Hands Is All You Need — 1166.6</li>
+      <li>hibi — 1164.2</li>
+      <li>karacoro — 1149.2</li>
+      <li>llkarill — 1146.3</li>
+      <li>yaruwo — 1143.6</li>
+      <li>Iwata Naoki (いわたん) — 1128.1</li>
+      <li>Donguk Jung — 1116.3</li>
+      <li>Zscorpio — 1113.7</li>
+      <li>Mudkip's Machines — 1111.3</li>
+      <li>hiroingk — 1110.7</li>
+      <li>kenn — 1101.4</li>
+      <li><strong>sbite0138 — 1096.8</strong> <span class="badge">Crustle派</span></li>
+      <li>PyJa — 1091.2</li>
+      <li>Kuroneko — 1082.3</li>
+    </ol>
+
+    <h3>注目 — Crustle Dashimaki 派の位置</h3>
+    <ul>
+      <li><strong>sbite0138 — 1096.8</strong> (18 位)</li>
+      <li><strong>AM — 1069.2</strong> (~38 位)</li>
+      <li><strong>takuyay (dashimaki360 本人?) — 1047.6</strong> (~37 位)</li>
+    </ul>
+    <p>「Crustle がメタ」の user 知見と整合 — Crustle 派は中位 (1000–1100) に分布。
+    最上位 1200+ は別技術 (PIMC / MCTS / 強化学習) と推測。</p>
+  </div>
+</section>
+
+<section>
+  <h2>我々の現状</h2>
+  <table class="submission-history">
+    <thead>
+      <tr><th>ref</th><th>file</th><th>status</th><th>public score</th><th>差分 vs Iono</th></tr>
+    </thead>
+    <tbody>
+      <tr class="latest"><td>53794828</td><td>romanrozen_v6</td><td>PENDING</td><td>—</td><td>—</td></tr>
+      <tr><td>53794617</td><td>crustle_dashimaki</td><td>COMPLETE</td><td>718.0</td><td>-44.2</td></tr>
+      <tr class="leader"><td>53793417</td><td>iono</td><td>COMPLETE</td><td><strong>762.2</strong></td><td>—</td></tr>
+      <tr><td>53778627</td><td>3-MLP ensemble</td><td>COMPLETE</td><td>679.6</td><td>-82.6</td></tr>
+      <tr><td>53776818</td><td>2-MLP ensemble (fix)</td><td>COMPLETE</td><td>613.3</td><td>-148.9</td></tr>
+    </tbody>
+  </table>
+  <p class="reality-check">
+    <strong>Reality check</strong>:
+    Iono 762.2 でも LB トップ 40 (1035.4) より <strong>-273</strong>。
+    rule-based の天井は ~1100 程度、最上位 1200+ には PIMC / MCTS / 強化学習が必要。
+  </p>
+</section>
+
+<section>
+  <h2>方針 (中期)</h2>
+  <ol>
+    <li><strong>PIMC 実装</strong> — <code>cg.api.search_begin / step / release</code> で
+        情報集合サンプリング → 1-2 ply rollout。 1100+ 目指す本命。</li>
+    <li><strong>Crustle 検出 + ハイブリッド agent</strong> — obs から相手 active を見て、
+        Crustle なら non-ex 攻撃ルートに切替 (V6 の発想を一般化)。</li>
+    <li><strong>強化学習 + PIMC rollout</strong> — 学習済み policy を rollout policy として使う。
+        long term。</li>
+    <li><strong>デッキ独自進化</strong> — 既存 6 デッキの組合せでは天井あり、独自構築の余地。</li>
+  </ol>
+</section>
+
+<footer>
+  <p>Last updated: 2026-06-18 / <a href="https://github.com/g-kari/poke-ai" target="_blank" rel="noopener">repo on GitHub</a></p>
+</footer>
+
+<script>
+  // Apply heatmap colors from data-pct
+  document.querySelectorAll('td[data-pct]').forEach(td => {
+    const pct = parseFloat(td.dataset.pct);
+    // 0 → red (0, 80, 80), 50 → yellow (60, 80, 80), 100 → green (140, 80, 80)
+    const hue = Math.round((pct / 100) * 140);
+    const saturation = 70;
+    const lightness = 78;
+    td.style.background = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  });
+</script>
+</body>
+</html>
