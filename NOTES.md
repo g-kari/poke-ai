@@ -1893,6 +1893,36 @@ User の「単一 agent 強化」方針に従い:
 3. value baseline を 0/1 + EMA に改修 (hard matchup gradient 安定化)
 4. PIMC + 学習 policy value head (本命、 並行)
 
+### V60 EXT (warm-start 3000ep、 合計 5500ep) 結果 ✨
+
+  vs Mega Lucario:    8-22  (26.7%)  ← +3.4pp vs 2500ep
+  vs Dragapult ex:    8-22  (26.7%)  ← +6.7pp
+  vs Iono:            4-26  (13.3%)  ← **+10pp**
+  vs Mega Abomasnow:  9-21  (30.0%)  ← +10pp
+  vs Crustle Dashi:   4-26  (13.3%)  ← +6.6pp
+  vs V6:              5-25  (16.7%)  ← +3.4pp
+  overall:           38-142 (21.1%)  ← **+6.7pp**
+
+**全 matchup で改善、 features60 効果を確認できた**。
+3-MLP @ 80g 23.3% との差は **-2.2pp** まで縮まった (= 単独 v60 policy で
+ensemble なしの 3 つ分に肉薄)。
+
+特に大きな改善:
+- Iono: **3.3% → 13.3% (+10pp)** ← 改善のサイン、ただし依然厳しい
+- Mega Aboma: 20% → 30% (+10pp)
+- Crustle Dashi: 6.7% → 13.3% (+6.6pp)
+
+これで「features60 単独で意味ある signal は無い」という前回判定を**訂正**:
+**学習量を増やせば features60 効果は出る**。 fresh 2500ep が短すぎた。
+
+### 次の打ち手 (本格)
+
+1. **更に warm-start 継続** (合計 8000-10000ep) → 3-MLP 23.3% を超えるか
+2. **複数 seed で V60 学習 → V60 ensemble 作成** (3-MLP の ensemble 効果を v60 で再現)
+3. **policy 容量増 (128-64)** で representation 強化
+4. **submission 化**: v60 policy を `main_learned_v60.py` でラップして submit
+   候補に加える (User 指示「単一 agent 強化」の到達目標)
+
 ## 🎯 方針転換 (2026-06-18 user 指示)
 
 ### 単一 agent への統一
