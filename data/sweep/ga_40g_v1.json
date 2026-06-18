@@ -254,6 +254,86 @@
       },
       "fitness": 0.1,
       "accepted": false
+    },
+    {
+      "gen": 13,
+      "swap": {
+        "idx": 28,
+        "from": 1086,
+        "to": 1212
+      },
+      "fitness": 0.125,
+      "accepted": false
+    },
+    {
+      "gen": 14,
+      "swap": {
+        "idx": 26,
+        "from": 1086,
+        "to": 7
+      },
+      "fitness": 0.0875,
+      "accepted": false
+    },
+    {
+      "gen": 15,
+      "swap": {
+        "idx": 37,
+        "from": 1182,
+        "to": 3
+      },
+      "fitness": 0.1,
+      "accepted": false
+    },
+    {
+      "gen": 16,
+      "swap": {
+        "idx": 7,
+        "from": 1141,
+        "to": 1
+      },
+      "fitness": 0.1,
+      "accepted": false
+    },
+    {
+      "gen": 17,
+      "swap": {
+        "idx": 49,
+        "from": 3,
+        "to": 18
+      },
+      "fitness": 0.0875,
+      "accepted": false
+    },
+    {
+      "gen": 18,
+      "swap": {
+        "idx": 12,
+        "from": 3,
+        "to": 7
+      },
+      "fitness": 0.1,
+      "accepted": false
+    },
+    {
+      "gen": 19,
+      "swap": {
+        "idx": 21,
+        "from": 3,
+        "to": 19
+      },
+      "fitness": 0.1125,
+      "accepted": false
+    },
+    {
+      "gen": 20,
+      "swap": {
+        "idx": 38,
+        "from": 1192,
+        "to": 8
+      },
+      "fitness": 0.1625,
+      "accepted": false
     }
   ]
 }

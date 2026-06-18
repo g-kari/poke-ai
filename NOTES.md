@@ -2583,6 +2583,57 @@ V60 EXT3 submission が **Kaggle で動作失敗**。 publicScore 0、 ERROR。
 3. 必要なら **main_v60 を完全 PyTorch-free 化** (numpy のみで V60 推論)
    - mlp_policy_v60.py の forward を pure numpy 版にすれば torch 不要
 
+## GA loop 8g/eval × 20 gens 結果 — **構造的限界の再確認** (2026-06-18 夜)
+
+`data/sweep/ga_40g_v1.json` に persist。 376 秒 (6 分) で完了:
+
+  initial: 11.2% (5g/eval noise の引き)
+  gen 2: Mega Froslass ex (861) → Premium Power Pro (1141) → 16.2% ✓
+  gen 5: Water Energy (3) → Lightning Energy (4) → **20.0%** ✓
+  gen 7: Gravity Mountain → Premium Power Pro (tie at 20.0%) ✓
+  gen 8-20: すべて reject (13 連敗、 local optimum)
+  best fitness (8g/eval): 20.0%
+
+### 40g 本格 bench の真の値: **13.2%**
+
+deck_ga_v3.csv の 40g bench:
+  vs Mega Lucario:  6-34 (15.0%)
+  vs Dragapult:    11-29 (27.5%)
+  vs Iono:          1-39 (2.5%) ← 致命的悪化
+  vs Mega Aboma:    8-32 (20.0%)
+  vs Crustle Wall:  6-34 (15.0%)
+  vs Crustle Dashi: 0-40 (0.0%) ← 持続
+  vs V6:            5-35 (12.5%)
+  overall:        37-243 (**13.2%**) ← v4 baseline 17.5% から -4.3pp
+
+### 過去 3 回 GA の真の天井
+
+| GA version | eval 内 | 40g 本格 |
+|---|---|---|
+| v1 (3g/eval) | 23.3% | 13.2% |
+| v2 (8g/eval) | 22.5% | 15.4% |
+| v3 (8g/eval) | 20.0% | **13.2%** |
+
+→ **GA は 13-15% の天井に張り付く**、 v4 baseline 17.5% を超えられず。
+
+### 構造的限界の判明
+
+1. **1-card swap は local optimum で詰む**: gen 5 で water → lightning
+   energy 1 枚交換した時点で improvement が止まる、 同じ deck の異なる
+   trainer 配分しか試せない
+2. **真の improvement 5pp 以下は 8g/eval (CI ±11pp) で検出不能**
+3. **GA は v4 builder の初期構築を改善しない** = builder のコア設計
+   (HP/(retreat+1) で attacker 選定) が **既に local optimum**
+4. Crustle Dashi 0% は構造的問題で deck-builder では解決不可
+   (ex pokemon を入れる限り)
+
+### Task #107 deck-builder の最終総括
+
+3 段階の GA + v7-v11 hybrid 改修 + v8-11 agent-routing 改修を経て:
+- **v4 baseline (= score 関数 + 1 chain) が GA の到達点 17.5%**
+- **deck-only の自動 search では LB 競争力 (V6 921) には届かない**
+- 真の breakthrough は **deck + agent + 学習** の三位一体改修が必要
+
 ### LB 観察 (2026-06-18 夕方)
 - V6: 896.5 (前 921 から微減)
 - CrustleDashi: **888.2** (前 866 から **+22 上昇!**)
