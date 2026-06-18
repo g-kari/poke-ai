@@ -1944,6 +1944,33 @@ ensemble なしの 3 つ分に肉薄)。
 4. **submission 化**: v60 policy を `main_learned_v60.py` でラップして submit
    候補に加える (User 指示「単一 agent 強化」の到達目標)
 
+### V60 EXT2 (8500ep, lr=1e-4) 結果 — 振動を観測
+
+  vs Mega Lucario:    4-26 (13.3%) ← EXT1 26.7% から **-13.4pp**
+  vs Dragapult ex:    4-26 (13.3%) ← EXT1 26.7% から **-13.4pp**
+  vs Iono:            5-25 (16.7%) ← +3.4pp
+  vs Mega Abomasnow:  9-21 (30.0%) ← 変化なし
+  vs Crustle Dashi:   0-30 ( 0.0%) ← **-13.3pp 致命的悪化**
+  vs V6:             14-16 (46.7%) ← **+30pp の大幅改善**
+  overall:           36-144 (20.0%) ← -1.1pp (ノイズ内)
+
+**policy が学習過程で大きく振動している**。 30g ノイズ floor (±13pp) を
+個別 matchup で超えているケース複数 (V6 +30, Lucario -13, Dragapult -13)。
+
+仮説:
+- lr=1e-4 でも policy gradient の variance が大きく、 特定 matchup に
+  overfit → 別 matchup を忘れる、 を繰り返す
+- value baseline tanh が依然 hard matchup で歪んでいる (前述の問題が再現)
+- 単一 policy 容量 (64-32) で 6 deck 全部に対応するのは難しい、
+  「ensemble of pool-trained」 か 「相手別 sub-policy」 が必要
+
+判断:
+- EXT2 を `archive/` に退避、 EXT1 (5500ep) を **作業ベースライン** に維持
+- 次サイクル: 別 seed で V60 学習を複数走らせ、 ensemble化を試みる
+  (V40 で失敗したが、 features60 で再挑戦)
+- ただし「単一 agent 強化」 方針なので、 まず ensemble なしで policy
+  容量増 + value baseline 修正を優先
+
 ## 🎯 方針転換 (2026-06-18 user 指示)
 
 ### 単一 agent への統一
