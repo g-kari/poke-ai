@@ -1513,6 +1513,19 @@ sandbox verify 完了。
 - submission_rule_based_romanrozen_v6.tar.gz (lab 57.9%、未 submit、author LB 860+)
 - submission_rule_based.tar.gz (Lucario, lab 46.5%、未 submit)
 
+## Iono LB 762.2 で大成功 (2026-06-18 night)
+
+53793417 (Iono) public score 推移:
+- T+0:   600.0 (TrueSkill μ₀ 初期値)
+- T+30m: 615.9 (+15.9、評価開始)
+- T+1h:  **762.2** (+146.3、3-MLP 679.6 を **+82.6 で overtake**)
+
+**lab signal は LB に translate する** ことが実証された。
+これは大きな結論で、以下が含意される:
+- CrustleDashi (lab 67.3%) は更に高得点取れる可能性
+- V6 (lab 57.9%, author 主張 LB 860+) も挑戦候補
+- 1 日 5 件枠、本日 1 件 (Iono) 投げたので残り 4 件可能
+
 ### rule_based(Iono) の特徴
 
 - **Crustle 系を完封**: Crustle Wall 97.5% / Crustle Dashimaki 92.5%
