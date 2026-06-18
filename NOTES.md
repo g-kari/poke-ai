@@ -1790,6 +1790,71 @@ shape mismatch でロード不可となり、3-MLP submission が壊れる
 作業ブランチで feature 拡張 → 再 train → 評価 → main マージ、 が正しい順序。
 1 サイクル内では「features 増 + 学習 + 評価」を atomically 実行できない。
 
+## カードデータ分析 (Task #107 第一歩、 2026-06-18)
+
+`scripts/analyze_cards.py` を新規実装、 `kaggle_data/EN_Card_Data.csv`
+(2022 cards) を読んで category 別集計と効率指標を出す。
+
+### カテゴリ別
+
+- Basic Pokémon: 958 / Stage 1: 618 / Stage 2: 229
+- Item: 82 / Supporter: 61 / Tool: 28 / Stadium: 26
+- Special Energy: 12 / Basic Energy: 8
+
+### 主要発見
+
+**Weakness 分布 (Pokemon HW + Stage1/2 の weakness type 集計):**
+
+| weakness type | count |
+|---|---|
+| {R} Fire | **361** |
+| {F} Fighting | **323** |
+| {L} Lightning | 258 |
+| {G} Grass | 247 |
+| {W} Water | 166 |
+| {D} Dark | 157 |
+| {M} Metal | 156 |
+| {P} Psychic | 66 |
+
+→ **LB 環境では Fire/Fighting attacker が 600+ cards に super-effective**
+を持つ。 Cinderace ex (Fire, 280 dmg/1 energy) や Mega Camerupt ex
+(280 dmg/1 energy) が「最強候補」 になり得る。
+
+**damage/energy 効率トップ:**
+
+  Mega Camerupt ex (Fire)   Volcanic Meteor   280 dmg / 1 energy
+  Cinderace ex     (Fire)   Flare Strike      280 dmg / 1 energy
+  Palafin ex       (Water)  Giga Impact       250 dmg / 1 energy
+  Crabominable     (Fighting) Haymaker        250 dmg / 1 energy
+  Conkeldurr       (Fighting) Gutsy Swing     250 dmg / 1 energy
+
+**HP/(retreat+1) 効率トップ (Basic Pokemon):**
+
+  Mega Latias ex  HP 280 / retreat 1 → 140
+  Mega Diancie ex HP 270 / retreat 1 → 135
+  Mega Audino ex  HP 270 / retreat 1 → 135
+  Mega Hawlucha ex HP 250 / retreat 1 → 125
+
+### 我々の deck.csv の分析
+
+  Basic Energy: 33 (Water 系)
+  Supporter: 8 / Item: 5 / Stadium: 2 / Tool: 2
+  Basic Pokémon: 6 (Kyogre x2、 Snover x4)
+  Stage 1: 4 (Mega Abomasnow ex x4)
+
+  → **我々のデッキは Water 系 Mega Abomasnow ex 軸**
+  → {W} weakness は 166 cards で中の下、 LB の Fire メタ {R} 361 を狙えない
+  → これが LB 上での agent の苦戦の構造的要因かも
+
+### deck-builder agent への入力候補
+
+将来的に Task #107 deck-builder agent を作る際の評価関数案:
+1. **damage efficiency**: 各 Pokemon の最強 attack の dmg/energy
+2. **HP efficiency**: HP/(retreat+1) で受けの強さ
+3. **type coverage**: deck の weakness をカバーする attacker (mirror 対応)
+4. **meta-fit**: deck の主要 attacker が LB の Pokemon weakness 集計を
+   どれだけ突けるか (= e.g. Fire 系なら 361 cards に super-effective)
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
