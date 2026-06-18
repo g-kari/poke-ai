@@ -2102,6 +2102,35 @@ Jumbo Ice Cream (回復 80) + Hero's Cape で **詰み構造** を作る。
 「単一 policy 強化」 路線では Crustle Dashi 問題は features と deck 両方の
 変更なしでは突破できない見込み。 User 方針再確認が必要。
 
+### 🎯 deck 切替 cross-bench (2026-06-18) — 大発見
+
+V60 EXT policy (= 我々 deck で訓練) を **異なる deck で動かして** bench:
+
+| deck | Mega Lucario | Crustle Dashi | Iono | subtotal (60g) |
+|---|---|---|---|---|
+| 我々 (Mega Aboma) | 30.0% | 5.0% | 0.0% | 11.7% |
+| **V6** (Lucario+Hariyama) | **50.0%** | 0.0% | 5.0% | **18.3%** |
+| Mega Lucario (Kiyota) | 30.0% | 0.0% | 10.0% | 13.3% |
+
+含意:
+- **policy は同じでも deck によって試合性能が大きく変わる**
+- V60 + V6 deck で Mega Lucario **+20pp** (30% → 50%)、 subtotal +6.6pp
+- Crustle 0% は deck 切替えでも持続 → policy が Hariyama 戦略を学んでいない
+  (V6 rule-based は hardcoded で持つ logic)
+- User の「deck 進化」 方針が **完全に支持される** 結果
+
+### 進行中: V60 + V6 deck 学習
+
+`train/mlp_train_v60.py:_read_deck()` に `POKE_AI_TRAIN_DECK` env var を
+追加。 deck.csv (= 既存 submission に影響) を編集せずに、 任意の deck で
+policy 学習可能。
+
+実行中: V6 deck (= deck_romanrozen_v6.csv) で fresh 4000ep、 pool5、 lr=5e-4。
+
+期待: V60 + V6 deck で訓練すれば、 policy は Hariyama 系の戦略を学習し、
+Mega Lucario 50% + Crustle 改善 + overall 30%+ になる可能性。
+これが当たれば、 main.py + deck_romanrozen_v6.csv で **新提出候補** に。
+
 ## zoli800 Dragapult tempo-control を vendor (Task #106、 2026-06-18)
 
 `zoli800/top-dragapult-ex-tempo-control-agent` (4 votes) を取り込み:

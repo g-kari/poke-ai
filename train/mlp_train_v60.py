@@ -28,8 +28,21 @@ from .mlp_policy_v60 import DEFAULT_PATH, MlpPolicyV60  # noqa: E402
 
 
 def _read_deck() -> list[int]:
+    """Read the training deck.
+
+    Defaults to repo-root deck.csv. Override via POKE_AI_TRAIN_DECK env
+    var (absolute path or path relative to repo root) — lets us train
+    the same policy on different decks without editing the canonical
+    deck.csv (which the 3-MLP submission still ships).
+    """
     here = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(os.path.dirname(here), "deck.csv")
+    root = os.path.dirname(here)
+    override = os.environ.get("POKE_AI_TRAIN_DECK")
+    if override:
+        path = override if os.path.isabs(override) else os.path.join(root, override)
+    else:
+        path = os.path.join(root, "deck.csv")
+    print(f"training deck: {path}")
     with open(path) as f:
         return [int(line.strip()) for line in f if line.strip()]
 
