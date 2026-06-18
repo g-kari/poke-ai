@@ -153,6 +153,108 @@ def deck_analysis(deck_path: Path) -> None:
             )
 
 
+def export_json(cards: list[dict], path: Path) -> None:
+    """Dump card stats useful for a deck-builder agent (Task #107).
+
+    Schema:
+      {
+        "metadata": {...},
+        "categories": {cat_name: count},
+        "weakness_distribution": {energy_type: count},
+        "top_hp_efficiency": [{name, hp, retreat, eff}],
+        "top_damage_efficiency": [{name, move, dmg, energy, eff}],
+        "pokemon_db": [{card_id, name, hp, type, weakness, retreat, ...}]
+      }
+    """
+    import json
+
+    by_cat = categorize(cards)
+    out: dict = {
+        "metadata": {
+            "total_cards": len(cards),
+            "source": "kaggle_data/EN_Card_Data.csv",
+            "schema_version": 1,
+        },
+        "categories": {k: len(v) for k, v in by_cat.items()},
+        "weakness_distribution": {},
+        "top_hp_efficiency": [],
+        "top_damage_efficiency": [],
+        "pokemon_db": [],
+    }
+    # weakness
+    weak: Counter = Counter()
+    for c in cards:
+        cat = (c.get("Stage (Pokémon)/Type (Energy and Trainer)") or "").strip()
+        if _is_pokemon(cat):
+            w = (c.get("Weakness") or "").strip()
+            if w and w not in ("n/a", ""):
+                weak[w] += 1
+    out["weakness_distribution"] = dict(weak.most_common())
+
+    # HP efficiency
+    hp_rows: list[tuple[float, dict]] = []
+    for c in cards:
+        cat = (c.get("Stage (Pokémon)/Type (Energy and Trainer)") or "").strip()
+        if cat != "Basic Pokémon":
+            continue
+        hp = _parse_int(c.get("HP"))
+        rc = _parse_int(c.get("Retreat"))
+        if hp is None or rc is None:
+            continue
+        hp_rows.append((hp / max(rc + 1, 1), {"name": c["Card Name"], "hp": hp, "retreat": rc}))
+    hp_rows.sort(key=lambda x: -x[0])
+    out["top_hp_efficiency"] = [{**r[1], "eff": round(r[0], 2)} for r in hp_rows[:30]]
+
+    # Damage efficiency
+    dmg_rows: list[tuple[float, dict]] = []
+    for c in cards:
+        dmg = _parse_int(c.get("Damage"))
+        cost_str = c.get("Cost")
+        if dmg is None or dmg <= 0 or not cost_str:
+            continue
+        ec = _energy_count(cost_str)
+        if ec == 0:
+            continue
+        dmg_rows.append(
+            (
+                dmg / ec,
+                {
+                    "name": c["Card Name"],
+                    "move": c.get("Move Name") or "?",
+                    "dmg": dmg,
+                    "energy": ec,
+                },
+            )
+        )
+    dmg_rows.sort(key=lambda x: -x[0])
+    out["top_damage_efficiency"] = [{**r[1], "eff": round(r[0], 2)} for r in dmg_rows[:30]]
+
+    # Pokemon DB (compact: just the info a deck-builder needs)
+    for c in cards:
+        cat = (c.get("Stage (Pokémon)/Type (Energy and Trainer)") or "").strip()
+        if not _is_pokemon(cat):
+            continue
+        cid = c.get("Card ID", "").strip()
+        if not cid.isdigit():
+            continue
+        out["pokemon_db"].append(
+            {
+                "card_id": int(cid),
+                "name": c.get("Card Name"),
+                "stage": cat,
+                "hp": _parse_int(c.get("HP")),
+                "type": (c.get("Type") or "").strip() or None,
+                "weakness": (c.get("Weakness") or "").strip() or None,
+                "retreat": _parse_int(c.get("Retreat")),
+                "ex": "ex" in (c.get("Card Name") or ""),
+                "mega": "Mega" in (c.get("Card Name") or ""),
+            }
+        )
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False, indent=2)
+    print(f"\nwrote {path} ({len(out['pokemon_db'])} pokemon entries)")
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument(
@@ -162,6 +264,12 @@ def main() -> int:
         help="Optional deck.csv to analyze (e.g. deck_iono.csv).",
     )
     p.add_argument("--limit", type=int, default=10, help="Top-N for ranking tables.")
+    p.add_argument(
+        "--json",
+        type=Path,
+        default=None,
+        help="Optional output JSON path (= deck-builder input). e.g. data/cards.json",
+    )
     args = p.parse_args()
 
     cards = load_cards()
@@ -177,6 +285,8 @@ def main() -> int:
 
     if args.deck:
         deck_analysis(args.deck)
+    if args.json:
+        export_json(cards, args.json)
     return 0
 
 

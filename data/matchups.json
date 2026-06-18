@@ -1,0 +1,139 @@
+{
+  "metadata": {
+    "schema_version": 1,
+    "generated_at": "2026-06-18",
+    "games_per_matchup": 80,
+    "wilson_ci_pp": 9,
+    "notes": "Lab bench results: subject_module vs opponent_module, 80 games per matchup (40 per seat). Source: scripts/bench_rule_based_lucario.py + scripts/bench_meta.py. Used as base data for the deck-builder agent (Task #107) and the meta-deck dashboard (docs/index.html)."
+  },
+  "subjects": [
+    {
+      "id": "crustle_dashimaki",
+      "label": "Crustle Dashimaki",
+      "deck_csv": "deck_crustle_dashimaki.csv",
+      "agent_module": "rule_based_crustle_dashimaki",
+      "overall_winrate": 0.673,
+      "critical_weakness": {"opp": "iono", "winrate": 0.112}
+    },
+    {
+      "id": "iono",
+      "label": "Iono",
+      "deck_csv": "deck_iono.csv",
+      "agent_module": "rule_based_iono",
+      "overall_winrate": 0.640,
+      "critical_weakness": {"opp": "mega_lucario", "winrate": 0.212}
+    },
+    {
+      "id": "romanrozen_v6",
+      "label": "RomanrozenV6",
+      "deck_csv": "deck_romanrozen_v6.csv",
+      "agent_module": "rule_based_romanrozen_v6",
+      "overall_winrate": 0.579,
+      "critical_weakness": null,
+      "note": "no critical weakness (min 43.8%)"
+    },
+    {
+      "id": "kojimar",
+      "label": "Kojimar",
+      "deck_csv": "deck_kojimar.csv",
+      "agent_module": "rule_based_kojimar",
+      "overall_winrate": 0.527,
+      "critical_weakness": {"opp": "crustle_dashimaki", "winrate": 0.212}
+    },
+    {
+      "id": "dragapult",
+      "label": "Dragapult",
+      "deck_csv": "deck_dragapult.csv",
+      "agent_module": "rule_based_dragapult",
+      "overall_winrate": 0.481,
+      "critical_weakness": {"opp": "crustle_dashimaki", "winrate": 0.0}
+    },
+    {
+      "id": "mega_lucario",
+      "label": "Mega Lucario",
+      "deck_csv": "deck_mega_lucario.csv",
+      "agent_module": "rule_based_agent",
+      "overall_winrate": 0.465,
+      "critical_weakness": {"opp": "crustle_dashimaki", "winrate": 0.225}
+    },
+    {
+      "id": "mega_abomasnow",
+      "label": "Mega Abomasnow",
+      "deck_csv": "deck_abomasnow.csv",
+      "agent_module": "rule_based_abomasnow",
+      "overall_winrate": 0.40,
+      "critical_weakness": {"opp": "crustle_dashimaki", "winrate": 0.162}
+    },
+    {
+      "id": "crustle_wall_haru",
+      "label": "Crustle Wall (haru)",
+      "deck_csv": "deck_crustle.csv",
+      "agent_module": "rule_based_crustle",
+      "overall_winrate": 0.369,
+      "critical_weakness": {"opp": "iono", "winrate": 0.012}
+    },
+    {
+      "id": "ours_3mlp",
+      "label": "3-MLP (our learned)",
+      "deck_csv": "deck.csv",
+      "agent_module": "main (3-MLP)",
+      "overall_winrate": 0.233,
+      "critical_weakness": {"opp": "iono", "winrate": 0.112},
+      "lb_score": 679.6
+    },
+    {
+      "id": "ours_v60_pool5_ext",
+      "label": "V60 pool5 EXT (5500ep)",
+      "deck_csv": "deck.csv",
+      "agent_module": "MlpPolicyV60 (single)",
+      "overall_winrate": 0.211,
+      "critical_weakness": {"opp": "iono", "winrate": 0.133},
+      "training": {"episodes": 5500, "opponent_pool_size": 5, "features": "v60"},
+      "lb_score": null
+    }
+  ],
+  "matchup_winrates_80g": {
+    "crustle_dashimaki": {
+      "mega_lucario": 0.838, "dragapult": 1.0,   "iono": 0.112,
+      "mega_abomasnow": 0.738, "crustle_wall_haru": 0.85, "crustle_dashimaki": 0.5
+    },
+    "iono": {
+      "mega_lucario": 0.212, "dragapult": 0.462, "iono": 0.575,
+      "mega_abomasnow": 0.688, "crustle_wall_haru": 0.975, "crustle_dashimaki": 0.925
+    },
+    "romanrozen_v6": {
+      "mega_lucario": 0.438, "dragapult": 0.575, "iono": 0.762,
+      "mega_abomasnow": 0.538, "crustle_wall_haru": 0.512, "crustle_dashimaki": 0.65
+    },
+    "kojimar": {
+      "mega_lucario": 0.6,   "dragapult": 0.613, "iono": 0.812,
+      "mega_abomasnow": 0.625, "crustle_wall_haru": 0.30, "crustle_dashimaki": 0.212
+    },
+    "dragapult": {
+      "mega_lucario": 0.512, "dragapult": 0.562, "iono": 0.70,
+      "mega_abomasnow": 0.525, "crustle_wall_haru": 0.588, "crustle_dashimaki": 0.0
+    },
+    "mega_lucario": {
+      "mega_lucario": 0.462, "dragapult": 0.538, "iono": 0.838,
+      "mega_abomasnow": 0.475, "crustle_wall_haru": 0.25, "crustle_dashimaki": 0.225
+    },
+    "mega_abomasnow": {
+      "mega_lucario": 0.312, "dragapult": 0.462, "iono": 0.287,
+      "mega_abomasnow": 0.5,   "crustle_wall_haru": 0.675, "crustle_dashimaki": 0.162
+    },
+    "crustle_wall_haru": {
+      "mega_lucario": 0.825, "dragapult": 0.362, "iono": 0.012,
+      "mega_abomasnow": 0.388, "crustle_wall_haru": 0.525, "crustle_dashimaki": 0.10
+    },
+    "ours_3mlp": {
+      "mega_lucario": 0.25,  "dragapult": 0.20,  "iono": 0.112,
+      "mega_abomasnow": 0.212, "crustle_wall_haru": 0.388, "crustle_dashimaki": 0.238
+    },
+    "ours_v60_pool5_ext": {
+      "mega_lucario": 0.267, "dragapult": 0.267, "iono": 0.133,
+      "mega_abomasnow": 0.30,  "crustle_wall_haru": null, "crustle_dashimaki": 0.133,
+      "romanrozen_v6": 0.167,
+      "note": "30 games per matchup only (not 80) — wider Wilson CI ±13pp"
+    }
+  }
+}

@@ -1855,6 +1855,27 @@ shape mismatch でロード不可となり、3-MLP submission が壊れる
 4. **meta-fit**: deck の主要 attacker が LB の Pokemon weakness 集計を
    どれだけ突けるか (= e.g. Fire 系なら 361 cards に super-effective)
 
+### data/ レイヤー整備 (Task #107 基盤、 2026-06-18)
+
+`scripts/analyze_cards.py --json data/cards.json` で deck-builder の
+入力 JSON を生成:
+
+  data/cards.json (401 KB、 1805 Pokemon entries)
+    - metadata: total_cards, source
+    - categories: 9 カテゴリ別 count
+    - weakness_distribution: {R}=361, {F}=323, {L}=258, ...
+    - top_hp_efficiency: 30 entries (Mega Latias ex 等)
+    - top_damage_efficiency: 30 entries (Mega Camerupt ex 等)
+    - pokemon_db: 1805 entries (card_id, name, hp, type, weakness, retreat, ex, mega)
+
+`data/matchups.json` で対戦相性表を構造化:
+  - 10 subjects (8 rule-based + 3-MLP + V60 EXT)
+  - 各 subject の overall_winrate / critical_weakness
+  - matchup_winrates_80g: 10×6 マトリクス
+
+これで Task #107 deck-builder agent の作業時、 「cards.json + matchups.json」
+を読んで card combination → 評価 → deck 出力、 という設計が可能になる。
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
