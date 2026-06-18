@@ -2419,6 +2419,53 @@ generic_agent 改修:
 - 「primary x4 が bench に出るまで secondary は不要」 ではなく
   「secondary x1 が bench に出るまで primary x4 は出さない」
 
+## v11 — proactive secondary deploy — **微改善のみ** (2026-06-18)
+
+`make_generic_agent` に v11 logic 追加:
+- `_my_secondary_count(obs)`: 自分の active+bench で secondary chain の
+  Pokemon を数える
+- secondary 0 体時は **base priority -20** で proactive boost (= ATTACH/
+  EVOLVE/PLAY で secondary を最優先)
+- secondary 1 体ある後は通常 priority + v8 Crustle boost のみ
+
+### v11 bench @ 30g/opp
+
+  vs Mega Lucario: 23.3% (v9 同水準)
+  vs Dragapult:     3.3% (v9 +3pp)
+  vs Iono:          0.0% (持続)
+  vs Mega Aboma:    6.7% (v9 +7pp)
+  vs Crustle Wall:  6.7% (v9 同水準)
+  vs Crustle Dashi: 0.0% (**持続**)
+  vs V6:           16.7% (v9 -3pp)
+  **overall: 8.1% (v9 7.1% から +1.0pp、 noise 内)**
+
+### **手動 logic 路線は頭打ち** — pivot 判断
+
+v8-v11 で deck-aware agent を 4 サイクルかけて手動構築したが、 **Crustle
+Dashi 0% は持続**、 overall は v4 baseline 17.5% に届かず。
+
+V6 が成功している真の理由は **30+ 行の専用 anti-Crustle logic** で:
+- 初期 select で active を Hariyama 系に
+- 中盤で energy を Hariyama に集中
+- 「Crustle 検出時の active rotation」 という 2 段階決定を扱う
+- これは generic_agent の OPTION_PRIORITY を boost するだけでは表現不可
+
+### User 方針 (A)+(C) の再検討
+
+- **(A) deck-aware agent generator**: 手動 logic 路線は限界が見えた
+- **(C) 深層学習路線**: policy が「opp 検出 + secondary route 学習」 を
+  自動で embed できる。 V60 EXT は features_v60 で opp の deck-id
+  fingerprint も含むので、 学習量を増やせば Crustle 検出 + 適切な action
+  選択を学べるかも
+
+### 次サイクル方針: (C) を再優先
+
+- V60 EXT (= ext1, ext2) は 5500-8500ep で振動 → 振動の真因を再調査
+- もしくは **「我々の deck.csv + V60 + 8500ep」** で再評価
+- もしくは **「V6 deck.csv + V60 + 大量 ep」** で deck-aware policy 学習
+- ただし deck.csv 変更は features_v60 の card-id hash bucket に影響あるので
+  fresh init 必須
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と

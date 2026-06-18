@@ -73,6 +73,28 @@ def _opp_has_crustle(obs: dict) -> bool:
     return False
 
 
+def _my_secondary_count(obs: dict, secondary_card_ids: set[int]) -> int:
+    """Count how many secondary-chain Pokemon we already have on the field
+    (active + bench). Used by v11 proactive-deploy logic."""
+    cur = obs.get("current")
+    if not cur:
+        return 0
+    you = cur.get("yourIndex", 0)
+    players = cur.get("players") or []
+    if you >= len(players):
+        return 0
+    me = players[you]
+    count = 0
+    for area in (me.get("active") or [], me.get("bench") or []):
+        for p in area:
+            if not p:
+                continue
+            cid = p.get("id") if isinstance(p, dict) else getattr(p, "id", None)
+            if cid in secondary_card_ids:
+                count += 1
+    return count
+
+
 def _my_active_card_id(obs: dict) -> int | None:
     """Return the card ID of our currently-active Pokemon, or None."""
     cur = obs.get("current")
@@ -143,31 +165,26 @@ def make_generic_agent(deck: list[int], secondary_card_ids: set[int] | None = No
 
         if max_c == 1 and len(opts) > 1:
             crustle_mode = secondary_card_ids and _opp_has_crustle(obs)
-            # v10: rotation routing.
-            # If Crustle is up and our active is NOT a secondary-chain card,
-            # we want to RETREAT (option type 12) so we can swap a secondary
-            # attacker in on the next select.
-            rotation_needed = False
-            if crustle_mode:
-                my_active = _my_active_card_id(obs)
-                if my_active is not None and my_active not in secondary_card_ids:
-                    rotation_needed = True
+            # v11: proactive secondary deployment.
+            # Whenever we have NO secondary on the field yet, prioritize any
+            # option that places one (PLAY/EVOLVE/ATTACH targeting secondary).
+            # Once one is set up, fall back to normal priority unless Crustle
+            # is detected (then keep boosting secondary).
+            need_proactive_deploy = False
+            if secondary_card_ids:
+                sec_count = _my_secondary_count(obs, secondary_card_ids)
+                if sec_count == 0:
+                    need_proactive_deploy = True
 
             def _rank_key(kv):
                 idx, opt = kv
                 base = OPTION_PRIORITY.get(opt.get("type", -1), 99)
-                otype = opt.get("type", -1)
-                # Under Crustle, boost options that touch a secondary card.
-                if crustle_mode and _option_targets_secondary(opt, sel, obs):
-                    base -= 10
-                # v10: when we need to rotate out of an ex into a non-ex,
-                # boost RETREAT (12) above ATTACK (13) and END (14). Still
-                # let ATTACH / EVOLVE / PLAY run first so we keep building.
-                if rotation_needed and otype == 12:
-                    base = 4  # between ABILITY (3) and ATTACK (4)
-                # Mirror: secondary-card CARD selections (option type 3) on
-                # the "swap-to bench" select are also boosted.
-                if rotation_needed and otype == 3 and _option_targets_secondary(opt, sel, obs):
+                touches_secondary = _option_targets_secondary(opt, sel, obs)
+                # v11: proactive — strong boost when no secondary is up yet.
+                if need_proactive_deploy and touches_secondary:
+                    base -= 20  # higher than crustle_mode boost
+                # v8 (kept): Crustle mode boost for any secondary-touching opt.
+                if crustle_mode and touches_secondary:
                     base -= 10
                 return (base, idx)
 
