@@ -390,6 +390,33 @@ opp 但し seed 固定で fresh 試合) では悪化。
 - 我々の BCRL2 (lab 19.3%, LB 583.1) は **BC+RL の local optimum**、
   これ以上の延長は LB 悪化を招く
 
+### 5.3g v40 vs v60 features の **ensemble lift** 構造的差異 (= 新発見)
+
+各 seed 単独の lab winrate と ensemble の lab winrate を比較:
+
+| features | 単独 seed lab | 3-policy ensemble lab | lift |
+|---|---|---|---|
+| **v40 (40-d)** | seed=0 alone: **13.2%** | **26.7%** | **+13.5pp** |
+| v60 (60-d, deck fingerprint) | EXT3 alone: 20.5% | 17.5% (fair members) | **-3.0pp** |
+
+**v40 は ensemble に強い、 v60 は ensemble で逆に下がる**。
+
+**仮説**: v60 features の **deck fingerprint hash bucket** が opponent
+identity を強く encode するため、 各 seed が同じ「相手別 specialization」
+に収束する。 logit 平均で多様性が消え、 lift が出ない。 一方 v40
+features は opponent 情報が乏しいので、 各 seed が異なる「内部戦略」
+(= 自分のデッキの使い方の流派) を学び、 ensemble で補完しあう。
+
+**含意**:
+- 3-MLP v40 (LB 679) の強さは個別 seed の質ではなく **ensemble の多様性**
+  に依存
+- v60 features を追加するなら、 ensemble を諦めて **単独 policy で
+  長期学習** (= EXT3 路線) するべき
+- 単独 seed v40 を改善できれば、 ensemble lift で更に伸び代がある
+  (= 13.2% × 2 = 26.7% の係数で、 18% → 36% の可能性)
+- **次の挑戦**: v40 seed を entropy bonus で延長して 18-20% に上げる
+  → 3-MLP ensemble で 30%+ → LB 700-800 期待
+
 ### 5.4 Transformer features
 
 card-level representation (= 各カードを embedding、 self-attention で
