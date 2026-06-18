@@ -11,9 +11,11 @@ exclude = [
     "scripts/rule_based_abomasnow.py", # vendored Kiyota Mega Abomasnow
     "scripts/rule_based_crustle.py",   # vendored harukiharada Crustle Wall
     "scripts/rule_based_crustle_dashimaki.py", # vendored dashimaki Day-1 #1 Crustle bot
+    "scripts/rule_based_romanrozen_v6.py", # vendored romanrozen V6 LB 860+ kernel
     "submission_rule_based.tar.gz",    # build artifact, gitignored anyway
     "submission_rule_based_iono.tar.gz",
     "submission_rule_based_crustle_dashimaki.tar.gz",
+    "submission_rule_based_romanrozen_v6.tar.gz",
 ]
 
 [tool.ruff.lint]

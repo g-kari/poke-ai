@@ -1462,6 +1462,57 @@ sandbox verify 完了。deck = [344, 344, 344, ...] (Crustle 系 head)。
 - 動かない/下がる場合: rule_based(Iono) は実 LB プレイヤーには通用しない可能性 → CrustleDashi 案にスイッチ
 - 上がる場合: 64.0% lab signal は LB に translate している
 
+## romanrozen V6 を vendor (2026-06-18 night)
+
+Kaggle public kernel `romanrozen/strong-start-crustle-lucario-agent-v6-lb-860`
+(36 votes、author 自身 LB 860+ を主張)。
+Lucario + Hariyama + Solrock ハイブリッド deck で、CRUSTLE_AWARE=True により
+Crustle 検出時に non-ex Hariyama (Crustle "Mysterious Rock Inn" 抜け)
+attack route を取る anti-Crustle 強化版。
+
+- vendored as `scripts/rule_based_romanrozen_v6.py` (env var
+  RULE_DECK_PATH_ROMANROZEN_V6 で deck 切替)
+- deck saved as `deck_romanrozen_v6.csv` (OLD_DECK = 60 cards)
+- USE_SEARCH=False (heuristic only、安全)
+
+### V6 @ 80g bench
+
+  vs Mega Lucario:    35-45 (43.8%)  ← lowest
+  vs Dragapult ex:    46-34 (57.5%)
+  vs Iono's:          61-19 (76.2%)
+  vs Mega Abomasnow:  43-37 (53.8%)
+  vs Crustle Wall:    41-39 (51.2%)
+  vs Crustle Dashi:   52-28 (65.0%)
+  overall:           278-202 (57.9%)
+
+### 7 subject 最新ランキング @ 80g
+
+| rank | subject | overall | min (= 致命弱点) |
+|---|---|---|---|
+| 1 | CrustleDashi | 67.3% | Iono 11.2% |
+| 2 | Iono | 64.0% | Mega Lucario 21.2% |
+| 3 | **RomanrozenV6** | **57.9%** | **Mega Lucario 43.8%** (致命弱点なし) |
+| 4 | Dragapult | 48.1% | Crustle Dashi 0% |
+| 5 | Lucario | 46.5% | Crustle Wall 25%, Crustle Dashi 22.5% |
+| 6 | Abomasnow | 40.0% | - |
+| 7 | CrustleWall (haru) | 36.9% | Iono 1.2% |
+
+V6 は overall は CrustleDashi/Iono に届かないが、**全 matchup で 43.8% 以上**を
+維持する分散の小さい候補。author 自身 LB 860+ を主張するので、実 LB では
+peak 値より分散の小ささが効く可能性。
+
+### V6 submission build 完了
+
+`main_rule_based_romanrozen_v6.py` + `make_submission_rule_based_romanrozen_v6.sh`
+作成、`submission_rule_based_romanrozen_v6.tar.gz` (~1MB) を build &
+sandbox verify 完了。
+
+### Submit 候補 4 つ ready
+- submission_rule_based_iono.tar.gz (現在 LB 上、評価進行中)
+- submission_rule_based_crustle_dashimaki.tar.gz (lab 67.3%、未 submit)
+- submission_rule_based_romanrozen_v6.tar.gz (lab 57.9%、未 submit、author LB 860+)
+- submission_rule_based.tar.gz (Lucario, lab 46.5%、未 submit)
+
 ### rule_based(Iono) の特徴
 
 - **Crustle 系を完封**: Crustle Wall 97.5% / Crustle Dashimaki 92.5%
