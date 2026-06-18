@@ -1639,6 +1639,54 @@ docstring は「pass obs as is」と書いてあるが、C 側は属性アクセ
 これが完成すれば、PIMC が初めて「対戦相手によって戦略を変える」
 適応的 agent になる (= search で相手の手を読んで反応する)。
 
+### 1-ply PIMC agent 初版 (2026-06-18)
+
+`train/pimc_agent.py` + `scripts/bench_pimc.py` を実装。
+- 各 root option について search_begin + search_step(1-ply)
+- value heuristic: prize 差分 (`opp_taken - my_taken`)
+- opp_hand サンプリング: 相手 deck からランダム
+- time budget 1.5s/decision、option cap 8 (root branching 対策)
+- 例外時は engine order fallback で crash 防止
+
+bench (10g/opp、 我々のオリジナル deck、Iono を opp deck と仮定):
+  vs Mega Lucario:    3-7  (30.0%)
+  vs Dragapult ex:    1-9  (10.0%)
+  vs Iono's:          1-9  (10.0%)
+  vs Mega Abomasnow:  0-10 ( 0.0%)
+  vs Crustle Wall:    0-10 ( 0.0%)
+  vs Crustle Dashi:   0-10 ( 0.0%)
+  overall: 5-55 ( 8.3%) ← 3-MLP 23.3% より悪い
+
+考察:
+1. **我々のオリジナル deck の弱さが直接露出** — PIMC を rule-based の
+   強 deck (Iono / Crustle Dashi) で動かすと性能上がるはず
+2. **1-ply prize_delta は信号不足** — 1 turn で prize 枚数の変化は稀。
+   多くの option で score=0 となり、tie-breaker (= engine order) に
+   なってしまう
+3. **rollout 深さ不足** — 真の PIMC は終局までシミュ。最低でも 3-5 ply
+4. **opp_hand サンプリングが poor** — Iono 仮定だが、Mega Lucario 相手で
+   Iono hand と仮定すると評価がズレる
+
+改善路線:
+- **値関数の強化**: prize 差分だけでなく active HP / bench 数 / 場のエネ
+- **multi-ply rollout**: search_step を複数回、または rule-based playout
+- **deck 切替**: PIMC を Iono deck で動かす実験 (現状の我々の deck が弱い)
+- **rollout policy として MLP/rule-based を使う**
+
+## LB 更新 (2026-06-18)
+
+| ref | file | publicScore | 変化 |
+|---|---|---|---|
+| 53794617 | CrustleDashi | **811.9** | 718.0 → **+93.9** ← **新ベスト** |
+| 53794828 | V6 | **801.9** | 初評価 |
+| 53793417 | Iono | 762.2 | 安定 |
+| 53778627 | 3-MLP | 679.6 | safe |
+
+CrustleDashi が +93.9 で大躍進、Iono を抜いて新ベスト。
+V6 は初評価 801.9 で堅実、author 主張 LB 860+ には届かず。
+最新 2 件 tracking: V6 + CrustleDashi (Iono は外れた可能性、ただしスコアは保持)。
+LB トップ 40 (1035.4) までまだ -223、PIMC + 学習が必要なギャップ。
+
 ## 8 subject 最新ランキング @ 80g
 
 | rank | subject | overall | min (致命弱点) | anti-Crustle |
