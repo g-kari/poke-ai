@@ -2672,6 +2672,39 @@ main_v60 を実装した際、 3-MLP main.py の **path fallback パターンを
 の頑健性」 を軽視した。 今後 submission を増やす時は 3-MLP の
 `_read_deck()` をそのまま使い回す方針。
 
+## 🎉 53812882 COMPLETE! V60 deep-learning agent が動いた (2026-06-19)
+
+```
+ref     | status    | publicScore | 修正点
+53810836 | ERROR    | -          | torch + single-shot path
+53812115 | ERROR    | -          | numpy-only だが single-shot path
+53812882 | COMPLETE | **600.0**  | numpy + multi-root fallback ✅
+```
+
+publicScore **600.0** は TrueSkill 初期値 μ₀、 評価試合 1-2 件のみ完了。
+前回 Iono の 600 → 615 → 762 と同じパターン、 試合数が増えれば真の
+スコアに収束する。
+
+### 達成: 我々自身の deep-learning agent の初の真の LB 到達
+
+User 方針 (C) の最初のマイルストーン:
+- **deck.csv = 我々のオリジナル Mega Abomasnow ex**
+- **policy = V60 EXT3 (= features_v60 + 5500ep warm-start from EXT1)**
+- **lab 20.5% @ 30g/opp** (3-MLP 23.3% にやや劣るが同水準)
+
+期待値: LB 3-MLP 並みの 700 前後に収束。 V6 926 には届かないが、
+deep-learning route が動くこと自体が大きな意味。
+
+### scripts/check_main_exec.py に --strict-cwd 追加
+
+今後の submission ERROR を **submit 前に local で検出** する体制:
+- `--strict-cwd`: cwd を sandbox の親に設定 + sys.path に sandbox 入れない
+- 53812882 で動くようになった main_v60 v3 でも strict-cwd では ERROR
+  (= 過度に厳しい、 Kaggle 実環境とは違うらしい)
+- Kaggle ランタイムは **bundle dir を cwd にしている** (= 3-MLP の relative
+  path が動く事実から推定)
+- ただし「path fallback あり」 が安全な実装
+
 ## GA loop 8g/eval × 20 gens 結果 — **構造的限界の再確認** (2026-06-18 夜)
 
 `data/sweep/ga_40g_v1.json` に persist。 376 秒 (6 分) で完了:
