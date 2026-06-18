@@ -341,6 +341,26 @@ deck fingerprint を活かすなら:
 - attention-based feature fusion (= 5.4 transformer 路線)
 - 単独 policy で長期学習 (= EXT3 路線、 lab 20.5% 天井)
 
+**最終確認 (公平な 5000ep × 3 メンバー)**:
+
+| 構成 | episode 合計 | lab winrate |
+|---|---|---|
+| EXT3 単体 | 10500ep | **20.5%** |
+| 3-poly (unfair: EXT3 + s200 + s300、 各 2000ep) | 14500ep | 18.9% |
+| **3-poly (fair: EXT3 + s200ext + s300ext、 各 5000ep)** | **20500ep** | **17.5%** ← 更に悪化 |
+
+メンバーを公平にしたら ensemble は **逆に悪化**。 原因は s200ext/
+s300ext で warm-start を続けると **lab が regression する** ため
+(s200: 16.1% → s200ext: 13.2%)。 v60 features は extension training
+で過学習 (= 訓練 pool に過剰最適化、 test bench で破綻) を起こす。
+
+V60 features 路線の最終結論:
+- **単独 policy** で seed=0 + 10500ep の特殊解 (lab 20.5%、 LB 578.7) のみが
+  到達点
+- **ensemble** では不可能 (= 個別メンバーが EXT3 級に達しないため平均化負け)
+- **BC warm-start からの REINFORCE** (= BCRL2) は別経路として有効
+  (lab 19.3%、 LB **583.1**、 ratio 30.2 で我々の DL 最高)
+
 ### 5.4 Transformer features
 
 card-level representation (= 各カードを embedding、 self-attention で
