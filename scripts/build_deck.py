@@ -86,73 +86,130 @@ def _pick_lowest_basic(name_to_cards: dict[str, list[dict]], name: str) -> dict 
     return basics[0]
 
 
-def pick_attacker_line(
+def _pick_lowest_stage1(name_to_cards: dict[str, list[dict]], name: str) -> dict | None:
+    """Pick the lowest-ID Stage 1 printing for a Pokemon name."""
+    cards = name_to_cards.get(name) or []
+    s1s = [c for c in cards if c.get("stage") == "Stage 1 Pokémon"]
+    if not s1s:
+        return None
+    s1s.sort(key=lambda c: c.get("card_id", 9999))
+    return s1s[0]
+
+
+def _resolve_chain(name_to_cards: dict[str, list[dict]], attacker: dict) -> list[dict] | None:
+    """Walk evolves_from upward and return [basic, stage1?, attacker].
+
+    Returns None if any link is unresolvable.
+    """
+    stage = attacker.get("stage")
+    if stage == "Basic Pokémon":
+        return [attacker]
+    if stage == "Stage 1 Pokémon":
+        ev = attacker.get("evolves_from")
+        if not ev:
+            return None
+        basic = _pick_lowest_basic(name_to_cards, ev)
+        return [basic, attacker] if basic else None
+    if stage == "Stage 2 Pokémon":
+        ev1 = attacker.get("evolves_from")
+        if not ev1:
+            return None
+        # ev1 is a Stage 1 Pokemon Name; find a Stage 1 printing
+        stage1 = _pick_lowest_stage1(name_to_cards, ev1)
+        if not stage1:
+            return None
+        ev2 = stage1.get("evolves_from")
+        if not ev2:
+            return None
+        basic = _pick_lowest_basic(name_to_cards, ev2)
+        return [basic, stage1, attacker] if basic else None
+    return None
+
+
+def pick_attacker_chain(
     cards: dict,
     target_weakness: str | None = None,
     avoid_self_weakness: bool = True,
-) -> tuple[dict, dict] | None:
-    """Pick a (Basic, Stage1-attacker) evolution chain.
+    allow_stage2: bool = True,
+) -> list[dict] | None:
+    """Pick an attacker chain [basic, (stage1?), attacker].
 
-    NEW v2 semantics: we pick a Stage 1 (or Stage 1 ex/mega) ATTACKER first
-    by damage-efficiency / meta-fit, then resolve `evolves_from` to find a
-    Basic printing whose Name matches. Returns (basic, stage1_attacker) or
-    None if no chain resolves.
+    v3: considers both Stage 1 AND Stage 2 attackers. Scores by HP/(retreat+1)
+    of the top stage + meta-fit + target_type bonus. Returns the resolved
+    chain (length 2 for Stage 1 attacker, length 3 for Stage 2).
     """
     pkmn_list = cards["pokemon_db"]
     name_index = _build_name_index(pkmn_list)
     weak_dist = cards.get("weakness_distribution", {})
 
-    stage1s = [p for p in pkmn_list if p.get("stage") == "Stage 1 Pokémon"]
-    scored: list[tuple[float, dict, dict]] = []
-    for s1 in stage1s:
-        if not s1.get("evolves_from"):
+    candidates: list[dict] = [p for p in pkmn_list if p.get("stage") == "Stage 1 Pokémon"]
+    if allow_stage2:
+        candidates += [p for p in pkmn_list if p.get("stage") == "Stage 2 Pokémon"]
+
+    scored: list[tuple[float, list[dict]]] = []
+    for atk in candidates:
+        chain = _resolve_chain(name_index, atk)
+        if not chain:
             continue
-        basic = _pick_lowest_basic(name_index, s1["evolves_from"])
-        if basic is None:
-            continue
-        # Score: HP_basic / (retreat+1) + meta-fit + damage_eff-of-stage1
-        hp = s1.get("hp") or 0
-        # Use stage1 HP / (retreat+1) since that's the attacker on the field
-        retreat = s1.get("retreat")
+        hp = atk.get("hp") or 0
+        retreat = atk.get("retreat")
         if retreat is None:
             continue
         eff = hp / max(retreat + 1, 1)
-        atk_type = _energy_type(s1.get("type"))
+        atk_type = _energy_type(atk.get("type"))
         target_count = weak_dist.get(f"{{{atk_type}}}", 0)
         bonus = target_count / 20.0
         if target_weakness and atk_type == target_weakness:
             bonus += 30.0
         if avoid_self_weakness:
-            my_weak = _energy_type(s1.get("weakness"))
+            my_weak = _energy_type(atk.get("weakness"))
             for w, count in weak_dist.items():
                 if my_weak and w.strip("{}") == my_weak and count > 50:
                     bonus -= count / 30.0
-        scored.append((eff + bonus, basic, s1))
+        # Slight penalty per evolution step (harder to set up)
+        bonus -= (len(chain) - 1) * 5.0
+        scored.append((eff + bonus, chain))
     if not scored:
         return None
     scored.sort(key=lambda kv: -kv[0])
-    _, best_basic, best_stage1 = scored[0]
-    return best_basic, best_stage1
+    return scored[0][1]
+
+
+# Backwards-compatible alias for v2 callers
+def pick_attacker_line(
+    cards: dict,
+    target_weakness: str | None = None,
+    avoid_self_weakness: bool = True,
+) -> tuple[dict, dict] | None:
+    chain = pick_attacker_chain(
+        cards,
+        target_weakness=target_weakness,
+        avoid_self_weakness=avoid_self_weakness,
+        allow_stage2=False,
+    )
+    return (chain[0], chain[-1]) if chain and len(chain) == 2 else None
 
 
 def build_deck(
     cards: dict,
     target_weakness: str | None = None,
-    n_basic_attacker: int = 4,
-    n_stage1: int = 4,
+    n_each_stage: int = 4,
     n_energy: int = 18,
+    allow_stage2: bool = True,
 ) -> list[int]:
-    """Construct a 60-card deck."""
-    pick = pick_attacker_line(cards, target_weakness=target_weakness)
-    if not pick:
-        raise RuntimeError("no attacker line found")
-    basic, stage1 = pick
+    """Construct a 60-card deck.
+
+    Picks an attacker chain (Basic + Stage1 [+ Stage2]) and includes
+    n_each_stage copies of each stage card, plus energy + trainer staples.
+    """
+    chain = pick_attacker_chain(cards, target_weakness=target_weakness, allow_stage2=allow_stage2)
+    if not chain:
+        raise RuntimeError("no attacker chain found")
     deck: list[int] = []
-    deck += [basic["card_id"]] * n_basic_attacker
-    if stage1:
-        deck += [stage1["card_id"]] * n_stage1
-    # Energy: Basic of attacker's type.
-    atk_type = _energy_type(basic.get("type")) or "C"
+    for card in chain:
+        deck += [card["card_id"]] * n_each_stage
+    # Energy: Basic of attacker (top of chain) type.
+    atk_type = _energy_type(chain[-1].get("type")) or "C"
     energy_id = ENERGY_BASIC.get(atk_type, ENERGY_BASIC["F"])
     deck += [energy_id] * n_energy
     # Trainer staples until we fill 60.
@@ -166,7 +223,6 @@ def build_deck(
             continue
         deck += [cid] * take
         used_counts[cid] += take
-    # If still short, top up with more energy.
     while len(deck) < 60:
         deck.append(energy_id)
     return deck[:60]

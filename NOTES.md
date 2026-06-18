@@ -1943,6 +1943,32 @@ Mega Camerupt 路線にも切替可能。
   Attacker 系は Hyper Aroma)
 - 実 bench で勝率測定 → 進化フィードバックで improve
 
+## deck-builder v3 (Stage 2 chain) 完成 (2026-06-18)
+
+`scripts/build_deck.py:pick_attacker_chain()` を実装:
+- candidates に Stage 1 と Stage 2 の両方を含める
+- `_resolve_chain()` で 1-2 段の evolves_from を name で遡る
+- chain 長に応じてセットアップペナルティ (-5 per evolution step) を score に
+  加算 (= Stage 2 が無条件で選ばれないように)
+
+### v3 構築例 (Fire target)
+
+  4x Charmander (Basic, HP 80, type {R})
+     ↓ evolves_from name="Charmander"
+  4x Charmeleon (Stage 1, HP 110, type {R})
+     ↓ evolves_from name="Charmeleon"
+  4x Mega Charizard Y ex (Stage 2, HP 360, type {R}) ← 強力 attacker
+
+これで builder は Mega Camerupt ex (Stage 1)、 Salazzle ex (Stage 1)、
+Mega Charizard Y ex (Stage 2) など全 stage の attacker を候補にできる。
+
+### 次の v4 改善
+
+- Trainer staples を deck-type-aware に切替 (Wall系は Hero's Cape、
+  Attacker系は Hyper Aroma、 setup-heavy は Buddy-Buddy Poffin 重視)
+- 実 bench で fitness 測定 (rule-based 相手に 20g 程度)
+- GA loop で deck pool を進化させる
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
