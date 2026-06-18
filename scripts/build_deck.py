@@ -263,16 +263,17 @@ def build_hybrid_deck(
     n_primary_each: int = 3,
     n_secondary_each: int = 2,
     n_energy: int = 16,
+    primary_allow_stage2: bool = True,
 ) -> list[int]:
     """v7: build a 60-card hybrid deck with two attacker lines.
 
     Defaults: 3x primary chain (each card) + 2x secondary chain + 16 energy
-    + trainer staples. Deck shape:
-      primary basic × 3 + primary stage1 (× 3) [+ primary stage2 × 3] +
-      secondary basic × 2 + secondary stage1 × 2 +
-      basic_energy × 16 + trainer staples to fill 60.
+    + trainer staples. v9 callers should use n_secondary_each=4 (and force
+    primary Stage 1) so the anti-Crustle line is drawable.
     """
-    pair = pick_attacker_chains(cards, target_weakness=target_weakness)
+    pair = pick_attacker_chains(
+        cards, target_weakness=target_weakness, allow_stage2=primary_allow_stage2
+    )
     if not pair:
         raise RuntimeError("no hybrid chain pair found")
     primary, secondary = pair

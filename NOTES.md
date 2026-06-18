@@ -2307,6 +2307,73 @@ v8 logic 自体は OK だが effect なし、 理由は:
 
 v9 実装 + bench は次サイクル目標。
 
+## v9 — secondary 比率を 4 に増やしても Crustle 0% 持続 (2026-06-18)
+
+`build_hybrid_deck(..., n_secondary_each=4, primary_allow_stage2=False)` で
+構築:
+- Primary: Salandit x3 → Salazzle ex x3 (Stage 1 Fire ex)
+- **Secondary: Croagunk x4 → Toxicroak x4 (Stage 1 Fighting non-ex)**
+- 25 Fire Energy + trainer staples
+
+secondary 8 枚 (= deck の 13%) で V6 と同等の比率を確保。
+
+### v9 + Crustle-aware vs no-route @ 30g/opp
+
+  matchup        | no-route | Crustle-aware | delta
+  Mega Lucario   |  13.3%  |   23.3%      | +10pp
+  Dragapult      |   0.0%  |    0.0%      |   0
+  Iono           |   0.0%  |    0.0%      |   0
+  Mega Aboma     |   3.3%  |    0.0%      |  -3pp
+  Crustle Wall   |   6.7%  |    6.7%      |   0
+  Crustle Dashi  |   0.0%  |    0.0%      |   0 (持続)
+  V6             |  23.3%  |   20.0%      |  -3pp
+  overall        |   6.7%  |    7.1%      | +0.4pp
+
+### **真の構造問題の発見**: V6 成功の本質
+
+secondary 比率を上げても Crustle 0% は **解決せず**。 仮説検証で判明:
+
+V6 が Crustle に強い真の理由は **deck 比率だけではない**:
+- 13% Hariyama は **必要条件** だが **十分条件ではない**
+- V6 agent の内部 logic に **「Crustle 検出時の active rotation +
+  Hariyama 専用 attack 順序選択」** がある
+- 具体的には V6 main.py の `CRUSTLE_AWARE=True` の中身は:
+  - obs から Crustle 検出時、 active を Mega Lucario ex から Hariyama に rotate
+  - Hariyama に Fighting エネルギーを attach
+  - Hariyama の attack で Crustle のロックインを抜ける
+  - これは **30+ 行の専用ロジック** で、 単純な OPTION_PRIORITY 切替では不可能
+
+我々の generic_agent は **ATTACH→EVOLVE→PLAY 優先順** のみで:
+- Crustle 検出は obs 確認できる
+- 「Toxicroak を hand から play する」 は detect 可能 (cardId=679)
+- ただし **「Salazzle ex から Toxicroak へ active rotation」** が我々の
+  agent では特定できない (RETREAT option はあるが、 どの bench に switch
+  するかの 2 段階選択を扱えない)
+
+### Task #107 deck-builder agent の構造的限界 (本サイクル末確定)
+
+deck-builder agent (Task #107) で生成した deck を **generic_agent で動かす**
+アプローチは、 anti-Crustle の本質を表現できない。 解決には:
+
+1. **agent も deck-builder と同時に生成 / 構築**
+   (= 「deck-aware agent generator」)
+2. **既存の V6 / Iono / CrustleDashi の専用 agent ロジックを vendor して
+   使う** (現在の rule-based submission の路線)
+3. **深層学習で agent を訓練** (= 我々の V60 路線、 ただし features 改造
+   や value head の問題で 21% の壁)
+
+つまり Task #107 単独では **anti-meta deck の発見はできても、 実戦運用には
+agent の改修が並行必要**。 これは大きな pivot point。
+
+### 次サイクル方針 (大幅見直し)
+
+- **deck-builder agent (Task #107)**: 「deck 発見」 と「実用」 を切り分けて、
+  deck pool に追加する形に留める
+- **V6 superhybrid agent vendor / 解析**: V6 の Crustle 検出 logic を読み解いて、
+  generic_agent に組込めるか検討
+- **路線の見直し**: rule-based submission 路線 (V6 LB 926.5) を強化する方が
+  efficient な可能性
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
