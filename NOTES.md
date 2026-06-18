@@ -2267,6 +2267,46 @@ primary chain を盲目的に setup する」**
 これは builder + agent 両方の **真の anti-Crustle solution** への正しい道ですわ。
 中規模実装、 次サイクル目標。
 
+## v8 agent-routing 実装 + 真の構造問題発見 (2026-06-18)
+
+### v8 実装内容
+
+`build_and_eval_deck.py:make_generic_agent` に:
+- `secondary_card_ids: set[int]` 引数追加
+- `_opp_has_crustle(obs)`: obs.current.players[1-yourIndex] の active/bench/
+  discard 全てを舐めて Crustle id=344/345 を検出
+- Crustle 検出時は `_option_targets_secondary` が True を返す option に
+  priority -10 を加算 (= 通常 priority より上位)
+- `_option_targets_secondary` は contextCard.id と option.cardId を確認
+
+### v8 vs v7 bench (deck_hybrid_v7、 secondary={679, 680})
+
+  vs Crustle Wall:    v7=6.7%, v8=6.7%  (= 同一)
+  vs Crustle Dashi:   v7=3.3%, v8=3.3%  (= 同一)
+
+### 真の構造問題: secondary x2 は引けない
+
+v8 logic 自体は OK だが effect なし、 理由は:
+- hybrid deck で secondary chain は **Croagunk x2 + Toxicroak x2 = 4 枚** のみ
+- 60 cards 中 4 枚 = 開幕 7 枚 hand に来る確率は 4/60 × 7 ≈ 47%、
+  Stage 1 までいくには更に 2-3 turn 必要
+- Crustle 戦は 5-10 turn で勝負が決まる、 そこに **Stage 1 + 進化 + ATTACK**
+  の 3 turn セットアップが間に合わない
+- 一方 V6 は Hariyama (Stage 1) x4 + Makuhita (Basic) x4 を含み、 anti-Crustle
+  attacker は **デッキの 13%** を占める
+
+### v9 設計案 (本サイクル末)
+
+1. **build_hybrid_deck の比率変更**:
+   - 現状: primary x3 chain + secondary x2 chain = 9-11 + 4 = 13-15 枚
+   - v9: primary x2 chain + secondary x3 chain = 6-8 + 6 = 12-14 枚
+   - secondary を **4 枚以上** にすれば Crustle 戦の手札確率が改善
+2. **もしくは secondary = single Basic non-ex 4 枚** (V6 と同じ構造)
+   - Hariyama x4 単独で deck を組む (Basic only、 進化不要なので速い)
+3. **v8 routing logic は維持** (deck 比率を上げれば effect 出るはず)
+
+v9 実装 + bench は次サイクル目標。
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と

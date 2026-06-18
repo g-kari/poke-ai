@@ -49,7 +49,36 @@ from kaggle_environments import make  # noqa: E402
 # ---------------------------------------------------------------------------
 
 
-def make_generic_agent(deck: list[int]):
+# Crustle line card IDs (from NOTES.md and bench data).
+_CRUSTLE_IDS = {344, 345}  # Crustib (Basic), Crustle (Stage 1 — "Mysterious Rock Inn")
+
+
+def _opp_has_crustle(obs: dict) -> bool:
+    """Return True if opponent shows a Crustle-line Pokemon anywhere on board."""
+    cur = obs.get("current")
+    if not cur:
+        return False
+    you = cur.get("yourIndex", 0)
+    players = cur.get("players") or []
+    if len(players) <= 1 - you:
+        return False
+    opp = players[1 - you]
+    for area_name in ("active", "bench", "discard"):
+        for p in opp.get(area_name) or []:
+            if not p:
+                continue
+            cid = p.get("id") if isinstance(p, dict) else getattr(p, "id", None)
+            if cid in _CRUSTLE_IDS:
+                return True
+    return False
+
+
+def make_generic_agent(deck: list[int], secondary_card_ids: set[int] | None = None):
+    """Generic heuristic agent. With `secondary_card_ids`, switches to anti-
+    Crustle routing when an opponent Crustle is detected: ATTACH / EVOLVE /
+    ATTACK options targeting a secondary-chain card jump to the top priority."""
+    secondary_card_ids = secondary_card_ids or set()
+
     OPTION_PRIORITY = {
         # PTCG cabt OptionType values (verified vs NOTES.md):
         8: 0,  # ATTACH
@@ -60,6 +89,23 @@ def make_generic_agent(deck: list[int]):
         12: 5,  # RETREAT
         14: 6,  # END turn
     }
+
+    def _option_targets_secondary(opt: dict, sel: dict, _obs: dict) -> bool:
+        """Heuristic: True if the option appears to deploy a secondary card.
+
+        We check the option payload for an inPlay* hint or a contextCard ID,
+        and also fall back to the select.deck contents (= card IDs in the
+        hand for PLAY/EVOLVE options)."""
+        if not secondary_card_ids:
+            return False
+        # contextCard: cabt sometimes attaches the card being acted on.
+        ctx = opt.get("contextCard") or sel.get("contextCard")
+        if isinstance(ctx, dict) and ctx.get("id") in secondary_card_ids:
+            return True
+        # cardId field (some option types carry it directly). toolIndex/
+        # energyIndex/etc. reference indices into select.deck; we don't
+        # follow those here, contextCard cover is enough.
+        return opt.get("cardId") in secondary_card_ids
 
     def agent(obs):
         sel = obs.get("select")
@@ -74,10 +120,17 @@ def make_generic_agent(deck: list[int]):
             return []
 
         if max_c == 1 and len(opts) > 1:
-            ranked = sorted(
-                enumerate(opts),
-                key=lambda kv: (OPTION_PRIORITY.get(kv[1].get("type", -1), 99), kv[0]),
-            )
+            crustle_mode = secondary_card_ids and _opp_has_crustle(obs)
+
+            def _rank_key(kv):
+                idx, opt = kv
+                base = OPTION_PRIORITY.get(opt.get("type", -1), 99)
+                # Under Crustle, boost options that touch a secondary card.
+                if crustle_mode and _option_targets_secondary(opt, sel, obs):
+                    base -= 10  # lift above everything else
+                return (base, idx)
+
+            ranked = sorted(enumerate(opts), key=_rank_key)
             return [ranked[0][0]]
 
         k = max(min_c, 1)
