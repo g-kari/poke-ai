@@ -1969,6 +1969,51 @@ Mega Charizard Y ex (Stage 2) など全 stage の attacker を候補にできる
 - 実 bench で fitness 測定 (rule-based 相手に 20g 程度)
 - GA loop で deck pool を進化させる
 
+## deck-builder v4: 実 bench fitness 評価 (2026-06-18)
+
+`scripts/build_and_eval_deck.py` を実装:
+1. 複数 spec (target_type × allow_stage2) で deck を構築
+2. **type-neutral heuristic agent** (ATTACH→EVOLVE→PLAY→ABILITY→ATTACK 優先)
+   で各 deck を駆動
+3. 5 種 rule-based opp 相手に 10g/side で playout
+4. overall winrate で ranking
+
+build_deck.py に `--no-stage2` flag も追加。
+
+### 6 spec × 5 opp × 10g (= 300 games) 結果
+
+| rank | spec | overall | Mega Luc | Dragapult |
+|---|---|---|---|---|
+| **1** | **Fighting / Stage1** | **18.0%** | **40%** | **30%** |
+| 2 | Fighting / Stage2 OK | 4.0% | 20% | 0% |
+| 3 | Lightning / Stage1 | 2.0% | 0% | 0% |
+| 3 | Fire / Stage1 | 2.0% | 10% | 0% |
+| 3 | Default / Stage2 OK | 2.0% | 0% | 0% |
+| 6 | Fire / Stage2 OK | 0.0% | 0% | 0% |
+
+### 重要な発見
+
+1. **Stage2 は 5g/opp の短期戦で setup 間に合わず壊滅** (Fire/Stage2 = 0%)
+2. **Fighting/Stage1 が anti-meta**: Mega Lucario 40%、 Dragapult 30%
+3. **type_target='F' は機能していない**: スコアで type bonus が
+   eff (HP/retreat) より小さく、 結果として **Water 系の
+   Snorunt → Mega Froslass ex (HP 310 Stage1 ex)** が選ばれた
+4. **偶然の HP 高 ex Stage1 が anti-meta** という発見:
+   - Snorunt id=103 → Mega Froslass ex id=861 (HP 310)
+   - Water type は LB の F weakness 323 cards は突けない
+   - だが HP 310 のタフネスで Mega Lucario/Dragapult に張り合える
+5. これは **deck-builder agent の自己評価ループの最初の発見** —
+   人間が思いつかない deck を heuristic が prototype として提案
+
+### 次サイクル方針
+
+- **Mega Froslass ex deck を 80g で本格評価** (lab で 18% は他 subjects と
+  比較できる)
+- **build_deck.py の score 関数を見直し**: target_type bonus を 30 → 100 に、
+  もしくは type bonus を winrate-相関の高い weight に再設計
+- **GA loop**: top spec の deck を seed に carbon copy + 1 card 変更で
+  fitness が上がるか測る
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と

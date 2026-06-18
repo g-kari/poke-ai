@@ -279,12 +279,17 @@ def main() -> int:
         help="Optional energy type to push (e.g. 'R' for Fire to counter the "
         "361 Fire-weak Pokemon in the meta).",
     )
+    p.add_argument(
+        "--no-stage2",
+        action="store_true",
+        help="Disable Stage 2 attackers (force Stage 1 only — faster setup).",
+    )
     args = p.parse_args()
 
     cards = load_cards(args.cards)
     print(f"Loaded {cards['metadata']['total_cards']} cards from {args.cards}")
 
-    deck = build_deck(cards, target_weakness=args.target_type)
+    deck = build_deck(cards, target_weakness=args.target_type, allow_stage2=not args.no_stage2)
     assert len(deck) == 60, f"deck size != 60: {len(deck)}"
     with open(args.out, "w") as f:
         for cid in deck:
