@@ -1419,10 +1419,48 @@ deck_crustle (haru), deck_crustle_dashimaki。
 残 subject 未計測: **Crustle Wall (haru)**。次サイクルで bench 予定。
 完了したら 6 subject 全網羅。
 
+### 6 subject 全網羅完了 (2026-06-18 後半)
+
+最終ランキング @ 80g (全 6 subject):
+
+| rank | subject | overall | 致命的弱点 |
+|---|---|---|---|
+| 1 | **CrustleDashi** | **67.3%** | Iono 11.2% |
+| 2 | Iono | 64.0% | Mega Lucario 21.2% |
+| 3 | Dragapult | 48.1% | Crustle Dashi 0.0% |
+| 4 | Lucario | 46.5% | Crustle Wall 25.0%, Crustle Dashi 22.5% |
+| 5 | Abomasnow | 40.0% | Iono 28.7%, Crustle Dashi 16.2% |
+| 6 | CrustleWall (haru) | 36.9% | Iono 1.2%, Crustle Dashi 10.0% |
+
+- 上位 2 つ (CrustleDashi, Iono) は相互天敵関係
+- LB の deck 分布が分からない以上、どちらが優れるかは経験的判断
+- 全 6 subject の submission ready (`make_submission_rule_based*.sh`)
+
+### CrustleDashi submission build 完了
+
+`main_rule_based_crustle_dashimaki.py` + `make_submission_rule_based_crustle_dashimaki.sh`
+作成、`submission_rule_based_crustle_dashimaki.tar.gz` (1.06MB) を build &
+sandbox verify 完了。deck = [344, 344, 344, ...] (Crustle 系 head)。
+
 ### Submission 履歴 (2026-06-18)
-- 53793417: rule_based(Iono) PENDING (user 指示で submit)
-- 53778627: 3-MLP, public 679.6 (更新: 666.3 → 679.6)
-- 過去スコアは NOTES の earlier section 参照
+
+| ref | file | status | publicScore |
+|---|---|---|---|
+| 53793417 | submission_rule_based_iono.tar.gz | COMPLETE | **600.0** (初期値、評価少) |
+| 53778627 | submission.tar.gz (3-MLP) | COMPLETE | 679.6 |
+| 53776818 | submission.tar.gz (2-MLP fix) | COMPLETE | 613.3 |
+| 53776705 | submission.tar.gz (2-MLP) | ERROR | - |
+
+**Iono submission の public score 600.0 は TrueSkill 初期値 μ₀=600 から
+動いていない**。試合数が少なく評価が始まったばかりの可能性。3-MLP も
+最初は 666.3 だったのが 679.6 に動いたので、Iono もこれから動くはず。
+60 分後/2 サイクル後にステータス再チェック予定。
+
+### 観察待ち事項
+
+- Iono の LB スコアが μ₀ 周辺から動くか
+- 動かない/下がる場合: rule_based(Iono) は実 LB プレイヤーには通用しない可能性 → CrustleDashi 案にスイッチ
+- 上がる場合: 64.0% lab signal は LB に translate している
 
 ### rule_based(Iono) の特徴
 

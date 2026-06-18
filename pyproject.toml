@@ -13,6 +13,7 @@ exclude = [
     "scripts/rule_based_crustle_dashimaki.py", # vendored dashimaki Day-1 #1 Crustle bot
     "submission_rule_based.tar.gz",    # build artifact, gitignored anyway
     "submission_rule_based_iono.tar.gz",
+    "submission_rule_based_crustle_dashimaki.tar.gz",
 ]
 
 [tool.ruff.lint]
