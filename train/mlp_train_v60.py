@@ -110,16 +110,30 @@ def run_episode(
     return trace0, [], env.steps[-1][1].reward, None
 
 
-def reinforce_update(policy, optimizer, trace, reward, linear_value: bool = False):
-    """REINFORCE with value baseline. linear_value=True drops the tanh clip
-    on V(s) — lets the value function express negative-magnitude expected
-    rewards in hard matchups (= where prior tanh saturated at -1 and broke
-    the advantage gradient)."""
+def reinforce_update(
+    policy,
+    optimizer,
+    trace,
+    reward,
+    linear_value: bool = False,
+    entropy_coef: float = 0.0,
+):
+    """REINFORCE with value baseline + optional entropy bonus.
+
+    linear_value=True drops the tanh clip on V(s) — lets the value
+    function express negative-magnitude expected rewards in hard matchups.
+
+    entropy_coef > 0 adds -entropy_coef * H(pi) to the loss (= reward
+    for high-entropy policy). This is the poor-man's PPO regularizer:
+    prevents the policy from collapsing to argmax during long warm-start
+    training, mitigating the regression pattern observed in EXT4,
+    s200ext, and BCRL3."""
     if not trace:
         return None
     device = policy.device
     policy_loss = torch.zeros(1, device=device)
     value_loss = torch.zeros(1, device=device)
+    entropy_sum = torch.zeros(1, device=device)
     reward_t = torch.tensor(reward, device=device, dtype=torch.float32)
     n_decisions = len(trace)
     for s in trace:
@@ -136,7 +150,11 @@ def reinforce_update(policy, optimizer, trace, reward, linear_value: bool = Fals
         advantage = (reward_t - v_pred).detach()
         policy_loss = policy_loss - advantage * log_probs[s.picked]
         value_loss = value_loss + (v_pred - reward_t).pow(2)
+        if entropy_coef > 0.0:
+            entropy_sum = entropy_sum - (log_probs.exp() * log_probs).sum()
     loss = policy_loss / n_decisions + value_loss / n_decisions
+    if entropy_coef > 0.0:
+        loss = loss - entropy_coef * entropy_sum / n_decisions
     optimizer.zero_grad()
     loss.backward()
     torch.nn.utils.clip_grad_norm_(policy.parameters(), 1.0)
@@ -165,6 +183,7 @@ def train(
     linear_value: bool = False,
     hidden_pi: tuple[int, ...] | None = None,
     hidden_v: tuple[int, ...] | None = None,
+    entropy_coef: float = 0.0,
 ) -> None:
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
@@ -195,7 +214,7 @@ def train(
     for ep in range(1, episodes + 1):
         trace0, _, r0, _ = run_episode(policy, rng, pool or None)
         if r0 is not None:
-            reinforce_update(policy, optimizer, trace0, float(r0), linear_value)
+            reinforce_update(policy, optimizer, trace0, float(r0), linear_value, entropy_coef)
         if r0 == 1:
             wins += 1
         elif r0 == -1:
@@ -257,6 +276,13 @@ def main():
         default=None,
         help="Comma-separated value MLP widths, e.g. '64,32'. Default: 32.",
     )
+    p.add_argument(
+        "--entropy-coef",
+        type=float,
+        default=0.0,
+        help="Entropy bonus coefficient (poor-man's PPO). 0.01-0.02 helps "
+        "prevent the warm-start regression seen in EXT4/s200ext/BCRL3.",
+    )
     args = p.parse_args()
 
     def _parse(spec):
@@ -274,6 +300,7 @@ def main():
         args.linear_value,
         _parse(args.hidden_pi),
         _parse(args.hidden_v),
+        args.entropy_coef,
     )
 
 
