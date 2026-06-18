@@ -40,6 +40,7 @@ import rule_based_dragapult  # noqa: E402
 import rule_based_iono  # noqa: E402
 import rule_based_kojimar  # noqa: E402  # kojimar validated Lucario+Hariyama
 import rule_based_romanrozen_v6  # noqa: E402  # romanrozen V6 LB 860+ hybrid
+import rule_based_zoli_dragapult  # noqa: E402  # zoli800 Dragapult tempo-control
 from kaggle_environments import make  # noqa: E402
 
 
@@ -88,6 +89,7 @@ SUBJECTS = {
     ),
     "romanrozen": ("rule_based(RomanrozenV6)", rule_based_romanrozen_v6.agent),
     "kojimar": ("rule_based(Kojimar)", rule_based_kojimar.agent),
+    "zoli_dragapult": ("rule_based(ZoliDragapult)", rule_based_zoli_dragapult.agent),
 }
 
 

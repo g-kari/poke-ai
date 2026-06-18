@@ -1970,6 +1970,33 @@ fresh init で seed=7、 3000ep、 lr=5e-4 で 学習中 (background)。
 
 bench は次サイクル (subjects に追加して 80g/opp 計測)。
 
+### zoli800 @ 80g 計測結果
+
+  vs Mega Lucario:    16-63 (20.0%)
+  vs Dragapult ex:    14-66 (17.5%) ← mirror も弱い
+  vs Iono:            23-57 (28.7%)
+  vs Mega Aboma:      15-65 (18.8%)
+  vs Crustle Wall:    14-66 (17.5%)
+  vs Crustle Dashi:    0-80 ( 0.0%) ← 致命的
+  overall:           82-397 (17.1%) ← **最下位**
+
+Kiyota Dragapult (overall 48.1%) と比較して **-31pp** で大幅に弱い。
+「tempo control」 はラベルのみで実装が弱い様子。 提出候補から外す。
+
+### 9 subject 最新ランキング @ 80g
+
+| rank | subject | overall |
+|---|---|---|
+| 1 | CrustleDashi | 67.3% |
+| 2 | Iono | 64.0% |
+| 3 | RomanrozenV6 | 57.9% |
+| 4 | Kojimar | 52.7% |
+| 5 | Dragapult (Kiyota) | 48.1% |
+| 6 | Lucario (Kiyota) | 46.5% |
+| 7 | Abomasnow | 40.0% |
+| 8 | CrustleWall (haru) | 36.9% |
+| **9** | **ZoliDragapult** | **17.1%** ← 新参 |
+
 ### V60 EXT2 (8500ep, lr=1e-4) 結果 — 振動を観測
 
   vs Mega Lucario:    4-26 (13.3%) ← EXT1 26.7% から **-13.4pp**
