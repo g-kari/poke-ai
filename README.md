@@ -119,12 +119,21 @@ CLAUDE.md             Claude Code 向け開発メモ
 | Iono | 762.2 | rule-based |
 | 3-MLP ensemble (seeds 20260628 + 42 + 100) | **679.6** | 🥇 DL ベスト |
 | 2-MLP ensemble (fix-only) | 613.3 | DL |
-| V60 EXT3 (single 10500ep) | 594.7 | DL (+20.8 rise) |
+| V60 EXT3 (single 10500ep) | 578.7 | DL |
+| **BCRL2 (BC v2 + REINFORCE 7000ep)** | **462.2** | DL (BC+RL 試行) |
 
-**LB 観察 (2026-06-19)**: V6 が CrustleDashimaki に逆転され、 ランキング
-中位帯では DL agents (V60 EXT3 ~594) と rule-based ボトム (Iono ~762)
-の間に依然 ~170 ポイントのギャップ。 BC 系列 (lab 5-14%) の試行は
-LB ~250-450 推定で、 提出する価値なしと判断。
+**LB → lab ratio の再校正 (= BCRL2 結果から)**:
+
+| 提出 | lab winrate | LB | ratio |
+|---|---|---|---|
+| 3-MLP | 26.7% | 679 | 25.4 |
+| V60 EXT3 | 20.5% | 578.7 | 28.2 |
+| BCRL2 | 19.3% | 462.2 | **23.9** |
+
+BCRL2 は ratio 23.9 と他より低く、 **BC prior が特定相手 (Mega Aboma
+37.5%、 V6 27.5%) に過剰最適化** され、 LB 多様母集団では破綻した
+可能性。 ratio 平均 ~26 で再校正すると、 LB 700 を達成するには
+lab 27%+ が必要。
 
 ## 環境
 
