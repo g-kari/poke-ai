@@ -150,10 +150,17 @@ def train(
     opponent_pool: str,
     warm_start: str | None = None,
     linear_value: bool = False,
+    hidden_pi: tuple[int, ...] | None = None,
+    hidden_v: tuple[int, ...] | None = None,
 ) -> None:
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
-    policy = MlpPolicyV60()
+    kwargs = {}
+    if hidden_pi is not None:
+        kwargs["hidden_pi"] = hidden_pi
+    if hidden_v is not None:
+        kwargs["hidden_v"] = hidden_v
+    policy = MlpPolicyV60(**kwargs)
     if warm_start and os.path.exists(warm_start):
         try:
             policy = MlpPolicyV60.load(warm_start, device=policy.device)
@@ -227,7 +234,21 @@ def main():
         action="store_true",
         help="Drop tanh on V(s) so it can express negative-magnitude expected rewards.",
     )
+    p.add_argument(
+        "--hidden-pi",
+        default=None,
+        help="Comma-separated policy MLP widths, e.g. '128,64'. Default: 64,32.",
+    )
+    p.add_argument(
+        "--hidden-v",
+        default=None,
+        help="Comma-separated value MLP widths, e.g. '64,32'. Default: 32.",
+    )
     args = p.parse_args()
+
+    def _parse(spec):
+        return tuple(int(x) for x in spec.split(",")) if spec else None
+
     train(
         args.episodes,
         args.lr,
@@ -238,6 +259,8 @@ def main():
         args.opponent_pool,
         args.warm_start,
         args.linear_value,
+        _parse(args.hidden_pi),
+        _parse(args.hidden_v),
     )
 
 

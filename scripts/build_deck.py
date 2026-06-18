@@ -67,60 +67,71 @@ def _energy_type(weak: str | None) -> str | None:
     return weak.strip("{}").upper()[:1] if weak else None
 
 
+def _build_name_index(pkmn_db_list: list[dict]) -> dict[str, list[dict]]:
+    """Group cards by Pokemon Name so evolves_from can resolve to a list of
+    candidate pre-evolution cards (multiple printings of e.g. 'Riolu')."""
+    idx: dict[str, list[dict]] = {}
+    for p in pkmn_db_list:
+        idx.setdefault(p["name"], []).append(p)
+    return idx
+
+
+def _pick_lowest_basic(name_to_cards: dict[str, list[dict]], name: str) -> dict | None:
+    """Pick the lowest-ID Basic-stage printing for a Pokemon name."""
+    cards = name_to_cards.get(name) or []
+    basics = [c for c in cards if c.get("stage") == "Basic Pokémon"]
+    if not basics:
+        return None
+    basics.sort(key=lambda c: c.get("card_id", 9999))
+    return basics[0]
+
+
 def pick_attacker_line(
     cards: dict,
     target_weakness: str | None = None,
     avoid_self_weakness: bool = True,
-) -> tuple[dict, dict | None] | None:
-    """Pick a (Basic, Stage1) line of attackers.
+) -> tuple[dict, dict] | None:
+    """Pick a (Basic, Stage1-attacker) evolution chain.
 
-    Prefers:
-      - high HP / (retreat+1) on Basic
-      - high damage / energy on Stage1
-      - if target_weakness given: prefer attacker type that's super-effective
-        against that weakness type
+    NEW v2 semantics: we pick a Stage 1 (or Stage 1 ex/mega) ATTACKER first
+    by damage-efficiency / meta-fit, then resolve `evolves_from` to find a
+    Basic printing whose Name matches. Returns (basic, stage1_attacker) or
+    None if no chain resolves.
     """
-    pkmn_db = {p["card_id"]: p for p in cards["pokemon_db"]}
-    basics = [p for p in pkmn_db.values() if p.get("stage") == "Basic Pokémon"]
-    # Score each basic by HP eff + meta-fit (= type effectiveness)
-    scored: list[tuple[float, dict]] = []
-    for b in basics:
-        hp = b.get("hp") or 0
-        retreat = b.get("retreat")
+    pkmn_list = cards["pokemon_db"]
+    name_index = _build_name_index(pkmn_list)
+    weak_dist = cards.get("weakness_distribution", {})
+
+    stage1s = [p for p in pkmn_list if p.get("stage") == "Stage 1 Pokémon"]
+    scored: list[tuple[float, dict, dict]] = []
+    for s1 in stage1s:
+        if not s1.get("evolves_from"):
+            continue
+        basic = _pick_lowest_basic(name_index, s1["evolves_from"])
+        if basic is None:
+            continue
+        # Score: HP_basic / (retreat+1) + meta-fit + damage_eff-of-stage1
+        hp = s1.get("hp") or 0
+        # Use stage1 HP / (retreat+1) since that's the attacker on the field
+        retreat = s1.get("retreat")
         if retreat is None:
             continue
         eff = hp / max(retreat + 1, 1)
-        # Bonus if the type counters meta weakness (the LB Pokemon pool's
-        # weakness distribution).
-        bonus = 0.0
-        atk_type = _energy_type(b.get("type"))
-        weak_dist = cards.get("weakness_distribution", {})
-        # Find this attacker's super-effective target count.
+        atk_type = _energy_type(s1.get("type"))
         target_count = weak_dist.get(f"{{{atk_type}}}", 0)
-        bonus = target_count / 10.0  # small additive boost
-        # If user gave a specific target_weakness, big bonus when match
+        bonus = target_count / 20.0
         if target_weakness and atk_type == target_weakness:
             bonus += 30.0
-        # Avoid commonly-attacked weaknesses on ourselves.
         if avoid_self_weakness:
-            my_weak = _energy_type(b.get("weakness"))
-            # Heavier-weight: if my weakness has > 50 attackers, penalty.
+            my_weak = _energy_type(s1.get("weakness"))
             for w, count in weak_dist.items():
                 if my_weak and w.strip("{}") == my_weak and count > 50:
                     bonus -= count / 30.0
-        scored.append((eff + bonus, b))
+        scored.append((eff + bonus, basic, s1))
     if not scored:
         return None
     scored.sort(key=lambda kv: -kv[0])
-    best_basic = scored[0][1]
-    # Find a Stage1 that evolves from a Pokemon of same type (we don't have
-    # full evolves-from data; fall back to "best HP Stage1 of same type").
-    stage1s = [p for p in pkmn_db.values() if p.get("stage") == "Stage 1 Pokémon"]
-    candidates = [p for p in stage1s if p.get("type") == best_basic.get("type")]
-    if not candidates:
-        candidates = stage1s
-    candidates.sort(key=lambda p: -(p.get("hp") or 0))
-    best_stage1 = candidates[0] if candidates else None
+    _, best_basic, best_stage1 = scored[0]
     return best_basic, best_stage1
 
 

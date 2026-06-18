@@ -237,6 +237,9 @@ def export_json(cards: list[dict], path: Path) -> None:
         cid = c.get("Card ID", "").strip()
         if not cid.isdigit():
             continue
+        prev_stage = (c.get("Previous stage") or "").strip()
+        if prev_stage in ("n/a", ""):
+            prev_stage = None
         out["pokemon_db"].append(
             {
                 "card_id": int(cid),
@@ -246,6 +249,7 @@ def export_json(cards: list[dict], path: Path) -> None:
                 "type": (c.get("Type") or "").strip() or None,
                 "weakness": (c.get("Weakness") or "").strip() or None,
                 "retreat": _parse_int(c.get("Retreat")),
+                "evolves_from": prev_stage,  # pre-evolution Pokemon NAME (not ID)
                 "ex": "ex" in (c.get("Card Name") or ""),
                 "mega": "Mega" in (c.get("Card Name") or ""),
             }

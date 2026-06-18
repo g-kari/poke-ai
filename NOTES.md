@@ -1916,6 +1916,33 @@ shape mismatch でロード不可となり、3-MLP submission が壊れる
 3. 実際に bench で勝率を測る評価関数 (= matchups.json 形式に揃える)
 4. GA / RL で deck pool を進化させる loop
 
+## deck-builder agent v2 (2026-06-18、 同サイクル) — 進化チェーン対応
+
+1. `analyze_cards.py --json` の `pokemon_db` に `evolves_from` (= 進化前の
+   Pokemon Name) を追加
+2. `build_deck.py` の `pick_attacker_line` を書き換え:
+   - Stage 1 attacker を damage-eff + HP-eff + meta-fit で score
+   - `evolves_from` を name index で解決して、 対応する Basic 印刷を取得
+   - lowest card_id の Basic を選ぶ (= base printing)
+3. 結果として「進化チェーンが正しい」 deck だけが構築される
+
+### v2 構築例 (Fire target)
+
+  4x Salandit (Basic, HP 70, type {R})
+     ↓ evolves_from name="Salandit"
+  4x Salazzle ex (Stage 1, HP 260, type {R})
+
+v1 の Mega Camerupt ex (Stage 1, evolves_from Numel) ではなく Salazzle ex
+が選ばれたのは、 HP eff (260 / (retreat+1)) の差。 評価関数の重み調整で
+Mega Camerupt 路線にも切替可能。
+
+### 次の改善 (v3)
+
+- Stage 2 Pokemon サポート (e.g. Mega Venusaur ex は Bulbasaur → Ivysaur → Mega)
+- Trainer staples を deck type に応じて切替 (e.g. Wall 系は Hero's Cape、
+  Attacker 系は Hyper Aroma)
+- 実 bench で勝率測定 → 進化フィードバックで improve
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
