@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import json
 import re
 import subprocess
 import sys
@@ -25,6 +26,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS_HTML = ROOT / "docs" / "index.html"
+MATCHUPS_JSON = ROOT / "data" / "matchups.json"
 KAGGLE_BIN = ROOT / ".venv" / "bin" / "kaggle"
 COMPETITION = "pokemon-tcg-ai-battle"
 
@@ -122,6 +124,46 @@ def render_submissions(rows: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def render_ranking() -> str | None:
+    """Generate the subject ranking <ol> from data/matchups.json."""
+    if not MATCHUPS_JSON.exists():
+        return None
+    try:
+        data = json.loads(MATCHUPS_JSON.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001
+        print(f"matchups.json parse failed: {exc}", file=sys.stderr)
+        return None
+    subjects = data.get("subjects") or []
+    # Sort by overall_winrate descending.
+    ranked = sorted(
+        [s for s in subjects if isinstance(s.get("overall_winrate"), (int, float))],
+        key=lambda s: -float(s["overall_winrate"]),
+    )
+    if not ranked:
+        return None
+    lines = ['  <ol class="ranking">']
+    for s in ranked:
+        label = s.get("label") or s.get("id") or "?"
+        wr = float(s["overall_winrate"]) * 100
+        crit = s.get("critical_weakness")
+        crit_note = ""
+        if crit:
+            opp = crit.get("opp") or "?"
+            opp_wr = crit.get("winrate")
+            if isinstance(opp_wr, (int, float)):
+                crit_note = f" (致命弱点: {opp} {opp_wr * 100:.1f}%)"
+        else:
+            note = s.get("note")
+            if note:
+                crit_note = f" ({note})"
+        cls = ' class="ours"' if s.get("id", "").startswith("ours_") else ""
+        bold_open = "<strong>" if not cls else ""
+        bold_close = "</strong>" if not cls else ""
+        lines.append(f"    <li{cls}>{bold_open}{label}{bold_close} — {wr:.1f}%{crit_note}</li>")
+    lines.append("  </ol>")
+    return "\n".join(lines)
+
+
 def replace_section(html: str, marker: str, new_inner: str) -> str:
     """Replace content between <!-- AUTO:MARKER_START --> and <!-- AUTO:MARKER_END -->."""
     pattern = re.compile(
@@ -158,6 +200,14 @@ def main() -> int:
             html = replace_section(html, "SUBMISSIONS", render_submissions(rows))
         else:
             print("  kaggle fetch failed/skipped; AUTO:SUBMISSIONS unchanged")
+
+    # ---- AUTO:RANKING ----
+    ranking_html = render_ranking()
+    if ranking_html:
+        print("  rendered ranking from matchups.json")
+        html = replace_section(html, "RANKING", ranking_html)
+    else:
+        print("  ranking skipped (no matchups.json or parse error)")
 
     # ---- AUTO:UPDATED ----
     # Use a date passed via env to keep results deterministic in tests.

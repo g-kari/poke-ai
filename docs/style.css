@@ -281,6 +281,25 @@ table.submission-history tr.leader {
   border-radius: 4px;
 }
 
+/* Subject ranking list (auto-generated from data/matchups.json) */
+ol.ranking {
+  margin: 8px 0 16px;
+  padding-left: 30px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+ol.ranking li {
+  padding: 2px 0;
+}
+
+ol.ranking li.ours {
+  background: #fff5cc;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-style: italic;
+}
+
 /* ============================================================
    Footer
    ============================================================ */
