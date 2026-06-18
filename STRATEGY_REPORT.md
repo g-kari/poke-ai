@@ -310,6 +310,35 @@ Abomasnow のみ ensemble が個別を上回った (+5pp boost)。
 
 ただし いずれも追加 1-3 サイクルの投資、 lab 25%+ 目標達成は不確定。
 
+### 5.3e 3-MLP v60 ensemble (= 異 seed × 3 で v40 を超えるか? — 棄却)
+
+v40 features 上の 3-MLP は LB 679 で DL ベスト。 同じ ensemble 構造を
+features_v60 (deck fingerprint 追加) で再現すれば lab 30%+ 期待、 という
+仮説。 結果:
+
+| 構成 | episode 累積 | lab winrate | LB 推定 |
+|---|---|---|---|
+| EXT3 単体 (seed=0) | 10500ep | **20.5%** | 578.7 (実測) |
+| s200 単体 (seed=200) | 2000ep | 16.1% | ~410 |
+| s300 単体 (seed=300) | 2000ep | 13.9% | ~350 |
+| 3-poly v60 ensemble | 16500ep 合計 | **18.9%** | ~480 |
+| **3-MLP v40** (比較) | 6000ep × 3 | **26.7%** | **679 (実測)** |
+
+**結論**: deck fingerprint feature の v60 features は **ensemble に転じない**。
+理由の推測:
+1. 60-d state vs 40-d state で input 層パラメータ +50%、 同じ network
+   width (= 64,32) では各 input への重みが希薄化
+2. 16-bucket hash の deck fingerprint は **collision noise** が大きく、
+   ensemble 平均で打ち消されない持続バイアスを生む
+3. 60-d を使いこなすには 5000-10000ep × 3 seed = 30000ep+ 必要、
+   我々の 5000ep 各では undertrain
+
+**含意**: v60 features は単純な 3-MLP ensemble での恩恵がない。
+deck fingerprint を活かすなら:
+- bigger network (= 128, 64) で容量増、 同じ episode count で学習
+- attention-based feature fusion (= 5.4 transformer 路線)
+- 単独 policy で長期学習 (= EXT3 路線、 lab 20.5% 天井)
+
 ### 5.4 Transformer features
 
 card-level representation (= 各カードを embedding、 self-attention で
