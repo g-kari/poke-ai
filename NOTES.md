@@ -2625,6 +2625,53 @@ ref **53812115** PENDING、 評価結果は次サイクル以降。 これが CO
 スコアが出れば「我々の deep-learning agent が Kaggle で動く」 ことを実証、
 torch 依存削除戦略の正しさを確認。
 
+### 🚨 53812115 も ERROR! (= torch 依存仮説は **不正解**)
+
+numpy-only 化しても Kaggle で ERROR。 真因は別。
+
+### 真因発見: deck.csv path resolution
+
+3-MLP main.py (LB 679.6 で動く) と main_v60 を diff した結果、 **deck.csv の
+path 解決ロジックが違う**:
+
+3-MLP main.py:
+```python
+path = "deck.csv"  # try relative first
+if not os.path.exists(path):
+    path = "/kaggle_simulations/agent/deck.csv"
+```
+
+main_v60 (両 ERROR 版):
+```python
+_HERE = Path(__file__).resolve().parent  # or Path.cwd() if __file__ missing
+deck_path = _HERE / "deck.csv"  # one-shot only
+```
+
+Kaggle ランタイムが exec() で main.py を呼ぶ時、 **`__file__` 無し** で
+**cwd が想定外** の組合せがあり得る。 main_v60 は **single-shot path 解決**
+だったので一度ミスると ERROR。 3-MLP は **3 候補 fallback** で頑健。
+
+### Fix #2: 53812882 (multi-root fallback)
+
+`main_v60.py:_candidate_roots()` を実装:
+- `Path(__file__).parent` (= sandbox 想定)
+- `Path.cwd()` (= __file__ 欠落時)
+- `Path("/kaggle_simulations/agent")` (= Kaggle 標準 mount path)
+
+3 ヶ所すべて試して deck.csv + train/ の存在確認。 sys.path にも全部追加。
+ローカル sandbox で:
+- `_POLICY: MlpPolicyV60Numpy`
+- `deck head: [721, 721, 722]`
+
+Re-submit: ref **53812882** PENDING、 3 回目の正直なるか。
+
+### 教訓
+
+main_v60 を実装した際、 3-MLP main.py の **path fallback パターンを継承
+しなかった** ことが二重 ERROR の根本原因。 deep-learning 移植時に「ロード
+の頑健性」 を軽視した。 今後 submission を増やす時は 3-MLP の
+`_read_deck()` をそのまま使い回す方針。
+
 ## GA loop 8g/eval × 20 gens 結果 — **構造的限界の再確認** (2026-06-18 夜)
 
 `data/sweep/ga_40g_v1.json` に persist。 376 秒 (6 分) で完了:

@@ -26,20 +26,42 @@ import sys
 from pathlib import Path
 
 
-def _resolve_here() -> Path:
+def _candidate_roots() -> list[Path]:
+    """All directories we'll try for deck.csv + train/ resolution.
+
+    Kaggle's runtime path layout is not always the same as our local sandbox,
+    so we test multiple candidates in order. The 3-MLP main.py uses the same
+    pattern and is known to work on LB (ref 53778627).
+    """
+    roots: list[Path] = []
     with contextlib.suppress(NameError):
-        return Path(__file__).resolve().parent
-    return Path.cwd().resolve()
+        roots.append(Path(__file__).resolve().parent)
+    roots.append(Path.cwd().resolve())
+    roots.append(Path("/kaggle_simulations/agent"))
+    # Dedupe while preserving order.
+    seen: set[Path] = set()
+    out: list[Path] = []
+    for r in roots:
+        if r not in seen:
+            seen.add(r)
+            out.append(r)
+    return out
 
 
-_HERE = _resolve_here()
-sys.path.insert(0, str(_HERE))
+_ROOTS = _candidate_roots()
+# Ensure all candidate roots are importable so `from train.x import ...` works.
+for _r in _ROOTS:
+    if _r.exists() and str(_r) not in sys.path:
+        sys.path.insert(0, str(_r))
 
 
 def _read_deck() -> list[int]:
-    deck_path = _HERE / "deck.csv"
-    with open(deck_path) as f:
-        return [int(line.strip()) for line in f if line.strip()]
+    for r in _ROOTS:
+        p = r / "deck.csv"
+        if p.exists():
+            with open(p, encoding="utf-8") as f:
+                return [int(line.strip()) for line in f if line.strip()]
+    raise FileNotFoundError("deck.csv not found in any candidate root")
 
 
 _DECK = _read_deck()
@@ -49,7 +71,9 @@ def _try_load_v60():
     """Load V60 policy from the bundle. Pure-numpy inference (no torch
     required at runtime). The bundle ships .npz files extracted from .pt
     by scripts/extract_v60_weights.py at build time."""
-    candidates = sorted(glob.glob(str(_HERE / "train" / "mlp_policy_v60*.npz")))
+    candidates: list[str] = []
+    for r in _ROOTS:
+        candidates.extend(sorted(glob.glob(str(r / "train" / "mlp_policy_v60*.npz"))))
     if not candidates:
         return None, None
     try:
