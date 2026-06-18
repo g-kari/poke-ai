@@ -16,6 +16,37 @@ GA / PIMC v1-v5 / Crustle 検出 agent / vendored rule-based) を試行し、
 劣後。 「lab 1pp ≈ LB 43 ポイント」 の換算法則 + 「features 共通の
 policy ensemble は seed diversity が効かない」 等の知見を発見。
 
+### Executive summary
+
+| 質問 | 回答 |
+|---|---|
+| **LB best agent** | vendored romanrozen V6 (LB 926.5) |
+| **我々自身の DL best** | 3-MLP ensemble (LB 679.6) |
+| **DL 路線で投資された時間** | 約 9 サイクル (V60: 7、 v40 warm-ext: 1、 PIMC: 1) |
+| **最大の発見** | lab 1pp ≈ LB 43 の換算法則、 deck と policy の coupling |
+| **最大の罠** | features_v60 で ensemble seed diversity 消滅、 GA の 3g/eval noise 量産 |
+| **shippable な再利用部品** | bench_v60.py / extract_v60_weights.py / build_deck.py / matchups.json |
+
+### 3 つの中心的な学び
+
+1. **「lab と LB は線形的に対応するが、 absolute 値の予測は困難」**
+   - 実測ケース: 3-MLP (lab 23.3% → LB 679) vs V60 EXT3 (lab 19.7% → LB 523)
+   - 3.6pp 差が 156 ポイント差 = 1pp ≈ 43
+   - ただし高 lab 領域では LB 増分が縮小 (V6 は lab 57.9% で LB 926)
+
+2. **「deck と agent の同時設計が真の breakthrough」**
+   - V6 が LB 926 で勝つのは 30+ 行の **CRUSTLE_AWARE logic** が deck と
+     一体だから
+   - 我々の generic_agent + heuristic deck-builder では agent と deck を
+     別個に最適化、 統合困難
+   - deck.csv だけ変えても overall -10pp、 warm-start でも shock 緩和不可
+
+3. **「features 改修と ensemble effect は trade-off」**
+   - v40 features は表現力低いが seed 0/2/100 ensemble で +α (23.3%)
+   - v60 features は deck-id fingerprint 追加で seed diversity 消滅 (-2pp)
+   - features の **discriminative power** が高すぎると、 多 seed policy が
+     同じ偏りを学んで中庸化に陥る
+
 ## 1. 問題設定
 
 PTCG ABC は **不完全情報の二人零和ゲーム**:
@@ -302,7 +333,102 @@ fingerprint を追加 (60-d、 16 buckets × 3 area + 4 mirror buckets):
    policy 間で ロジット平均は中庸化のリスク、 **diverse features** や
    **diverse training objective** (= 別 reward function) が必要
 
-### A.3 PIMC v1-v5 の 5 試行 — heuristic value の天井
+### A.3 vendored rule-based 7 種の比較 — LB best (V6 926) の正体
+
+**収集元**: Kaggle 公開 kernel から **6 種 + 我々 vendored** を pull:
+
+| subject | 出処 | vote | deck タイプ | overall lab @ 80g |
+|---|---|---|---|---|
+| Mega Lucario | Kiyota 公式 | 203 | ex + Hariyama hybrid | 46.5% |
+| Dragapult ex | Kiyota 公式 | 97 | ex 機動力 | 48.1% |
+| Iono | Kiyota 公式 | 35 | Lightning chain | **64.0%** |
+| Mega Abomasnow ex | Kiyota 公式 | 28 | Ice tank | 40.0% |
+| Crustle Wall (haru) | harukiharada | 7 | wall + lock | 36.9% |
+| Crustle Dashi | dashimaki360 | 35 | Day-1 #1 wall | **67.3%** |
+| **RomanrozenV6** | romanrozen | **36** | **anti-Crustle hybrid** | **57.9%** |
+
+**LB スコアの推移** (= 評価期間進行による収束):
+- 53793417 (Iono): 600 → 615 → 762.2
+- 53794617 (CrustleDashi): 718 → 866 → 870-888
+- 53794828 (V6): 801 → 873 → **921-926.5**
+
+**なぜ V6 が LB 最強か** (= 我々が最も学んだ事例):
+
+1. **CRUSTLE_AWARE=True の 30+ 行 logic**:
+   - obs から相手 active のカード ID で Crustle 系を検出
+   - 検出時 **active を Mega Lucario ex から Hariyama (non-ex) に rotate**
+   - Hariyama に **Fighting エネルギーを集中配分**
+   - Hariyama の attack で Crustle の「ふしぎなロックイン」 を抜く
+   - これは **2 段階 decision** (= retreat → bench select) を扱う
+
+2. **proactive setup**:
+   - 初期 turn から **Hariyama 系も bench に配置**
+   - Crustle が出る前から secondary chain が ready
+   - 我々の generic_agent は OPTION_PRIORITY で常に primary 優先、
+     secondary は冷遇 → 検出してから setup では間に合わない
+
+3. **hybrid deck の比率**:
+   - Mega Lucario ex (Stage 1 ex)、 Hariyama (Stage 1 non-ex)、
+     Solrock (Basic supporting) を **2:2:1 程度** で構成
+   - non-ex Hariyama が deck の **13%+** で Crustle 戦の手札確率を確保
+   - 我々の v7 hybrid は secondary 4 枚 (= 7%) で Crustle 戦に間に合わず
+
+**含意**: V6 の 30+ 行 logic は agent と deck の **同時設計**。 これを
+heuristic で再現するのは 7 サイクル投資して頓挫 (Task #105 / v7-v11)、
+深層学習で再発見するには 25%+ lab 必須 = 我々の V60 路線では届かなかった。
+
+### A.4 deck-builder v1-v9 + GA loop — Task #107 の構造的限界
+
+**動機**: 「人間が思いつかない anti-meta deck を自動探索」 を狙った
+heuristic agent。 user 方針 (C) の長期目標。
+
+**v1-v9 の進化**:
+
+| ver | feature | best output | overall lab |
+|---|---|---|---|
+| v1 | 単純 HP/(retreat+1) score | Mega Camerupt ex (chain 無視) | n/a |
+| v2 | + evolves_from chain 解決 | Salandit → Salazzle ex | 17.5% (40g) |
+| v3 | + Stage 2 サポート | Charmander → Charmeleon → Mega Charizard Y ex | n/a |
+| v4 | + 6 spec 自動 fitness 評価 | **Snorunt → Mega Froslass ex** | **18.0% (5g)** |
+| v5 | target bonus 30 → 200 + ex penalty | Salandit など | 8.0% (失敗) |
+| v6 | v4 weights に revert | Snorunt → Mega Froslass ex | 17.5% (40g) |
+| v7 | hybrid chain (primary ex + secondary non-ex) | Charizard ex + Toxicroak | 4.8% (失敗) |
+| v8 | + Crustle 検出 + non-ex routing | (deck 同じ、 agent 改修) | 7.1% |
+| v9 | + secondary 比率 4 → 8 | (deck 同じ) | 7.1% |
+
+**v4 の発見** (= Task #107 の peak achievement):
+
+`scripts/build_and_eval_deck.py` で 6 spec を 5g/opp で fitness 評価。
+**Fighting/Stage1 spec で 18.0% overall** が判明。 内訳:
+- target_type='F' (Fighting) を強制したが、 type_bonus 30 が weak で
+  実際は **Water type の Snorunt → Mega Froslass ex (HP 310 Stage1 ex)**
+  が選ばれた (= 偶然の発見)
+- Mega Lucario 40%、 Dragapult 30% は他 spec より圧倒的
+
+40g 本格 bench で 17.5% (5g の 18.0% と整合)、 だが Crustle Dashi 0% が
+**6 試行 6 回持続** = builder 単独では Crustle 対策不可能。
+
+**GA loop 3 試行の noise floor 教訓**:
+
+| version | eval games | best fitness (in-eval) | 真の 40g bench |
+|---|---|---|---|
+| v1 | 3g/eval | 23.3% | 13.2% |
+| v2 | 8g/eval | 22.5% | 15.4% |
+| v3 | 8g/eval | 20.0% | 13.2% |
+
+3 試行で **真の値は全て v4 baseline (17.5%) 以下**。 GA は **「ある matchup
+を伸ばし他を犠牲にする」 local trade-off** を選び、 single mutation では
+local optimum から脱出できない。
+
+**転用可能な insight**:
+1. heuristic deck-builder で「偶然の anti-meta 発見」 はあり得るが、
+   **真の improvement vs v4 baseline は noise floor 内で確認不可**
+2. GA loop の eval は **最低 40g/eval** (= 1 generation 90 秒) が必要、
+   1-card swap では local optimum で 5pp 以下の improvement しか出ない
+3. deck-builder + agent の **三位一体改修** が真の breakthrough (V6 が
+   実証)、 deck だけ・agent だけの改修では LB 競争力に届かない
+
+### A.5 PIMC v1-v5 の 5 試行 — heuristic value の天井
 
 **設計**: 不完全情報ゲーム標準の Perfect Information Monte Carlo:
 1. 相手の手札 / deck 残りを **uniformly sample**
