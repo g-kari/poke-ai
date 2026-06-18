@@ -2466,6 +2466,48 @@ V6 が成功している真の理由は **30+ 行の専用 anti-Crustle logic** 
 - ただし deck.csv 変更は features_v60 の card-id hash bucket に影響あるので
   fresh init 必須
 
+## (C) V60 路線の本格 pursuit (2026-06-18 夕方)
+
+### インフラ整備完了
+
+- `scripts/bench_v60.py`: 任意の V60 .pt を 7 opp で評価 (`--games N` で
+  per-side N games = 2N/opp)
+- `main_v60.py`: glob で V60 .pt を集めて、 1 つなら single、 2 つ以上なら
+  EnsemblePolicyV60 を自動選択
+- `train/ensemble_policy_v60.py`: ロジット平均で `.logits()` / `.value()` /
+  `.probs()` API を維持
+- `make_submission_v60.sh`: bundle build + sandbox verify
+- 全て build verified、 EXT3 完了で即提出可能
+
+### 学習量と V60 性能の対応 (20g/opp benchmark)
+
+| version | total ep | overall | best matchup | worst matchup |
+|---|---|---|---|---|
+| fresh pool5 | 2500 | **17.1%** | Mega Lucario 40% | Crustle Wall 5%, CrustleDashi 5% |
+| EXT1 (warm-start) | 5500 | **20.1%** | Mega Aboma 40% | CrustleDashi 5% |
+| EXT2 (warm-start round 2) | 8500 | ~20% (振動) | - | - |
+| EXT3 (lr=1e-4 round 3) | 10500 | **学習中** | TBD | TBD |
+
+**学習量で +3pp 改善** (fresh→EXT1) を確認、 学習継続には意味あり。
+ただし EXT3 で 25%+ は **microscopic gain** 期待 (~23-24% 程度予想)。
+振動 (ext2 で 8500ep でも 20% 程度) も警戒。
+
+### V60 EXT3 完了後のフロー
+
+```bash
+# 1. solo bench
+scripts/run.sh python3 scripts/bench_v60.py --weights train/mlp_policy_v60_ext3.pt --games 20
+
+# 2. もし 25%+ なら ensemble bench も (= EXT1 + EXT3 の自動 2-V60 ensemble)
+scripts/run.sh python3 scripts/bench_v60.py --weights train/mlp_policy_v60_pool5_ext.pt --games 20
+# (上記は main_v60 が自動的に ensemble 化するので bench としては single でも OK)
+
+# 3. 提出
+./make_submission_v60.sh
+.venv/bin/kaggle competitions submit -c pokemon-tcg-ai-battle \
+    -f submission_v60.tar.gz -m "V60 EXT3 (10500ep) — first deep-learning submission"
+```
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
