@@ -14,6 +14,9 @@ import numpy as np
 
 STATE_DIM = 40
 OPTION_DIM = 40
+# Card-ID hash buckets used to identify opponent deck type (experimental,
+# unused until we retrain with the extended state). See _accumulate_card_buckets.
+_DECK_ID_BUCKETS = 16
 
 # Card ID hash buckets — cheap proxy for "this is the same card I saw last time"
 # without needing the C-side AllCard table. Increase if collisions become a
@@ -142,6 +145,31 @@ def state_features(obs: dict) -> np.ndarray:
         _, _, opp_retreat = opp_card
         f[39] = opp_retreat / 4.0
     return f
+
+
+def _accumulate_card_buckets(
+    out: np.ndarray, base: int, pokes_or_cards, weight: float = 1.0, n_buckets: int = None
+) -> None:
+    """Hash card IDs into buckets at out[base : base + n_buckets]. Each card
+    contributes `weight` to its bucket. Normalized at the end so the row
+    sums to ~1 per source (= scale-invariant)."""
+    nb = n_buckets if n_buckets is not None else _DECK_ID_BUCKETS
+    if not pokes_or_cards:
+        return
+    total = 0.0
+    for p in pokes_or_cards:
+        if p is None:
+            continue
+        cid = p.get("id") if isinstance(p, dict) else None
+        if cid is None:
+            continue
+        bucket = cid % nb
+        out[base + bucket] += weight
+        total += weight
+    if total > 0:
+        # Normalize this contribution so scale doesn't blow up with discard size.
+        for i in range(nb):
+            out[base + i] /= max(1.0, total)
 
 
 def option_features(opt: dict, obs: dict, sel: dict) -> np.ndarray:

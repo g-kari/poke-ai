@@ -1740,6 +1740,56 @@ pool 学習で「相手によって戦略を変える」を学習できる。
 3. PIMC + 学習済み NN value (AlphaZero スタイル、本命)
 4. pool training は features 強化後に再試
 
+## features.py 強化 + fresh learning 試行 (2026-06-18)
+
+train/features.py の STATE_DIM を 40 → **60** に拡張。追加 20-d:
+- `f[40..55]`: opp の active/bench/discard カード ID を 16 buckets に hash
+  (active は weight 2.0、bench は 1.0、discard は 0.5)
+- `f[56..59]`: 自分の active カード ID を 4 buckets に hash (mirror sense)
+
+実装は `_accumulate_card_buckets()` で sample-level normalize。
+これで policy は「相手の場のカード ID 構成」を fingerprint として認識でき、
+理論上「相手が Iono か Crustle か」を識別して戦略を切替えられる。
+
+### fresh learning (pool5、 1500ep、 lr=5e-4) 結果
+
+  vs Mega Lucario: 2-18 (10.0%)
+  vs Dragapult ex: 1-19 ( 5.0%)
+  vs Iono:         0-20 ( 0.0%)
+  vs Mega Aboma:   5-15 (25.0%)
+  vs Crustle Dashi:0-20 ( 0.0%)
+  vs V6:           3-17 (15.0%)
+
+avg ~9.2%、3-MLP 23.3% よりまだ弱い。 fresh init から features60 + 1500ep
+では未収束 (容量増の分、学習量も必要)。
+
+### 学び
+
+- features 拡張は技術的には実装 OK (smoke 通った、normalize 正しく動く)
+- ただし fresh init では 1500ep では不足、もっと長い学習 (3000-5000ep) が必要
+- STATE_DIM 変更すると warm-start 不可 → ゼロから学習し直し、時間コスト大
+- 次サイクル: features60 で 5000ep 学習 + 評価
+
+### archive
+
+- `train/archive/mlp_policy_features60.pt` (1500ep、 fresh、 pool5)
+- `train/metrics_mlp_features60.json`
+
+### 🚨 reverted (本サイクル内、submission 保護)
+
+STATE_DIM=60 を維持すると、既存 mlp_policy*.pt (40-d で訓練) が
+shape mismatch でロード不可となり、3-MLP submission が壊れる
+(`_POLICY is None`)。submission を保護するため:
+- `STATE_DIM` を 40 に戻した
+- `_accumulate_card_buckets` 関数は残置 (= unused helper、 後で復活)
+- 60-d feature ロジック自体はコミット履歴 + `_accumulate_card_buckets`
+  に残るので次サイクルで「features60.py を別ファイル化、新 policy 専用」
+  すれば再利用可能
+
+**教訓**: STATE_DIM 変更は破壊的、既存 submission を壊す。
+作業ブランチで feature 拡張 → 再 train → 評価 → main マージ、 が正しい順序。
+1 サイクル内では「features 増 + 学習 + 評価」を atomically 実行できない。
+
 ## 8 subject 最新ランキング @ 80g
 
 | rank | subject | overall | min (致命弱点) | anti-Crustle |
