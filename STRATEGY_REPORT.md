@@ -182,11 +182,44 @@ PIMC heuristic は 10% 天井、 価値関数の質に強く依存。 self-disti
 PIMC 文脈の value head を訓練すれば AlphaZero スタイルが可能。 ただし
 infra が大きい (= replay buffer、 distributed self-play 等)。
 
-### 5.3 Behavioral cloning from V6 agent
+### 5.3 Behavioral cloning from V6 agent (実行結果: lab 5.7%、 提出見送り)
 
 V6 の 30+ 行ロジック (= active rotation + Hariyama energy 配分 +
 attack 順序選択) を policy で模倣する supervised learning。 V6 が
-LB 926 なので、 90% 模倣できれば LB 800+ 期待。
+LB 888-926 なので、 90% 模倣できれば LB 800+ 期待だった。
+
+**実行結果 v1 (200 games / 7802 samples / 500 epoch BC training)**:
+- **supervised acc 69.6%** (random baseline 12.5%) — 学習自体は成功
+- **lab winrate 5.7%** @ 40g/opp × 7 opponents (= 280g)
+  - vs Mega Lucario: 10.0%
+  - vs Iono / Abomasnow / Crustle Dashi: **0.0%**
+  - vs V6: 12.5%
+
+**学び (distribution shift トラップ)**:
+学習サンプルは V6 が出会った state のみ。 BC policy 自身が agent と
+して動くと V6 が探索しない state に陥り、 そこで誤判断する。 訓練 acc
+が高くても (= 69.6%)、 そのほとんどが「V6 と同じ簡単な手」に偏って
+おり、 hard matchup (Crustle Dashi 0%) では破綻する。
+
+**v2 改善試行 (進行中)**: V6 が勝った試合のみで再学習。 負け試合の
+混乱した選択を除外することで、 V6 の "competent regions" に集中。
+
+### 5.3b BC 系統が一般的に LB 700+ に届かない理由
+
+1. **state coverage の限界**: V6 は決定論的 rule-based なので、 同一相手
+   からほぼ同一の game tree しか生成しない。 200 games × 5 opps = 1000
+   trajectories は state space を全くカバーしない。
+2. **PG-style action distribution の欠落**: BC は argmax 模倣で、 V6 の
+   "tie-break logic" を学べない。 V6 は同点候補で先頭優先するが、 BC
+   policy は softmax で確率分散して別の手を選び、 連鎖的に状態が崩れる。
+3. **クリティカル decision の希少性**: V6 の本領 (Crustle Dashi vs
+   non-ex 攻撃ルート切替) は全 7800 samples 中 ~50 程度。 epoch を回し
+   ても重みは平均的な「Hariyama 場出し」ばかりで勘所が学べない。
+
+**回避策候補**: (a) DAgger (state visitation を学習者側で生成、 V6 が
+ラベル付け)、 (b) DPO/RLHF (V6 を preference model として REINFORCE)、
+(c) 大量データ (10000+ games) で long-tail を網羅。 いずれも 1 サイクル
+30 分には収まらない。
 
 ### 5.4 Transformer features
 
