@@ -1559,6 +1559,45 @@ Lucario + Hariyama + Solrock 構造。
 Kojimar は Crustle 対策が弱い (V6 と異なり anti-Crustle 専用ルーチンなし)。
 **Crustle メタ環境では V6 より劣る**ので即 submit 候補ではない。
 
+## LB 環境調査 (2026-06-18, user 指摘で着手)
+
+### LB トップ 40 のスコア分布
+
+| rank | team | score | submit date |
+|---|---|---|---|
+| 1 | onechan1 | **1308.7** | 06-17 |
+| 2 | DENPA92 | 1230.4 | 06-17 |
+| 3 | Kyo_s_s | 1211.6 | 06-17 |
+| 4 | くりたんとたけちゃん | 1179.9 | 06-17 |
+| 5 | YT | 1175.8 | 06-17 |
+| 6 | tubotu | 1174.6 | 06-18 |
+| ... | (1100 帯多数) | ... | |
+| 18 | sbite0138 (Crustle派) | 1096.8 | 06-17 |
+| 20 | Kuroneko | 1082.3 | 06-17 |
+| ~37 | takuyay (dashimaki本人?) | 1047.6 | 06-16 |
+| ~38 | AM (Crustle派) | 1069.2 | 06-17 |
+
+### 我々の位置
+
+- Iono 762.2: トップ 40 (1035.4) より **-273 下**
+- CrustleDashi 718.0: 更に下
+- LB 上位 1100+ には rule-based + meta deck では届かない
+
+### 環境の含意
+
+1. **rule-based agent の天井 = ~1100** (anti-Crustle 強化版でこの水準)
+2. **トップ 1200+ は別技術**: PIMC / MCTS / 強化学習 / 洗練された深いルックアヘッド
+3. **「LB 860+」を author が主張する V6 ですら、実 LB では更に上の人々が大勢**
+4. Crustle 派 (sbite0138, AM, takuyay/dashimaki) は 1047-1097 帯。**Crustle メタ
+   は事実だが、最上位ではない**
+5. 我々の現状 762.2 は、まず 1000 を超える事が短期目標、次に 1100、最終的に 1200+
+
+### 戦略再考
+
+- 短期 (今日): rule-based 系で 800-900 を目指す (V6 評価結果次第)
+- 中期: PIMC 実装 — NOTES の「打ち手 #1」、cg.api.search_begin/step が使える
+- 長期 (締切 8/16 まで 2 ヶ月弱): PIMC + 強化学習 hybrid を目指す
+
 ## 8 subject 最新ランキング @ 80g
 
 | rank | subject | overall | min (致命弱点) | anti-Crustle |
