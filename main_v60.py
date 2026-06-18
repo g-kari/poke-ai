@@ -46,13 +46,14 @@ _DECK = _read_deck()
 
 
 def _try_load_v60():
-    """Pick the most recent V60 .pt in the bundle. Returns (policy, rng) or
-    (None, None) on failure."""
-    candidates = sorted(glob.glob(str(_HERE / "train" / "mlp_policy_v60_ext3.pt")))
-    if not candidates:
-        candidates = sorted(glob.glob(str(_HERE / "train" / "mlp_policy_v60*ext*.pt")))
-    if not candidates:
-        candidates = sorted(glob.glob(str(_HERE / "train" / "mlp_policy_v60*.pt")))
+    """Load V60 policies from the bundle.
+
+    Decision stack:
+      1. EnsemblePolicyV60 if 2+ V60 .pt files exist (= EXT1 + EXT3 etc.)
+      2. Single MlpPolicyV60 if exactly one exists
+      3. None on any failure (caller will fall back to engine-prior)
+    """
+    candidates = sorted(glob.glob(str(_HERE / "train" / "mlp_policy_v60*.pt")))
     if not candidates:
         return None, None
     try:
@@ -60,6 +61,13 @@ def _try_load_v60():
 
         from train.mlp_policy_v60 import MlpPolicyV60  # noqa: PLC0415
 
+        if len(candidates) >= 2:
+            from train.ensemble_policy_v60 import EnsemblePolicyV60  # noqa: PLC0415
+
+            ens = EnsemblePolicyV60.try_load(candidates)
+            if ens is not None and len(ens.members) >= 2:
+                return ens, np.random.default_rng(0)
+        # Fall through to single-policy.
         policy = MlpPolicyV60.load(candidates[-1])
         policy.eval()
         return policy, np.random.default_rng(0)

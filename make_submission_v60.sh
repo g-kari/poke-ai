@@ -38,6 +38,7 @@ require train/features.py
 require train/features_v60.py
 require train/mlp_policy.py
 require train/mlp_policy_v60.py
+require train/ensemble_policy_v60.py
 
 # Need at least one V60 weight file.
 weights=$(ls train/mlp_policy_v60*.pt 2>/dev/null || true)
@@ -63,6 +64,7 @@ cp train/features.py "$STAGE/train/"
 cp train/features_v60.py "$STAGE/train/"
 cp train/mlp_policy.py "$STAGE/train/"
 cp train/mlp_policy_v60.py "$STAGE/train/"
+cp train/ensemble_policy_v60.py "$STAGE/train/"
 # Ship all V60 weight files (main_v60 picks the newest).
 for w in $weights; do
     cp "$w" "$STAGE/train/"
