@@ -197,6 +197,111 @@ def pick_attacker_line(
     return (chain[0], chain[-1]) if chain and len(chain) == 2 else None
 
 
+def pick_attacker_chains(
+    cards: dict,
+    target_weakness: str | None = None,
+    avoid_self_weakness: bool = True,
+    allow_stage2: bool = True,
+) -> tuple[list[dict], list[dict]] | None:
+    """v7: pick TWO complementary attacker chains.
+
+    - Primary: best by HP/(retreat+1) + meta-fit (= same as v6/v4).
+    - Secondary: best NON-EX whose type is *different* from primary
+      (= V6-style fallback for Crustle "Mysterious Rock Inn" lock).
+
+    Returns (primary_chain, secondary_chain) or None on resolution failure.
+    The secondary chain shares Basic-only Pokemon space so the deck still
+    fits in 60 cards.
+    """
+    primary = pick_attacker_chain(
+        cards,
+        target_weakness=target_weakness,
+        avoid_self_weakness=avoid_self_weakness,
+        allow_stage2=allow_stage2,
+    )
+    if not primary:
+        return None
+    primary_type = _energy_type(primary[-1].get("type"))
+    # Find best non-ex attacker of a different type.
+    # We do a constrained search on Stage 1 only (to keep n_each_stage modest).
+    pkmn_list = cards["pokemon_db"]
+    name_index = _build_name_index(pkmn_list)
+    weak_dist = cards.get("weakness_distribution", {})
+    candidates = [
+        p
+        for p in pkmn_list
+        if p.get("stage") == "Stage 1 Pokémon"
+        and not p.get("ex")
+        and _energy_type(p.get("type")) != primary_type
+    ]
+    scored: list[tuple[float, list[dict]]] = []
+    for atk in candidates:
+        chain = _resolve_chain(name_index, atk)
+        if not chain:
+            continue
+        hp = atk.get("hp") or 0
+        retreat = atk.get("retreat")
+        if retreat is None:
+            continue
+        eff = hp / max(retreat + 1, 1)
+        atk_type = _energy_type(atk.get("type"))
+        target_count = weak_dist.get(f"{{{atk_type}}}", 0)
+        bonus = target_count / 20.0
+        # No target_weakness override for secondary; just take strongest.
+        bonus -= (len(chain) - 1) * 5.0
+        scored.append((eff + bonus, chain))
+    if not scored:
+        return None
+    scored.sort(key=lambda kv: -kv[0])
+    secondary = scored[0][1]
+    return primary, secondary
+
+
+def build_hybrid_deck(
+    cards: dict,
+    target_weakness: str | None = None,
+    n_primary_each: int = 3,
+    n_secondary_each: int = 2,
+    n_energy: int = 16,
+) -> list[int]:
+    """v7: build a 60-card hybrid deck with two attacker lines.
+
+    Defaults: 3x primary chain (each card) + 2x secondary chain + 16 energy
+    + trainer staples. Deck shape:
+      primary basic × 3 + primary stage1 (× 3) [+ primary stage2 × 3] +
+      secondary basic × 2 + secondary stage1 × 2 +
+      basic_energy × 16 + trainer staples to fill 60.
+    """
+    pair = pick_attacker_chains(cards, target_weakness=target_weakness)
+    if not pair:
+        raise RuntimeError("no hybrid chain pair found")
+    primary, secondary = pair
+    deck: list[int] = []
+    for c in primary:
+        deck += [c["card_id"]] * n_primary_each
+    for c in secondary:
+        deck += [c["card_id"]] * n_secondary_each
+
+    # Primary-type energy.
+    atk_type = _energy_type(primary[-1].get("type")) or "C"
+    energy_id = ENERGY_BASIC.get(atk_type, ENERGY_BASIC["F"])
+    deck += [energy_id] * n_energy
+
+    used_counts: Counter = Counter(deck)
+    for cid, max_n, _name in TRAINER_STAPLES:
+        slots = 60 - len(deck)
+        if slots <= 0:
+            break
+        take = min(max_n - used_counts[cid], max_n, slots)
+        if take <= 0:
+            continue
+        deck += [cid] * take
+        used_counts[cid] += take
+    while len(deck) < 60:
+        deck.append(energy_id)
+    return deck[:60]
+
+
 def build_deck(
     cards: dict,
     target_weakness: str | None = None,
@@ -302,17 +407,25 @@ def main() -> int:
         action="store_true",
         help="Require non-ex attacker (= V6-style anti-Crustle Hariyama route).",
     )
+    p.add_argument(
+        "--hybrid",
+        action="store_true",
+        help="v7: build a hybrid deck with primary ex + secondary non-ex chain.",
+    )
     args = p.parse_args()
 
     cards = load_cards(args.cards)
     print(f"Loaded {cards['metadata']['total_cards']} cards from {args.cards}")
 
-    deck = build_deck(
-        cards,
-        target_weakness=args.target_type,
-        allow_stage2=not args.no_stage2,
-        require_non_ex=args.non_ex,
-    )
+    if args.hybrid:
+        deck = build_hybrid_deck(cards, target_weakness=args.target_type)
+    else:
+        deck = build_deck(
+            cards,
+            target_weakness=args.target_type,
+            allow_stage2=not args.no_stage2,
+            require_non_ex=args.non_ex,
+        )
     assert len(deck) == 60, f"deck size != 60: {len(deck)}"
     with open(args.out, "w") as f:
         for cid in deck:

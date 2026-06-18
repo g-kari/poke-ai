@@ -2218,6 +2218,55 @@ def pick_attacker_chains(cards, primary, secondary, ...) -> list[list[dict]]:
   を最適化、 single matchup の犠牲を penalize
 - 真の breakthrough は v7 (hybrid) の方が大きい見込み
 
+## v7 hybrid 実装 + bench — **失敗** (2026-06-18)
+
+`build_deck.py` に `pick_attacker_chains()` (primary ex + secondary
+non-ex) と `build_hybrid_deck()` を追加。 `--hybrid` flag で利用可能。
+
+v7 deck (Fire target):
+  Primary chain x3: Charmander → Charmeleon → Mega Charizard Y ex (HP 360)
+  Secondary chain x2: Croagunk → Toxicroak (HP 130 Fighting non-ex)
+  16 Fire Energy + trainer staples
+
+### 30g/opp bench 結果
+
+  vs Mega Lucario:    3.3% ← v4 30% から **-27pp**
+  vs Dragapult:       3.3% ← -29pp
+  vs Iono:            0.0%
+  vs Mega Aboma:      0.0%
+  vs Crustle Wall:   23.3% ← v4 17.5% から +6pp
+  vs Crustle Dashi:   0.0% ← **持続!** hybrid でも解決せず
+  vs V6:              3.3%
+  overall:           4.8% ← v4 17.5% から **-12.7pp**
+
+### 根本原因の判明
+
+**「generic_agent は OPTION_PRIORITY 優先順 (ATTACH→EVOLVE→PLAY→ABILITY→
+ATTACK→RETREAT) で動くため、 deck に secondary chain が入っていても
+primary chain を盲目的に setup する」**
+
+- 結果: Stage 2 Mega Charizard Y ex の setup が間に合わず (Fire/Stage2 既知
+  の問題)、 secondary Toxicroak は使われずに deck 内で腐る
+- Crustle Dashi 0% も持続 — generic_agent が Crustle を「検出」して secondary
+  に routing する logic を持たないため
+- **deck-level の hybrid 構造だけでは無意味**、 agent-level の routing が必須
+
+### 次の v8 方針 (本サイクル末発見)
+
+**真の hybrid solution は builder + agent の同時改修**:
+
+1. **builder v8**: `pick_attacker_chains` は v7 のまま (deck 構造 OK)
+2. **agent v8**: `make_generic_agent` を **Crustle 検出 + non-ex 切替**
+   logic に改修
+   - obs から相手 active の card_id を見て Crustle (id=344/345) と
+     その派生 ID を検出
+   - 検出時は ATTACH/EVOLVE を secondary chain の card に向ける
+   - これは V6 の `CRUSTLE_AWARE=True` ロジックと同じ発想
+3. **bench で再評価**: agent v8 + deck v7 で Crustle 0% を抜けられるか
+
+これは builder + agent 両方の **真の anti-Crustle solution** への正しい道ですわ。
+中規模実装、 次サイクル目標。
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
