@@ -2627,6 +2627,57 @@ deck_ga_v3.csv の 40g bench:
 4. Crustle Dashi 0% は構造的問題で deck-builder では解決不可
    (ex pokemon を入れる限り)
 
+## EXT4 — lr=5e-5 は逆効果 (2026-06-18 夜)
+
+`mlp_train_v60 --lr 5e-5 --warm-start ext3` で 5000ep、 合計 15500ep。
+recent 振動 0.21-0.26、 lr=1e-4 (EXT3) と **同じ振動範囲**。
+
+### EXT4 bench @ 30g/opp
+
+| matchup | EXT3 (lr=1e-4) | **EXT4 (lr=5e-5)** | delta |
+|---|---|---|---|
+| Mega Lucario | 13.3% | 10.0% | -3pp |
+| Dragapult | 36.7% | 23.3% | -14pp |
+| Iono | 10.0% | 10.0% | 0 |
+| Mega Aboma | 36.7% | 23.3% | -14pp |
+| Crustle Wall | 30.0% | 20.0% | -10pp |
+| Crustle Dashi | 3.3% | 0.0% | -3pp |
+| V6 | 13.3% | 6.7% | -7pp |
+| **overall** | **20.5%** | **13.3%** | **-7.2pp** |
+
+### 失敗の原因
+
+1. **lr 下げても振動は止まらず** (recent 0.21-0.26 で EXT3 と同じ範囲)
+2. **学習過程の peak/valley を制御できない** — checkpoint は last-ep を
+   保存するので、 偶然「谷」 で終わると劣化を保存する
+3. EXT4 archive 行き。 EXT3 が引き続き V60 best として扱う
+
+### 振動の真因 (推定)
+
+- REINFORCE の policy gradient variance が大きい (= reward sparsity)
+- 1 試合で reward は ±1 だけ、 trajectory 内の credit assignment が困難
+- lr を下げても variance 自体は減らない
+- 解決策:
+  - **PPO** (clipped surrogate objective + value baseline GAE)
+  - **A2C/A3C** (advantage 推定で variance 削減)
+  - **early stopping** + best-checkpoint 保存 (heuristic)
+- これらは large refactor、 next phase
+
+## V60 の状況 (本サイクル末)
+
+- EXT3 = **20.5% @ 30g** が我々の deep-learning agent の best
+- EXT3 を Kaggle submit → **ERROR (53810836)** 原因究明 task #111 で進行中
+- EXT4 で改善試みたが -7.2pp、 archive 行き
+- 振動制御には PPO 級の改修が必要、 直近では実装困難
+
+### 次サイクル方針
+
+1. **Task #111 — EXT3 ERROR 原因究明** (最優先): main_v60 を numpy-only 化
+   して V60 を実機で動かす
+2. ERROR 解決後、 EXT3 を再 submit
+3. PPO 路線は中長期目標 (refactor 大)
+4. deck-builder GA は構造的限界判明、 投資中止
+
 ### Task #107 deck-builder の最終総括
 
 3 段階の GA + v7-v11 hybrid 改修 + v8-11 agent-routing 改修を経て:
