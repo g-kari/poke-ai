@@ -1,0 +1,45 @@
+{
+  "experiment": "BCRL2 — BCRL1 warm-start + REINFORCE 5000ep (lr=5e-5, V6 in pool)",
+  "ancestry": [
+    "V6 rule-based (LB 860-888)",
+    "BC v2 (lab 10.4%, supervised on V6 wins)",
+    "BCRL1 (lab 12.1%, +2000ep REINFORCE lr=1e-4 meta5 pool)",
+    "BCRL2 (this experiment, +5000ep REINFORCE lr=5e-5 meta5+V6 pool)"
+  ],
+  "training": {
+    "episodes": 5000,
+    "lr": 5e-5,
+    "seed": 1,
+    "opponent_pool": [
+      "rule_based_agent (Mega Lucario)",
+      "rule_based_dragapult",
+      "rule_based_iono",
+      "rule_based_abomasnow",
+      "rule_based_crustle_dashimaki",
+      "rule_based_romanrozen_v6"
+    ],
+    "wall_time_sec": 1534.7,
+    "cumulative_wins": 1119,
+    "cumulative_losses": 3881,
+    "cumulative_winrate": 0.224
+  },
+  "trajectory_recent_winrate": {
+    "ep_200": 0.23,
+    "ep_1000": 0.21,
+    "ep_2000": 0.22,
+    "ep_3000": 0.20,
+    "ep_3600": 0.26,
+    "ep_4000": 0.26,
+    "ep_4600": 0.25,
+    "ep_5000": 0.27,
+    "interpretation": "Stable 0.20-0.27 range with most recent settling at 0.27 — beats V60 EXT3 lab 0.205 trend."
+  },
+  "vs_previous": {
+    "BC_v1_lab": 0.057,
+    "BC_v2_lab": 0.104,
+    "BCRL1_lab": 0.121,
+    "V60_EXT3_lab": 0.205,
+    "3_MLP_lab": 0.267,
+    "BCRL2_lab": "pending bench"
+  }
+}
