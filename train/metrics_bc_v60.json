@@ -1,0 +1,38 @@
+{
+  "experiment": "BC from V6 (Behavioral Cloning)",
+  "dataset": "data/sweep/bc_v6_dataset.npz",
+  "n_samples": 7802,
+  "n_games_collected": 200,
+  "opponents": [
+    "rule_based_agent (Mega Lucario)",
+    "rule_based_dragapult",
+    "rule_based_iono",
+    "rule_based_abomasnow",
+    "rule_based_crustle_dashimaki"
+  ],
+  "feature_dim": {"state": 60, "option": 40},
+  "model": "MlpPolicyV60 (pi: 64,32; v: 32)",
+  "training": {
+    "epochs": 500,
+    "batch_size": 64,
+    "lr": 1e-3,
+    "optimizer": "Adam",
+    "grad_clip": 1.0,
+    "seed": 0,
+    "device": "cuda",
+    "wall_time_sec": 2600
+  },
+  "trajectory": [
+    {"epoch": 1, "loss": 1.9002, "acc": 0.300},
+    {"epoch": 25, "loss": 1.2930, "acc": 0.501},
+    {"epoch": 50, "loss": 1.2092, "acc": 0.526},
+    {"epoch": 100, "loss": 1.1154, "acc": 0.561},
+    {"epoch": 200, "loss": 0.9451, "acc": 0.626},
+    {"epoch": 300, "loss": 0.8633, "acc": 0.649},
+    {"epoch": 400, "loss": 0.8079, "acc": 0.676},
+    {"epoch": 500, "loss": 0.7467, "acc": 0.693}
+  ],
+  "best_acc": 0.696,
+  "random_baseline_acc": 0.125,
+  "interpretation": "BC policy imitates V6 decisions 69.6% of the time across MAIN single-choice selects. Random baseline (median n_opts=8) is 12.5%."
+}
