@@ -38,6 +38,7 @@ import rule_based_crustle  # noqa: E402  # harukiharada Crustle Wall
 import rule_based_crustle_dashimaki  # noqa: E402  # dashimaki Day-1 #1 Crustle
 import rule_based_dragapult  # noqa: E402
 import rule_based_iono  # noqa: E402
+import rule_based_kojimar  # noqa: E402  # kojimar validated Lucario+Hariyama
 import rule_based_romanrozen_v6  # noqa: E402  # romanrozen V6 LB 860+ hybrid
 from kaggle_environments import make  # noqa: E402
 
@@ -86,6 +87,7 @@ SUBJECTS = {
         rule_based_crustle_dashimaki.agent,
     ),
     "romanrozen": ("rule_based(RomanrozenV6)", rule_based_romanrozen_v6.agent),
+    "kojimar": ("rule_based(Kojimar)", rule_based_kojimar.agent),
 }
 
 

@@ -1526,6 +1526,52 @@ sandbox verify 完了。
 - V6 (lab 57.9%, author 主張 LB 860+) も挑戦候補
 - 1 日 5 件枠、本日 1 件 (Iono) 投げたので残り 4 件可能
 
+### CrustleDashi も submit 完了 (2026-06-18)
+
+53794617 (CrustleDashi) PENDING、評価待ち。user 選択で「Iono を上回るか比較」。
+
+## メタ情報: **イワパレス (Crustle) がメタ** (2026-06-18 user 知見)
+
+User より「LB ではイワパレス (Crustle) がメタ」情報を共有。
+これは戦略的判断を更新する材料:
+
+- **Iono (Crustle 97.5/92.5%) は引き続き優位** ← 既に LB 762.2 で実証
+- **CrustleDashi (Iono 11.2%) は LB の Iono プレイヤー比率次第**
+  - もし Iono もメタなら CrustleDashi は危険
+  - もし Crustle 主導でメタなら CrustleDashi は mirror 50% で平均的
+- **V6 (anti-Crustle 強化、Crustle 51.2/65.0%) は安全な選択**
+  - 全 matchup 43%+ で分散小さい
+  - author 自身 LB 860+ を主張
+
+53794617 の結果が出れば、Iono と CrustleDashi の直接比較が可能。
+**Crustle メタ前提なら次の打ち手は V6 が最も安全**。
+
+## kojimar agent も vendor (2026-06-18 night)
+
+`kojimar/validated-rule-based-agent-matchup-tests` (32 votes) を vendor。
+Lucario + Hariyama + Solrock 構造。
+
+### kojimar @ 80g
+- Mega Lucario 60.0%, Dragapult 61.3%, Iono **81.2%**
+- Aboma 62.5%, Crustle Wall 30.0%, Crustle Dashi 21.2%
+- overall: **52.7%**
+
+Kojimar は Crustle 対策が弱い (V6 と異なり anti-Crustle 専用ルーチンなし)。
+**Crustle メタ環境では V6 より劣る**ので即 submit 候補ではない。
+
+## 8 subject 最新ランキング @ 80g
+
+| rank | subject | overall | min (致命弱点) | anti-Crustle |
+|---|---|---|---|---|
+| 1 | CrustleDashi | 67.3% | **Iono 11.2%** | self (50%) |
+| 2 | Iono | 64.0% | Lucario 21.2% | **97.5/92.5%** |
+| 3 | RomanrozenV6 | 57.9% | Lucario 43.8% | **51.2/65.0%** (built-in) |
+| 4 | Kojimar | 52.7% | Crustle Dashi 21.2% | 30/21.2% |
+| 5 | Dragapult | 48.1% | Crustle Dashi 0% | 58.8/0% |
+| 6 | Lucario | 46.5% | Crustle 25/22.5% | 25/22.5% |
+| 7 | Abomasnow | 40.0% | - | 67.5/16.2% |
+| 8 | CrustleWall (haru) | 36.9% | Iono 1.2% | self/10% |
+
 ### rule_based(Iono) の特徴
 
 - **Crustle 系を完封**: Crustle Wall 97.5% / Crustle Dashimaki 92.5%
