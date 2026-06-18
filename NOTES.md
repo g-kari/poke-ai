@@ -2849,6 +2849,40 @@ V60 EXT3 を **V6 deck で動かす** (deck.csv のみ変更、 policy はその
 - 我々の **deck.csv (Mega Aboma)** が V60 best deck の事実は変わらず
 - 53812882 (= 我々 deck + EXT3) が引き続き V60 best、 これ以上の改善は困難
 
+## PIMC v5 — multi-ply rollout — **改善なし** (2026-06-19)
+
+`train/pimc_agent.py:_ROLLOUT_DEPTH = 8` で 1-ply 評価後に search_step を
+greedy (= 常に option 0) で 8 ステップ続行、 終局 or budget まで進めて
+最終局面の prize_delta で評価。
+
+### v5 bench @ 20g/opp
+
+  vs Mega Lucario: 2-18 (10.0%)
+  vs Iono:         1-19 ( 5.0%)
+  vs Crustle Dashi: 0-20 ( 0.0%)
+  subtotal: 3-57 (5.0%)
+
+v1 (1-ply) 8.3%、 v2 (field-aware) 10%、 v4 (inference) 10%、 v5 5%。
+multi-ply は **逆効果** (= greedy rollout policy が weak、 8 ply 進めても
+prize delta が改善しない、 むしろ random rollout より弱い)。
+
+### PIMC heuristic-only の天井確定
+
+| version | feature | subtotal |
+|---|---|---|
+| v1 | 1-ply prize delta | 8.3% |
+| v2 | + field-aware (HP/bench/energy) | 10% |
+| v3 | + V60 EXT value head | 1.7-6.7% |
+| v4 | + opp deck inference | 10% |
+| **v5** | **+ multi-ply rollout depth 8** | **5%** |
+
+PIMC heuristic は **5-10% で頭打ち**、 5 試行で確定。 真の改善には:
+- AlphaZero スタイル: PIMC 専用 value head 訓練 (selfplay 文脈ではダメ)
+- もしくは learned rollout policy で muti-ply 改善
+
+両方とも大規模実装、 短期 ROI 低い。 V60 EXT3 (LB 523) で deep-learning
+ベースラインを確定、 PIMC は backseat に。
+
 ### scripts/check_main_exec.py に --strict-cwd 追加
 
 今後の submission ERROR を **submit 前に local で検出** する体制:

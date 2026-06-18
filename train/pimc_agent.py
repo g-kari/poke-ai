@@ -34,6 +34,9 @@ from cg.api import (
 _TIME_BUDGET_S = 1.5
 # Cap number of options we score (root branching can blow up).
 _MAX_OPTIONS_TO_SCORE = 8
+# v5: how many additional search_step iterations to push past the 1-ply
+# evaluation. Each step is ~0.5ms so 8 steps is well under our budget.
+_ROLLOUT_DEPTH = 8
 
 
 def _sample_opp_hand(opp_deck: list[int], hand_count: int, rng: random.Random) -> list[int]:
@@ -160,12 +163,25 @@ def _try_score_option(
         next_obs_class = to_observation_class(next_obs) if isinstance(next_obs, dict) else next_obs
         if next_obs_class.current is None:
             return 0.0
-        score = _prize_delta(next_obs_class, your_index)
+        # v5: rollout further (greedy: always pick option 0 = engine-prior).
+        # Doing this for a few more steps lets prize-delta accumulate signal.
+        # Each step is ~0.5ms so we can afford 5-10 steps cheap.
+        for _ in range(_ROLLOUT_DEPTH):
+            cur = next_obs_class.current
+            if cur is None or (cur.result is not None and cur.result >= 0):
+                break
+            try:
+                ns = search_step(sid, [0])  # greedy engine-order
+                next_obs = ns.observation
+                next_obs_class = (
+                    to_observation_class(next_obs) if isinstance(next_obs, dict) else next_obs
+                )
+            except Exception:  # noqa: BLE001
+                break
+        score = _prize_delta(next_obs_class, your_index) if next_obs_class.current else 0.0
         if nn_value_fn is not None and isinstance(next_obs, dict):
             with contextlib.suppress(Exception):
                 v = nn_value_fn(next_obs, your_index)
-                # nn_value_fn returns a value in [-1, 1] (tanh-bounded);
-                # we add it as a learned-Q correction to the heuristic.
                 score += v * nn_weight
         return score
     except Exception:  # noqa: BLE001
