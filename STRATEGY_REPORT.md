@@ -201,8 +201,21 @@ LB 888-926 なので、 90% 模倣できれば LB 800+ 期待だった。
 が高くても (= 69.6%)、 そのほとんどが「V6 と同じ簡単な手」に偏って
 おり、 hard matchup (Crustle Dashi 0%) では破綻する。
 
-**v2 改善試行 (進行中)**: V6 が勝った試合のみで再学習。 負け試合の
-混乱した選択を除外することで、 V6 の "competent regions" に集中。
+**実行結果 v2 (400 games / 227 wins / 8447 samples / 500 epoch BC v2)**:
+- **supervised acc 66.0%** (v1 から -3.6pp、 dataset が concentrated)
+- **lab winrate 10.4%** @ 280g — v1 から **+4.7pp 改善**
+  - **0.0% matchup が消滅** (全 opp で 7.5-15%、 variance 減)
+  - vs V6: 15.0% (v1 12.5% から微増)
+- ただし 3-MLP 26.7% / V60 EXT3 20.5% には届かず、 **提出見送り**
+
+wins-only filter は意味があった (= negative samples の影響を取り除けば
+分布は均す)、 が **BC 単体の天井** が ~10% にあると確認。 これは V6 が
+LB 888 でも、 supervised cloning で学べる部分は 1/9 程度しか転写されて
+いないことを示す。
+
+**v3 次の手 (進行中)**: BC v2 weights を REINFORCE warm-start として
+利用。 V6 prior で初期化された政策が self-play で distribution shift を
+解消できるか検証。 (AlphaGo 戦略の縮小版)
 
 ### 5.3b BC 系統が一般的に LB 700+ に届かない理由
 

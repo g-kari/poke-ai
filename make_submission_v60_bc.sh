@@ -7,11 +7,13 @@
 # avoid shipping ext3 alongside BC.
 #
 # Usage:
-#   ./make_submission_v60_bc.sh                        # -> submission_v60_bc.tar.gz
-#   ./make_submission_v60_bc.sh out/foo.tar.gz         # -> out/foo.tar.gz
+#   ./make_submission_v60_bc.sh                                    # default BC v1 weights
+#   ./make_submission_v60_bc.sh out/foo.tar.gz                     # custom tar path
+#   BC_PT=train/mlp_policy_v60_bc_v2.pt ./make_submission_v60_bc.sh # use v2 weights
 
 set -euo pipefail
 OUT="${1:-submission_v60_bc.tar.gz}"
+BC_PT="${BC_PT:-train/mlp_policy_v60_bc.pt}"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
@@ -31,12 +33,11 @@ require train/__init__.py
 require train/features.py
 require train/features_v60.py
 require train/mlp_policy_v60_numpy.py
-require train/mlp_policy_v60_bc.pt
+require "$BC_PT"
 require scripts/extract_v60_weights.py
 
 # Extract BC weights to npz.
-BC_PT="train/mlp_policy_v60_bc.pt"
-BC_NPZ="train/mlp_policy_v60_bc.npz"
+BC_NPZ="${BC_PT%.pt}.npz"
 if [ ! -e "$BC_NPZ" ] || [ "$BC_PT" -nt "$BC_NPZ" ]; then
     echo "extracting $BC_PT -> $BC_NPZ"
     "$ROOT/scripts/run.sh" python3 "$ROOT/scripts/extract_v60_weights.py" \

@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 GAMES="${1:-10}"
-WEIGHTS="train/mlp_policy_v60_bc.pt"
+WEIGHTS="${WEIGHTS:-train/mlp_policy_v60_bc.pt}"
 
 if [ ! -e "$WEIGHTS" ]; then
     echo "missing: $WEIGHTS — train BC first via train/bc_train.py" >&2
@@ -30,7 +30,7 @@ echo "overall winrate parsed: $overall%"
 if [ "${SHIP:-0}" = "1" ]; then
     echo
     echo "=== Bundling submission_v60_bc.tar.gz ==="
-    ./make_submission_v60_bc.sh
+    BC_PT="$WEIGHTS" ./make_submission_v60_bc.sh
     echo
     echo "Ready: .venv/bin/kaggle competitions submit -c pokemon-tcg-ai-battle \\"
     echo "    -f submission_v60_bc.tar.gz -m \"BC from V6 (lab ${overall}% @ $((2 * GAMES))g/opp)\""

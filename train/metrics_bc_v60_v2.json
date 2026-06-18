@@ -1,0 +1,58 @@
+{
+  "experiment": "BC v2 — wins-only filter from V6",
+  "motivation": "v1 lab 5.7% suggested BC was learning V6's losing-game noise too. Filter to V6's winning trajectories only.",
+  "dataset": "data/sweep/bc_v6_wins_only.npz",
+  "n_samples": 8447,
+  "n_games_collected": 400,
+  "n_winning_games_kept": 227,
+  "v6_winrate_during_collection": 0.568,
+  "feature_dim": {"state": 60, "option": 40},
+  "model": "MlpPolicyV60 (pi: 64,32; v: 32)",
+  "training": {
+    "trainer": "train.bc_train_v2 (vectorized padded-minibatch, ~10x faster)",
+    "epochs": 500,
+    "batch_size": 128,
+    "lr": 1e-3,
+    "optimizer": "Adam",
+    "grad_clip": 1.0,
+    "seed": 0,
+    "device": "cuda",
+    "wall_time_sec": 62
+  },
+  "trajectory": [
+    {"epoch": 1, "loss": 2.0097, "acc": 0.253},
+    {"epoch": 50, "loss": 1.2306, "acc": 0.514},
+    {"epoch": 100, "loss": 1.1553, "acc": 0.552},
+    {"epoch": 200, "loss": 1.0298, "acc": 0.597},
+    {"epoch": 300, "loss": 0.9909, "acc": 0.621},
+    {"epoch": 400, "loss": 0.9144, "acc": 0.632},
+    {"epoch": 500, "loss": 0.8642, "acc": 0.658}
+  ],
+  "best_acc": 0.660,
+  "random_baseline_acc": 0.125,
+  "vs_v1": {
+    "v1_best_acc": 0.696,
+    "v2_best_acc": 0.660,
+    "interpretation": "v2 has lower supervised acc, expected because the dataset is more concentrated on V6's strong-decision regions."
+  },
+  "bench_result": {
+    "games_per_opp": 40,
+    "total_games": 280,
+    "wins": 29,
+    "losses": 251,
+    "overall_winrate": 0.104,
+    "per_opp": {
+      "Mega Lucario": 0.100,
+      "Dragapult ex": 0.125,
+      "Iono": 0.075,
+      "Mega Abomasnow": 0.100,
+      "Crustle Wall": 0.100,
+      "Crustle Dashi": 0.075,
+      "V6": 0.150
+    },
+    "vs_v1_winrate": 0.057,
+    "delta": "+4.7pp (= wins-only filter helped — no more 0% catastrophic matchups), still well below 3-MLP 26.7% and V60 EXT3 20.5%."
+  },
+  "submission_decision": "SKIPPED. Lab 10.4% would translate to LB ~250 (10.4% × 43 LB/lab%) which is far below our 3-MLP 679.6 ceiling.",
+  "next_step": "Use BC v2 weights as REINFORCE warm-start — V6 prior in early training may shape later self-play better than from-scratch."
+}
