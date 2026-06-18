@@ -2555,6 +2555,38 @@ ref **53810836** PENDING、 評価結果は次サイクル以降。 これは我
 - V6: 896.5 (前 921 から微減)
 - CrustleDashi: **888.2** (前 866 から **+22 上昇!**)
 
+## EXT3 評価中の並行作業 (2026-06-18 夕方)
+
+EXT3 submission (53810836) は PENDING、 LB 評価に数十分必要。 待ち時間に
+2 つの background job を並行起動:
+
+### Job 1: EXT4 学習 (GPU、 28 分予測)
+
+`mlp_train_v60` で EXT3 から warm-start、 **lr=5e-5** (= EXT3 の lr=1e-4 の
+半分) で振動を更に抑制を試す。 5000ep、 seed=2718。 合計 15500ep を目指す。
+
+仮説: ext1 (5500ep, lr=5e-4) → ext3 (10500ep, lr=1e-4) で recent 振動 0.17-
+0.25 だった。 lr を更に下げて 0.20-0.24 に収束を狙う。 15500ep 完了で 22%
+台に進めるかも (~25% は微妙)。
+
+### Job 2: GA loop 20 gens @ 40g/eval (CPU、 30-45 分予測)
+
+`ga_deck.py` で Snorunt+Mega Froslass ex deck から 1-card swap 進化。
+**8g/eval (= 40g per opp)** で前回の 3g/eval の noise (false positive 量産)
+を排除。 20 generations は前回 8g/eval × 15 gens で gen 2 で local optimum
+に達した経験を踏まえ、 もう少し脱出を試す。
+
+CPU で走るので EXT4 学習 (GPU) と独立。 結果は `data/sweep/ga_40g_v1.json`
+に persist。 generation 毎に dump するので途中で killed しても安全。
+
+### 整合性チェック
+
+EXT1 を `train/archive/` に退避した影響を確認:
+- 3-MLP submission (= train/mlp_policy*.pt の v40 系) は **verify OK 維持**
+- V60 submission (= train/mlp_policy_v60_ext3.pt のみ) も **verify OK**
+- main.py の glob `train/mlp_policy*.pt` は v60 ファイルも match するが、
+  EnsemblePolicy が features 不一致でスキップして 3-MLP として動く (= 既知挙動)
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
