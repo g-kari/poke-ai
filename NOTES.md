@@ -2730,6 +2730,53 @@ V60 EXT3 単独は **3-MLP に劣る**。 次の打ち手:
 
 時間効率重視で (1) を優先試行。 完了後 ensemble bench、 22%+ なら再 submit。
 
+### Task #112 結果: V60 ensemble は機能しない (2026-06-19 朝)
+
+seed=31415 fresh 4000ep 完了 (22 分、 累計 16.8%)。
+
+**single bench**:
+- seed=31415: overall 16.2% (Mega Lucario 30%、 Dragapult 27% は強いが Aboma 10%)
+- EXT3: 20.5% (前回測定)
+
+**ensemble (EXT3 + seed31415) bench**:
+  vs Mega Lucario:  7-23 (23.3%) ← EXT3 +10pp
+  vs Dragapult:    10-20 (33.3%)
+  vs Iono:          0-30 ( 0.0%) ← **致命的中庸化**
+  vs Mega Aboma:    7-23 (23.3%) ← EXT3 -14pp
+  vs Crustle Wall:  8-22 (26.7%)
+  vs Crustle Dashi: 1-29 ( 3.3%)
+  vs V6:            6-24 (20.0%) ← EXT3 +7pp
+  **overall: 39-171 (18.6%)** ← EXT3 single 20.5% から **-1.9pp 悪化**
+
+### V60 ensemble の構造問題
+
+前回 EXT1+EXT3 ensemble (-2pp) と今回 EXT3+seed31415 ensemble (-1.9pp) で
+**同じ pattern**:
+- 個別 matchup で改善 (V6 +7pp、 Mega Lucario +10pp) と悪化 (Iono -10pp、
+  Aboma -14pp) が trade-off
+- 平均すると -2pp の中庸化
+
+仮説:
+- **features_v60 共通**で訓練された policy は本質的に同じ「meta」 を学ぶ
+- seed の違いでは matchup-specific な偏りが補完されるが、 overall
+  の方向では同調する
+- 3-MLP は v40 features で seed 0/2/100 ensemble なら 23.3% に届くが、
+  V60 では同じ trick が効かない
+- features の表現力が seed-level diversity を圧倒している可能性
+
+### Task #112 close、 next pivot
+
+V60 ensemble 路線は dead-end と確定。 次の打ち手候補:
+
+1. **3-MLP の features を v60 にアップグレード**:
+   - 既存 mlp_policy / seed2 / seed100 を features_v60 で fresh 学習
+   - 3-MLP の seed-level diversity を v60 features で再現する試み
+2. **PPO**: 振動制御で 25%+ を目指す中長期路線
+3. **V60 EXT3 を deck.csv = V6 deck で fresh 大量学習**: 前回 4000ep は
+   失敗したが 10000ep+ なら収束する仮説
+4. **V60 EXT3 + 3-MLP のクロス ensemble**: features 不一致で結合不可、
+   別 main.py が必要
+
 ### scripts/check_main_exec.py に --strict-cwd 追加
 
 今後の submission ERROR を **submit 前に local で検出** する体制:
