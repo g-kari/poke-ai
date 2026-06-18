@@ -1687,6 +1687,59 @@ V6 は初評価 801.9 で堅実、author 主張 LB 860+ には届かず。
 最新 2 件 tracking: V6 + CrustleDashi (Iono は外れた可能性、ただしスコアは保持)。
 LB トップ 40 (1035.4) までまだ -223、PIMC + 学習が必要なギャップ。
 
+## opponent pool 多様化 fine-tune (2026-06-18 user 議論後)
+
+「データの質を上げる」改善 #2 (相手プール多様化) を実装:
+`train/mlp_train.py` に `--opponent-pool` (カンマ区切り module 名)
+を追加、毎エピソード pool からランダム選択。
+
+学習設定: 5 opp pool [Iono, CrustleDashi, V6, Lucario, Dragapult]、
+warm-start mlp_policy.pt、lr=1e-4、1500ep、seed=42。
+
+学習中: recent 勝率 0.18-0.28 (mix opp の平均)、安定。
+
+### solo @ 20g 結果
+
+  vs Mega Lucario:    4-16 (20.0%)
+  vs Dragapult ex:    8-12 (40.0%) ← 改善傾向？
+  vs Iono:            0-20 ( 0.0%) ← **致命的悪化**
+  vs Mega Abomasnow:  4-16 (20.0%)
+  vs Crustle Dashi:   0-20 ( 0.0%) ← **致命的悪化**
+  vs V6:              4-16 (20.0%)
+
+**判定: pool 多様化だけでは「全方位中庸」policy になり、強い相手 (Iono /
+Crustle Dashi) には全敗。**
+
+仮説の検証結果:
+- 当初仮説: 「相手によって戦略を変えるシグナルが学べる」
+- 実際: **policy は obs から相手 deck を識別する手がかりが無い**
+  (features.py は自分の場の情報のみ、相手の active カード ID 等を見ていない)
+- 結果として 5 opp を平均的に処理する妥協 policy になり、各 opp 専用の
+  戦略は学習されない
+
+教訓:
+**pool 多様化は features.py の表現力強化と同時にやらないと効かない**。
+具体的には:
+- 相手 active カード ID embedding
+- 相手 bench 数 / energy 数 / discard pile 主要カード
+- 相手 deck pattern 推定 (Iono が Wattrel chain を出してれば Iono と分かる)
+
+これらの features があれば policy は「相手が誰か」を identify でき、
+pool 学習で「相手によって戦略を変える」を学習できる。
+
+### archive
+
+- `train/archive/mlp_policy_pool5.pt` (1500ep pool training)
+- `train/metrics_mlp_pool5.json` (学習履歴)
+
+### 次サイクル候補
+
+優先順 (前回議論より):
+1. **features.py 強化** (相手 active embed、 deck pattern 推定) → これが前提
+2. **value baseline 0/1 + EMA** (hard matchup での gradient 改善)
+3. PIMC + 学習済み NN value (AlphaZero スタイル、本命)
+4. pool training は features 強化後に再試
+
 ## 8 subject 最新ランキング @ 80g
 
 | rank | subject | overall | min (致命弱点) | anti-Crustle |

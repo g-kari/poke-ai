@@ -87,18 +87,25 @@ def run_episode(
     rng: np.random.Generator,
     opponent=None,
     opponent_prob: float = 1.0,
+    opponent_pool: list | None = None,
 ):
     """Self-play one episode.
 
-    - opponent is None OR opponent_prob == 0: mirror selfplay (both seats use policy)
-    - else with probability `opponent_prob`: policy vs opponent (random seat),
-      only policy's trace returned
-    - else: mirror selfplay
+    - opponent_pool given: pick a random opponent from the pool each episode
+      (= opponent diversity, teaches the policy to switch strategies vs
+      different decks). Falls back to single `opponent` if pool is empty.
+    - opponent is None OR opponent_prob == 0: mirror selfplay
+    - else with probability `opponent_prob`: policy vs opponent (random seat)
     """
     trace0: list[Step] = []
     a0 = make_training_agent(policy, rng, trace0)
     env = make("cabt")
-    use_opp = opponent is not None and rng.random() < opponent_prob
+    chosen_opp = None
+    if opponent_pool:
+        chosen_opp = opponent_pool[int(rng.integers(len(opponent_pool)))]
+    elif opponent is not None:
+        chosen_opp = opponent
+    use_opp = chosen_opp is not None and rng.random() < opponent_prob
     if not use_opp:
         trace1: list[Step] = []
         a1 = make_training_agent(policy, rng, trace1)
@@ -107,10 +114,10 @@ def run_episode(
         r1 = env.steps[-1][1].reward
         return trace0, trace1, r0, r1
     if rng.random() < 0.5:
-        env.run([a0, opponent])
+        env.run([a0, chosen_opp])
         r0 = env.steps[-1][0].reward
         return trace0, [], r0, None
-    env.run([opponent, a0])
+    env.run([chosen_opp, a0])
     r0 = env.steps[-1][1].reward
     return trace0, [], r0, None
 
@@ -193,6 +200,7 @@ def train(
     hidden_v: tuple[int, ...] | None = None,
     opponent: str = "",
     opponent_prob: float = 1.0,
+    opponent_pool: str = "",
 ) -> None:
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
@@ -210,11 +218,24 @@ def train(
             print(f"warm-start load failed ({exc}); training from scratch")
     print(f"policy: pi={policy.hidden_pi} v={policy.hidden_v} device={policy.device}")
     opp_fn = _load_opponent(opponent)
-    eff_prob = opponent_prob if opp_fn is not None else 0.0
-    print(
-        f"opponent: {opponent or 'mirror selfplay'} "
-        f"(prob={eff_prob:.2f}, mix with mirror selfplay otherwise)"
-    )
+    pool_fns = []
+    if opponent_pool:
+        for name in opponent_pool.split(","):
+            name = name.strip()
+            if name:
+                pool_fns.append(_load_opponent(name))
+    if pool_fns:
+        eff_prob = opponent_prob
+        print(
+            f"opponent: pool of {len(pool_fns)} agents [{opponent_pool}] "
+            f"(prob={eff_prob:.2f} per ep)"
+        )
+    else:
+        eff_prob = opponent_prob if opp_fn is not None else 0.0
+        print(
+            f"opponent: {opponent or 'mirror selfplay'} "
+            f"(prob={eff_prob:.2f}, mix with mirror selfplay otherwise)"
+        )
     policy.train()
     optimizer = torch.optim.Adam(policy.parameters(), lr=lr)
 
@@ -223,7 +244,7 @@ def train(
     recent: list[int] = []
     metrics: list[dict] = []
     for ep in range(1, episodes + 1):
-        trace0, trace1, r0, r1 = run_episode(policy, rng, opp_fn, eff_prob)
+        trace0, trace1, r0, r1 = run_episode(policy, rng, opp_fn, eff_prob, pool_fns or None)
         if r0 is not None:
             reinforce_update(policy, optimizer, trace0, float(r0))
         if r1 is not None:
@@ -294,6 +315,14 @@ def main():
         help="Probability of facing --opponent per episode (else mirror selfplay). "
         "0.5 = mixed mode (recommended for catastrophic-forgetting avoidance).",
     )
+    p.add_argument(
+        "--opponent-pool",
+        default="",
+        help="Comma-separated list of opponent modules from scripts/ "
+        "(e.g. 'rule_based_iono,rule_based_crustle_dashimaki,rule_based_romanrozen_v6'). "
+        "Each episode picks one at random; trains the policy to switch strategies "
+        "across multiple decks. Overrides --opponent when set.",
+    )
     args = p.parse_args()
 
     def _parse(spec):
@@ -311,6 +340,7 @@ def main():
         _parse(args.hidden_v),
         args.opponent,
         args.opponent_prob,
+        args.opponent_pool,
     )
 
 
