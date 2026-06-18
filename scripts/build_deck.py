@@ -131,12 +131,14 @@ def pick_attacker_chain(
     target_weakness: str | None = None,
     avoid_self_weakness: bool = True,
     allow_stage2: bool = True,
+    require_non_ex: bool = False,
 ) -> list[dict] | None:
     """Pick an attacker chain [basic, (stage1?), attacker].
 
-    v3: considers both Stage 1 AND Stage 2 attackers. Scores by HP/(retreat+1)
-    of the top stage + meta-fit + target_type bonus. Returns the resolved
-    chain (length 2 for Stage 1 attacker, length 3 for Stage 2).
+    v5: target_weakness bonus boosted from 30 → 200 (now actually dominant
+    over raw HP/retreat efficiency). ex penalty added because ex pokemon
+    are vulnerable to Crustle's "Mysterious Rock Inn" lock. Optional
+    require_non_ex strict filter for "wall-bypass" specs (V6-style).
     """
     pkmn_list = cards["pokemon_db"]
     name_index = _build_name_index(pkmn_list)
@@ -148,6 +150,8 @@ def pick_attacker_chain(
 
     scored: list[tuple[float, list[dict]]] = []
     for atk in candidates:
+        if require_non_ex and atk.get("ex"):
+            continue
         chain = _resolve_chain(name_index, atk)
         if not chain:
             continue
@@ -159,6 +163,9 @@ def pick_attacker_chain(
         atk_type = _energy_type(atk.get("type"))
         target_count = weak_dist.get(f"{{{atk_type}}}", 0)
         bonus = target_count / 20.0
+        # v6 (reverted from v5 mistake): modest target-type bonus, no ex
+        # penalty — HP/(retreat+1) eff should dominate so the best Stage1
+        # ex (= v4's anti-meta discovery) can win.
         if target_weakness and atk_type == target_weakness:
             bonus += 30.0
         if avoid_self_weakness:
@@ -166,7 +173,7 @@ def pick_attacker_chain(
             for w, count in weak_dist.items():
                 if my_weak and w.strip("{}") == my_weak and count > 50:
                     bonus -= count / 30.0
-        # Slight penalty per evolution step (harder to set up)
+        # Penalty per evolution step (harder to set up).
         bonus -= (len(chain) - 1) * 5.0
         scored.append((eff + bonus, chain))
     if not scored:
@@ -196,13 +203,19 @@ def build_deck(
     n_each_stage: int = 4,
     n_energy: int = 18,
     allow_stage2: bool = True,
+    require_non_ex: bool = False,
 ) -> list[int]:
     """Construct a 60-card deck.
 
     Picks an attacker chain (Basic + Stage1 [+ Stage2]) and includes
     n_each_stage copies of each stage card, plus energy + trainer staples.
     """
-    chain = pick_attacker_chain(cards, target_weakness=target_weakness, allow_stage2=allow_stage2)
+    chain = pick_attacker_chain(
+        cards,
+        target_weakness=target_weakness,
+        allow_stage2=allow_stage2,
+        require_non_ex=require_non_ex,
+    )
     if not chain:
         raise RuntimeError("no attacker chain found")
     deck: list[int] = []
@@ -284,12 +297,22 @@ def main() -> int:
         action="store_true",
         help="Disable Stage 2 attackers (force Stage 1 only — faster setup).",
     )
+    p.add_argument(
+        "--non-ex",
+        action="store_true",
+        help="Require non-ex attacker (= V6-style anti-Crustle Hariyama route).",
+    )
     args = p.parse_args()
 
     cards = load_cards(args.cards)
     print(f"Loaded {cards['metadata']['total_cards']} cards from {args.cards}")
 
-    deck = build_deck(cards, target_weakness=args.target_type, allow_stage2=not args.no_stage2)
+    deck = build_deck(
+        cards,
+        target_weakness=args.target_type,
+        allow_stage2=not args.no_stage2,
+        require_non_ex=args.non_ex,
+    )
     assert len(deck) == 60, f"deck size != 60: {len(deck)}"
     with open(args.out, "w") as f:
         for cid in deck:

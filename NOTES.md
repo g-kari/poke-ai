@@ -2051,6 +2051,47 @@ build_deck.py に `--no-stage2` flag も追加。
 - **non-ex Hariyama / Solrock 系の手書き spec** を candidate に加える
 - GA loop: best spec を seed に 1 card 変更で fitness 改善を測る
 
+## deck-builder v5 (score 関数改修) — **逆効果** (2026-06-18)
+
+実装:
+- `pick_attacker_chain` で target_weakness bonus を 30 → **200** に
+- ex penalty **-20** を新設 (Crustle ロックイン対策)
+- `require_non_ex` 引数で non-ex Hariyama 系を強制可能に
+- `build_and_eval_deck.py` に non-ex 系の 3 spec を追加
+
+### 8 spec × 5 opp × 5g (= 200 games) 結果
+
+| rank | spec | overall | attacker (head) |
+|---|---|---|---|
+| **v4 比較** | **Fighting/Stage1 (旧)** | **18.0%** | **Snorunt → Mega Froslass ex** |
+| 1 | Fighting/Stage1 (v5) | 8.0% | id=333 |
+| 2 | Fire/Stage1/non-ex | 6.0% | id=496 (Volcanion?) |
+| 3 | Psychic/Stage1 | 4.0% | id=1039 |
+| 4-5 | Lightning, Fighting/non-ex | 2.0% | - |
+| 6-8 | Fire, Default, Default/non-ex | 0.0% | - |
+
+すべて v4 の 18% から大幅劣化。
+
+### 失敗の原因
+
+1. **target_type bonus 200 が強すぎ**: 「meta-fit の HP 高 ex」 を outranking
+   できる Fire type の attacker が無く、 結果として弱い type 強制で
+   1025 (Salandit) などが選ばれた
+2. **ex penalty -20** は Snorunt+Mega Froslass ex (HP 310 で eff 100+) を
+   敗者にし、 Stage1 の弱い non-ex Hariyama (HP 130 程度) が勝てない
+3. **強い type への偏重** が「人間が思いつかない」 deck を発見する能力
+   (= v4 の核心) を**潰した**
+
+### v6 方針 (本サイクル末尾)
+
+- **v4 score 関数に revert** する (HP/(retreat+1) 主導が正解だった)
+- ex penalty は **無効化** or 大幅軽減 (-5 以下)
+- target_type bonus は **30** で十分 (200 は強すぎ)
+- 真の improvement は **GA loop** で「best spec を seed に 1 card swap で
+  fitness 改善を測る」 直接 fitness-driven 進化
+- 教訓: heuristic score の手動 tuning は noise vs guidance のバランスが
+  難しい、 fitness ベース GA の方が安全
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と

@@ -141,14 +141,32 @@ def main() -> int:
         ("Crustle Dashi", rule_based_crustle_dashimaki.agent),
     ]
 
-    # Try multiple deck specs.
+    # Try multiple deck specs. v5 adds non-ex variants (anti-Crustle route).
     specs = [
         {"target_type": "R", "allow_stage2": False, "label": "Fire / Stage1"},
-        {"target_type": "R", "allow_stage2": True, "label": "Fire / Stage2 OK"},
         {"target_type": "F", "allow_stage2": False, "label": "Fighting / Stage1"},
-        {"target_type": "F", "allow_stage2": True, "label": "Fighting / Stage2 OK"},
         {"target_type": "L", "allow_stage2": False, "label": "Lightning / Stage1"},
-        {"target_type": None, "allow_stage2": True, "label": "Default / Stage2 OK"},
+        {"target_type": "P", "allow_stage2": False, "label": "Psychic / Stage1"},
+        # v5: non-ex specs (V6-style Hariyama route, immune to Crustle ex lock)
+        {
+            "target_type": "F",
+            "allow_stage2": False,
+            "require_non_ex": True,
+            "label": "Fighting / Stage1 / non-ex",
+        },
+        {
+            "target_type": "R",
+            "allow_stage2": False,
+            "require_non_ex": True,
+            "label": "Fire / Stage1 / non-ex",
+        },
+        {
+            "target_type": None,
+            "allow_stage2": False,
+            "require_non_ex": True,
+            "label": "Default / Stage1 / non-ex",
+        },
+        {"target_type": None, "allow_stage2": True, "label": "Default / Stage2 OK (baseline)"},
     ]
 
     print(f"Evaluating {len(specs)} deck specs × {len(opps)} opps × 2 × {args.games}g\n")
@@ -159,6 +177,7 @@ def main() -> int:
             cards,
             target_weakness=spec["target_type"],
             allow_stage2=spec["allow_stage2"],
+            require_non_ex=spec.get("require_non_ex", False),
         )
         winrates = measure_fitness(deck, opps, args.games)
         overall = winrates["_overall"]
