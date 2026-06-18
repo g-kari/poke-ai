@@ -2131,6 +2131,51 @@ GA が学んだ含意:
 3. 結果が 25%+ なら **submission 候補に**
 4. multi-mutation (2-card swap) も試行
 
+### 🚨 GA 40g 本格 bench — improvement は **noise だった**
+
+  vs Mega Lucario:    7-33 (17.5%)
+  vs Dragapult ex:    7-33 (17.5%)
+  vs Iono:            4-36 (10.0%)
+  vs Mega Aboma:      7-33 (17.5%)
+  vs Crustle Wall:    5-35 (12.5%)
+  vs Crustle Dashi:   0-40 ( 0.0%) ← 持続
+  vs V6:              7-33 (17.5%)
+  overall:           37-243 (13.2%) ← v4 17.5% から **-4.3pp 悪化**
+
+3g/eval GA evaluation の 23.3% → 40g 本格 bench 13.2% = **改善は noise**。
+**Wilson 95% CI ±18pp で覆われる範囲内**。 むしろ「Snorunt → Stadium」
+「Water → Metal Energy」 の 2 つの swap は **長期 winrate を下げる方向**
+だった。
+
+### GA loop の真の制約 (本サイクル末発見)
+
+1. **3g/eval は使えない**: noise floor が large、 false positive 量産
+2. **最低 40g/eval** が必要 (= 1 generation ≈ 14秒 × 5 opps × 8 sides ≈ 60-90秒)
+3. **100 gens × 90秒 ≈ 2.5h** → overnight scheduler に適切な workload
+4. ただし、 構造的問題 **「単一 ex chain は Crustle 0% 確定」** は GA でも解決不可
+
+### Task #107 deck-builder の構造的限界
+
+- 現状の `pick_attacker_chain()` は **単一 evolution chain** のみ
+- ex attacker を選ぶと **Crustle ロックインで詰む** (gen 8 で確認、 v4 80g、 v6 GA)
+- 真の anti-meta deck は V6 のような **hybrid (ex + non-ex)**
+- builder v7 で hybrid deck をサポートすれば、 Crustle 改善できる見込み
+
+### v7 設計案 (本サイクル末提案)
+
+```python
+# 仮: pick_attacker_chain は最大 2 つの chain を返す
+def pick_attacker_chains(cards, primary, secondary, ...) -> list[list[dict]]:
+    return [primary_chain, secondary_chain]
+
+# Crustle 検出時は secondary (non-ex) を出す agent ロジックも必要
+```
+
+これは builder + agent 両方の改修。 中規模実装、 1-2 サイクル必要。
+
+### LB 観察 (2026-06-18)
+- V6: **926.5** (横ばい、 我々の best submission 安定)
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
