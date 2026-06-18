@@ -2092,6 +2092,45 @@ build_deck.py に `--no-stage2` flag も追加。
 - 教訓: heuristic score の手動 tuning は noise vs guidance のバランスが
   難しい、 fitness ベース GA の方が安全
 
+## GA loop 初回実行 — **進化に成功!** (2026-06-18)
+
+`scripts/ga_deck.py` を 10 generations、 3g/eval (= 30g per opp) で実行:
+
+  initial fitness: 10.0% (3-MLP 23.3% より -13.3pp、 noise 大)
+  gen 2: Snorunt → Gravity Mountain swap → 16.7% ✓ accept
+  gen 3: Water Energy → Metal Energy swap → 23.3% ✓ accept
+  gen 4-10: すべて reject (上記 2 つが本質改善だった)
+
+  **final fitness: 23.3% (+13.3pp、 3-MLP と同水準!)**
+
+### 進化後 deck (deck_ga_v1.csv) の構成
+
+  4x Mega Froslass ex (HP 310 Stage1 ex)  ← attacker 維持
+  3x Snorunt (Basic、 1 枚減)              ← 4→3 に進化
+  Stadium 3 (Gravity Mountain 増)        ← set-up 重視
+  Item 10、 Supporter 8、 Tool 1
+  Basic Energy (Water + Metal 1 枚)
+
+GA が学んだ含意:
+1. **attacker x4 は維持** (gen 8 で Mega Froslass ex 削除を試した → reject)
+2. **Basic Pokemon の 4 枚は冗長**、 1 枚 Stadium に置換が利く
+3. **Stadium で持続効果** を出す方が単発の Snorunt より valuable
+4. Energy 種類変更 (Water 1 枚を Metal に) で何か改善 (noise の可能性も)
+
+### 注意 (3g/eval の noise)
+
+- 3 games/opp/seat × 5 opps × 2 sides = 30 games per fitness 評価
+- Wilson 95% CI ≈ ±18pp、 noise 大
+- 23.3% は本物の improvement か noise かは **40g+ で再評価必須**
+- ただし「方向性」 (= attacker 重要、 Basic 減らせる) は valuable な発見
+
+### 次サイクル方針
+
+1. **deck_ga_v1.csv を 40g/opp で本格 bench** (= noise 除去)
+2. **GA を 100 generations + 5g/eval で長期実行** (= scheduler に組込済)
+3. 結果が 25%+ なら **submission 候補に**
+4. multi-mutation (2-card swap) も試行
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
