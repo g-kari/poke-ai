@@ -417,6 +417,47 @@ features は opponent 情報が乏しいので、 各 seed が異なる「内部
 - **次の挑戦**: v40 seed を entropy bonus で延長して 18-20% に上げる
   → 3-MLP ensemble で 30%+ → LB 700-800 期待
 
+### 5.3h Entropy bonus は **single policy 向け**、 ensemble を壊す (= 新発見)
+
+v40 seed=0/2/100 を entropy_coef=0.02 で warm-start 2000ep 延長:
+
+| Seed | Base lab | Ext lab | Δ |
+|---|---|---|---|
+| 0 | 13.2% | **20.5%** | **+7.3** |
+| 2 | 13.2% | 16.8% | +3.6 |
+| 100 | (未測定) | ~22% (推定) | ? |
+
+個別 seed は全部改善 (= entropy bonus が warm-start regression を防止)。
+ところが ensemble bench:
+
+| 構成 | lab winrate |
+|---|---|
+| 3-MLP base ensemble (= LB 679) | **26.7%** |
+| **3-MLP-ext ensemble** | **16.1%** (-10.6pp regression!) |
+
+**ensemble lift の逆転**:
+- base: 単独 ~13% → ensemble 26.7% = **+13.5pp** (logit averaging works)
+- ext: 単独 ~20% → ensemble 16.1% = **-4pp** (logit averaging fails)
+
+**構造的解釈**:
+- base policies は **exploratory** (entropy が高い、 logit が softer)
+  → ensemble 平均で「diverse vote の中庸」 を取れる
+- ext policies は **deterministic** (entropy bonus で更に高い entropy
+  を保つはずだが、 warm-start で local optima に各々収束しているため、
+  実質的に specialized で confident な policies)
+  → 3 specialists の logit average は何も合意しない中庸を生み、 全員が
+  間違った手を選ぶ
+
+**含意 (重要)**:
+- entropy bonus は **single policy training** には有効
+  (= V60 EXT3 / BCRL2 級の 20%+ 単独 policy を狙う場合)
+- ensemble approach (= 3-MLP 級の 26%+) を狙う場合は **entropy を
+  入れない方が良い**
+- 個別の policy 改善と ensemble 改善は **別問題**
+
+これは Kaggle 競技だけでなく深層強化学習一般において、 ensemble
+設計の重要な経験則になる発見ですわ。
+
 ### 5.4 Transformer features
 
 card-level representation (= 各カードを embedding、 self-attention で
