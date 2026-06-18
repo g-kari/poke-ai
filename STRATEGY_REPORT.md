@@ -361,6 +361,35 @@ V60 features 路線の最終結論:
 - **BC warm-start からの REINFORCE** (= BCRL2) は別経路として有効
   (lab 19.3%、 LB **583.1**、 ratio 30.2 で我々の DL 最高)
 
+### 5.3f REINFORCE warm-start regression パターン (= 三度確認)
+
+複数の実験で、 既存 policy を warm-start として REINFORCE を続行すると、
+**lab winrate が逆に下がる** パターンを観測:
+
+| 試行 | 起点 | 追加 episode | 起点 lab | 終了 lab | Δ |
+|---|---|---|---|---|---|
+| V60 EXT4 | EXT3 10500ep | +5000ep lr=5e-5 | 20.5% | 13.3% | **-7.2pp** |
+| s200ext | s200 2000ep | +3000ep lr=3e-4 | 16.1% | 13.2% | **-2.9pp** |
+| BCRL3 | BCRL2 7000ep | +5000ep lr=5e-5 | 19.3% | 15.4% | **-3.9pp** |
+
+**全 3 試行で regression**。 訓練の recent winrate (= 学習 pool 内の
+最近 100 試合) は 0.22-0.30 で改善傾向を示すのに、 test bench (= 同じ
+opp 但し seed 固定で fresh 試合) では悪化。
+
+**仮説**:
+1. 後期 REINFORCE は **訓練 pool 内の特定 trajectory に過剰最適化**
+2. policy は近視的に「報酬を取れる手」 を覚えるが、 反応的でない手
+   (= 序盤の構築) の質が劣化
+3. learning rate を下げても (= 5e-5) variance 削減が不十分、 policy
+   が局所最適に逃げ込む
+
+**含意**:
+- REINFORCE warm-start は 1 サイクル分 (2000-5000ep) しか有効でない
+- 長期改善には PPO (clipped objective) や entropy bonus、 KL penalty で
+  policy の暴走を抑制する必要
+- 我々の BCRL2 (lab 19.3%, LB 583.1) は **BC+RL の local optimum**、
+  これ以上の延長は LB 悪化を招く
+
 ### 5.4 Transformer features
 
 card-level representation (= 各カードを embedding、 self-attention で
