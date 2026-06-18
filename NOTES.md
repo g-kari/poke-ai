@@ -1998,6 +1998,42 @@ linear にすれば advantage が gradient signal を正しく伝える。
 
 fresh init で seed=7、 3000ep、 lr=5e-4 で 学習中 (background)。
 
+### linear-value 結果 — **失敗**
+
+  vs Mega Lucario: 1-29 ( 3.3%) ← **-23pp** vs tanh EXT1
+  vs Dragapult:    7-23 (23.3%)
+  vs Iono:         1-29 ( 3.3%) ← -10pp
+  vs Mega Aboma:   6-24 (20.0%) ← -10pp
+  vs Crustle Dashi: 0-30 ( 0.0%) ← -13pp
+  vs V6:           2-28 ( 6.7%) ← -10pp
+  overall:        17-163 ( 9.4%) ← **-11.7pp from tanh EXT1**
+
+仮説の **訂正**:
+- 当初仮説: 「tanh は hard matchup で V(s) を ±1 にクリップ → advantage 壊す」
+- 実証結果: linear V(s) は **学習が遅く、 結果も悪い**
+- 実は tanh は **必要な regularization** だった
+  - V(s) が無拘束だと早期に exploding values で value loss が暴走
+  - value MSE が policy loss を喰い、 policy update が小さくなる
+  - 3000ep fresh では収束しない
+
+linear-value policy を `train/archive/mlp_policy_v60_linval.pt` に退避。
+ext1 (5500ep tanh) が引き続き作業ベースライン。
+
+### 真の振動原因の再考
+
+EXT2 振動の原因は tanh ではなく以下のいずれかと推定:
+1. **lr 設定の不適切** (1e-4 でも reward signal が間欠的に大きい)
+2. **policy 容量 (64-32) 不足** — features60 が要求する表現力に届かず、
+   局所最適間を「行き来」している
+3. **opponent pool 5 が多すぎ** — 各 opp に対する gradient signal が薄まる、
+   policy が局所最適を選ぶ事ができない
+
+次サイクル候補 (優先順):
+1. **policy 容量 128-64 へ拡張** (= warm-start 不可、 fresh init 必要、 時間コスト大)
+2. **lr scheduling** (warm-up + decay)
+3. **PPO** (clipped surrogate objective、 variance 削減)
+4. **PIMC** (本命、 別軸)
+
 ## zoli800 Dragapult tempo-control を vendor (Task #106、 2026-06-18)
 
 `zoli800/top-dragapult-ex-tempo-control-agent` (4 votes) を取り込み:
