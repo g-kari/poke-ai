@@ -5,6 +5,10 @@
 📊 **メタデッキ・ダッシュボード**: <https://g-kari.github.io/poke-ai/>
 (対戦相性表、LB 環境、提出履歴を視覚化。`docs/` 配下を GitHub Pages で配信)
 
+🔄 **定期更新**: `scripts/cron_update_pages.sh` を呼ぶと kaggle CLI から最新 LB を
+取得して docs/index.html を更新 + git push (差分なしならスキップ)。 cron / /loop で
+定期実行に組み込めます。 `scripts/update_pages.py --no-fetch` でオフライン更新も可。
+
 `obs` (`dict`) を受け取り option index のリストを返す `main.py` をエントリに、
 self-play REINFORCE で学習した numpy 線形ポリシー (`train/policy.npz`) を内蔵。
 
