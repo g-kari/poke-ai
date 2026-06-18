@@ -2228,6 +2228,38 @@ EXT (5500ep tanh、 我々 deck) が引き続き作業ベースライン。
 → 単純な改造案は全部限界。 **真の本命は PIMC** (search で相手を読む)、
   もしくは **deck-builder agent で新 deck 構築** (Task #107 v4+)。
 
+### PIMC v2: 値関数強化 (2026-06-18)
+
+`train/pimc_agent.py:_prize_delta()` を v2 に拡張:
+- prize delta (×100、 dominant) + active HP ratio (×10) +
+  bench fill (×2) + active energy count (×1.5)
+- 「prize は最重要、 field 状態は marginal」 という重み付け
+
+bench (3 opp × 20g):
+
+  vs Mega Lucario: 1-19 ( 5.0%) ← v1 30% から **-25pp 大幅悪化**
+  vs Iono:         3-17 (15.0%) ← v1 10% から +5pp
+  vs Crustle Dashi:2-18 (10.0%) ← v1 0% から +10pp
+  subtotal:       6-54 (10.0%) ← v1 ~13% から微減
+
+**判定**: matchup 単位の改善悪化が打ち消し合い、 overall 不変。
+heuristic value function の改造では本質解決にならない。
+
+### PIMC v3 への方針 (本サイクル末尾の整理)
+
+- 単なる value heuristic 拡張は overall 改善せず (v1=8.3%、 v2=10%)
+- 真に必要なのは:
+  1. **learned value head** (= NN を value function に使う、 AlphaZero 派生)
+  2. **multi-ply rollout** (1-ply の prize delta だけでは情報量が少ない)
+  3. **opp deck inference** (相手の手札サンプリングを uniform random から、
+     見えた action や discard からの推定に置き換え)
+
+実装優先順:
+- (3) opp deck inference: 中規模、 effort vs gain 良し
+- (1) learned value head: 既存 V60 EXT policy の value head を流用可能、
+  PIMC 結果 + V(s) で argmax
+- (2) multi-ply: 高 cost、 後回し
+
 ## zoli800 Dragapult tempo-control を vendor (Task #106、 2026-06-18)
 
 `zoli800/top-dragapult-ex-tempo-control-agent` (4 votes) を取り込み:

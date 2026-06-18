@@ -61,19 +61,56 @@ def _pick_opp_active(opp_deck: list[int], obs_class: Observation, your_index: in
 
 
 def _prize_delta(obs_class: Observation, your_index: int) -> float:
-    """Higher = better for us. Counts prize cards taken so far.
+    """v2 board-state value heuristic. Higher = better for us.
 
-    prize list starts with 6 entries; entries get consumed when prizes are
-    taken. We want our opponent to have FEWER prizes remaining = we took
-    more. So delta = (opp prize taken) - (our prize taken).
+    Components (weights chosen so prize delta is dominant but field state
+    matters at the margin):
+      - prize delta (×100): we want opp to have fewer remaining prizes
+      - active HP ratio: we want our active healthy, theirs hurt
+      - bench fill: setup advantage = more bench Pokemon ready
+      - energy on our active: ability to attack next turn
     """
     cur = obs_class.current
-    my = cur.players[your_index].prize
-    opp = cur.players[1 - your_index].prize
-    my_taken = 6 - len(my)
-    opp_taken = 6 - len(opp)
-    # Slight bonus for our active HP remaining vs opponent's.
-    return float(my_taken - opp_taken)
+    me = cur.players[your_index]
+    opp = cur.players[1 - your_index]
+    my_taken = 6 - len(me.prize or [])
+    opp_taken = 6 - len(opp.prize or [])
+    score = (opp_taken - my_taken) * 100.0
+
+    # Active HP ratio (max HP comes from card data when available;
+    # fallback: assume 200 if missing).
+    def _hp_ratio(pkmn_list) -> float:
+        if not pkmn_list:
+            return 0.0
+        p = pkmn_list[0]
+        if p is None:
+            return 0.0
+        hp = getattr(p, "hp", None) or 0
+        max_hp = getattr(p, "maxHp", None) or 200
+        if max_hp <= 0:
+            return 0.0
+        return max(0.0, min(1.0, hp / max_hp))
+
+    score += _hp_ratio(me.active or []) * 10.0
+    score -= _hp_ratio(opp.active or []) * 10.0
+
+    # Bench fill (more = better setup options).
+    score += len([p for p in (me.bench or []) if p]) * 2.0
+    score -= len([p for p in (opp.bench or []) if p]) * 2.0
+
+    # Energy on our active (= ability to attack soon).
+    def _energy_count(pkmn_list) -> int:
+        if not pkmn_list:
+            return 0
+        p = pkmn_list[0]
+        if p is None:
+            return 0
+        eng = getattr(p, "energy", None) or []
+        return len(eng)
+
+    score += _energy_count(me.active or []) * 1.5
+    score -= _energy_count(opp.active or []) * 1.5
+    return float(score)
 
 
 def _try_score_option(
