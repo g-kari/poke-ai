@@ -2176,6 +2176,48 @@ def pick_attacker_chains(cards, primary, secondary, ...) -> list[list[dict]]:
 ### LB 観察 (2026-06-18)
 - V6: **926.5** (横ばい、 我々の best submission 安定)
 
+## GA 8g/eval 再実行 (2026-06-18) — trade-off 発見
+
+3g/eval が noise だった反省で **8g/eval (= 80 games per fitness)** に上げて
+15 generations、 rng_seed=7 で実行 (5 分):
+
+  initial: 18.8% (v4 baseline 17.5% とほぼ整合 — noise 圏内に収束)
+  gen 2: swap[25] Water Energy → **Boss's Orders (1182)** → 22.5% ✓ accept
+  gen 3-15: すべて reject (= 13 連敗、 真の global optimum 付近に居る示唆)
+
+  final fitness (8g eval): 22.5%
+
+### deck_ga_v2 を 40g/opp 本格 bench
+
+  vs Mega Lucario:   6-34 (15.0%) ← v4 30% から **-15pp**
+  vs Dragapult:     11-29 (27.5%) ← v4 32.5% から -5pp
+  vs Iono:           3-37 ( 7.5%) ← 同水準
+  vs Mega Aboma:     8-32 (20.0%) ← -2.5pp
+  vs Crustle Wall:   4-36 (10.0%) ← -7.5pp
+  vs Crustle Dashi:  0-40 ( 0.0%) ← **持続** (ex 構造的問題)
+  vs **V6**:        11-29 (**27.5%**) ← v4 12.5% から **+15pp**
+  overall:         43-237 (**15.4%**) ← v4 17.5% から **-2.1pp**
+
+### 重要な発見
+
+1. **Boss's Orders (1182) 追加は deck-specific な効果**:
+   - V6 / Dragapult (hybrid 系) **+10-15pp** 改善 (相手の bench を gust で
+     引き出して 2 prize KO を狙える)
+   - Mega Lucario / Crustle Wall (直接打点系) **-7.5 ~ -15pp** 悪化
+     (Boss は Mega Lucario の HP 高に対して 1 turn の手数で勝負を決められない)
+2. **8g/eval (80 games)** でも Wilson CI ±11pp、 まだ noise あり
+3. GA は「特定 matchup を伸ばすが他を犠牲にする trade-off」 を選びがち
+4. **overall を上げるには multi-mutation + Pareto 評価が必要** (= 単一 swap は
+   local optimum をすぐ exit する)
+5. **Crustle Dashi 0% は完全に構造的** — Mega Froslass ex を使う限り解決不可
+
+### v7-v8 設計案
+
+- **v7**: hybrid chain (primary ex + secondary non-ex) で Crustle 対策
+- **v8**: GA loop で multi-fitness (overall + 各 matchup weighted average)
+  を最適化、 single matchup の犠牲を penalize
+- 真の breakthrough は v7 (hybrid) の方が大きい見込み
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
