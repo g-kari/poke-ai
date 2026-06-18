@@ -1397,15 +1397,32 @@ agent + Mega Lucario deck を素で提出する方が約 2 倍強い**。
 `--subject {lucario, dragapult, iono, abomasnow, crustle, crustle_dashimaki}`
 を切替えられるようにし、各 rule-based agent を主役にして 80g/opp で総当り。
 
-### 候補ランキング @ 80g
+### 候補ランキング @ 80g (2026-06-18 拡張)
 
 | subject | overall | Mega Luc | Drag | Iono | Aboma | Crustle Wall | Crustle Dashi |
 |---|---|---|---|---|---|---|---|
-| **Iono** | **64.0%** | 21.2% | 46.2% | 57.5% | 68.8% | **97.5%** | **92.5%** |
-| Dragapult | 48.1% | 51.2% | 56.2% | 70.0% | 52.5% | 58.8% | 0.0% |
+| **CrustleDashi** | **67.3%** | 83.8% | **100%** | **11.2%** ★ | 73.8% | 85.0% | 50.0% |
+| Iono | 64.0% | 21.2% ★ | 46.2% | 57.5% | 68.8% | **97.5%** | **92.5%** |
+| Dragapult | 48.1% | 51.2% | 56.2% | 70.0% | 52.5% | 58.8% | 0.0% ★ |
 | Lucario | 46.5% | 46.2% | 53.8% | 83.8% | 47.5% | 25.0% | 22.5% |
 | Abomasnow | 40.0% | 31.2% | 46.2% | 28.7% | 50.0% | 67.5% | 16.2% |
 | 3-MLP (我々) | 23.3% | 25.0% | 20.0% | 11.2% | 21.2% | 38.8% | 23.8% |
+
+★ = single critical weakness。Iono と CrustleDashi は相互天敵 (Iono は Lucario 21.2% で苦しく、CrustleDashi は Iono 11.2% で苦しい)。
+
+### 補足: deck 探索状況 (2026-06-18 夜)
+
+既存の vendored deck/agent ペアは 6 つ:
+deck_mega_lucario, deck_dragapult, deck_iono, deck_abomasnow,
+deck_crustle (haru), deck_crustle_dashimaki。
+
+残 subject 未計測: **Crustle Wall (haru)**。次サイクルで bench 予定。
+完了したら 6 subject 全網羅。
+
+### Submission 履歴 (2026-06-18)
+- 53793417: rule_based(Iono) PENDING (user 指示で submit)
+- 53778627: 3-MLP, public 679.6 (更新: 666.3 → 679.6)
+- 過去スコアは NOTES の earlier section 参照
 
 ### rule_based(Iono) の特徴
 
