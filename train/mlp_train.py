@@ -127,42 +127,44 @@ def reinforce_update(
     optimizer: torch.optim.Optimizer,
     trace: list[Step],
     reward: float,
+    entropy_coef: float = 0.0,
 ) -> tuple[float, float] | None:
-    """REINFORCE policy gradient + value MSE on a single episode's trace.
+    """REINFORCE policy gradient + value MSE + optional entropy bonus.
+
+    entropy_coef > 0 adds -coef * H(pi) to the loss (poor-man's PPO).
+    Mitigates the warm-start regression seen in v60 EXT4/s200ext/BCRL3.
     Returns (policy_loss, value_loss) for logging, or None if trace empty."""
     if not trace:
         return None
     device = policy.device
 
-    # Batch all decisions in this trace.
     n_decisions = len(trace)
-    # Build per-decision tensors. Different decisions have different
-    # n_opts, so we can't stack naively; iterate but accumulate the loss.
     policy_loss = torch.zeros(1, device=device)
     value_loss = torch.zeros(1, device=device)
+    entropy_sum = torch.zeros(1, device=device)
     reward_t = torch.tensor(reward, device=device, dtype=torch.float32)
 
     for s in trace:
         sf = torch.from_numpy(s.sf).to(device)
         of_all = torch.from_numpy(s.of_all).to(device)
         n = of_all.shape[0]
-        # Logits for every option.
         x = torch.cat([sf.unsqueeze(0).expand(n, -1), of_all], dim=1)
         logits = policy.pi(x).squeeze(-1)
         ranks = torch.arange(n, device=device, dtype=torch.float32)
         logits = logits + policy.b_order * (n - 1 - ranks) / max(1, n - 1)
         log_probs = torch.log_softmax(logits, dim=0)
 
-        # Value baseline.
         v_pred = torch.tanh(policy.v(sf.unsqueeze(0)).squeeze())
         advantage = (reward_t - v_pred).detach()
 
-        # REINFORCE: -advantage * log_pi(picked|s)
         policy_loss = policy_loss - advantage * log_probs[s.picked]
-        # Value MSE.
         value_loss = value_loss + (v_pred - reward_t).pow(2)
+        if entropy_coef > 0.0:
+            entropy_sum = entropy_sum - (log_probs.exp() * log_probs).sum()
 
     loss = policy_loss / n_decisions + value_loss / n_decisions
+    if entropy_coef > 0.0:
+        loss = loss - entropy_coef * entropy_sum / n_decisions
     optimizer.zero_grad()
     loss.backward()
     torch.nn.utils.clip_grad_norm_(policy.parameters(), 1.0)
@@ -201,6 +203,7 @@ def train(
     opponent: str = "",
     opponent_prob: float = 1.0,
     opponent_pool: str = "",
+    entropy_coef: float = 0.0,
 ) -> None:
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
@@ -246,9 +249,9 @@ def train(
     for ep in range(1, episodes + 1):
         trace0, trace1, r0, r1 = run_episode(policy, rng, opp_fn, eff_prob, pool_fns or None)
         if r0 is not None:
-            reinforce_update(policy, optimizer, trace0, float(r0))
+            reinforce_update(policy, optimizer, trace0, float(r0), entropy_coef)
         if r1 is not None:
-            reinforce_update(policy, optimizer, trace1, float(r1))
+            reinforce_update(policy, optimizer, trace1, float(r1), entropy_coef)
         if r0 == 1:
             wins += 1
         elif r0 == -1:
@@ -323,6 +326,13 @@ def main():
         "Each episode picks one at random; trains the policy to switch strategies "
         "across multiple decks. Overrides --opponent when set.",
     )
+    p.add_argument(
+        "--entropy-coef",
+        type=float,
+        default=0.0,
+        help="Entropy bonus coefficient (poor-man's PPO) — 0.01-0.05 prevents "
+        "policy collapse during long warm-start training.",
+    )
     args = p.parse_args()
 
     def _parse(spec):
@@ -341,6 +351,7 @@ def main():
         args.opponent,
         args.opponent_prob,
         args.opponent_pool,
+        args.entropy_coef,
     )
 
 
