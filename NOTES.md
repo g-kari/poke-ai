@@ -1790,7 +1790,45 @@ shape mismatch でロード不可となり、3-MLP submission が壊れる
 作業ブランチで feature 拡張 → 再 train → 評価 → main マージ、 が正しい順序。
 1 サイクル内では「features 増 + 学習 + 評価」を atomically 実行できない。
 
-## 8 subject 最新ランキング @ 80g
+## 🎯 方針転換 (2026-06-18 user 指示)
+
+### 単一 agent への統一
+
+User 指示: 「デッキごとに agent を設けないで 1 つのエージェントを強化する」
+
+- 現状の submission 候補は 4 つ (Iono 762.2 / CrustleDashi 894.2 / V6 897.6 / 3-MLP 679.6)
+  だが、これらは全て **deck × rule-based agent のペア**
+- 今後の方針: **deck.csv (我々のオリジナル) を提出 deck として固定**、
+  そこで動く **学習 policy 1 つ** を継続的に強化していく
+- 既存の rule-based agent (Iono / Crustle / Lucario / V6 / kojimar 等) は
+  「対戦相手」 (= bench/training opponent) として利用、 自分の提出には使わない
+- submission_rule_based_*.tar.gz は **legacy** として `archive/` 行き候補
+
+つまり目指す形:
+```
+deck.csv (固定 or deck-builder agent が生成)
+   ↓
+ main.py = 学習 policy (現状 3-MLP、 将来は v60 / v100 / PIMC + NN)
+   ↓
+ submit
+```
+
+### deck の進化
+
+User 指示: 「既存だけでなく対戦評価の上で構築し直せる deck」
+
+- 短期: 外部 Kaggle kernel + 公開 deck list から deck pool 拡充
+  (zoli800 Dragapult、 pilkwang Lucario v2、 nursrijan Lucario 等)
+- 中期: 自分の deck.csv を「対戦評価」 ベースで進化させる
+  (= 既存 deck × 改造案を bench して、 winrate の高い deck を選ぶ GA loop)
+- 長期: **deck-building agent** を別途実装
+  - 入力: 全カード DB (kaggle_data の EN_Card_Data.csv 等)
+  - 出力: 60 枚の deck.csv
+  - 中身: super-effective / HP / damage / energy 効率を heuristic か RL で評価
+
+これら 3 段階を順に進める。
+
+### 8 subject 最新ランキング @ 80g
 
 | rank | subject | overall | min (致命弱点) | anti-Crustle |
 |---|---|---|---|---|
