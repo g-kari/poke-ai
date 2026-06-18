@@ -2187,6 +2187,47 @@ Mega Lucario 50% + Crustle 改善 + overall 30%+ になる可能性。
 V6DECK policy を `train/archive/` に退避。
 EXT (5500ep tanh、 我々 deck) が引き続き作業ベースライン。
 
+### 3-MLP + V6 deck 検証 (2026-06-18)
+
+「policy は our deck で訓練、 提出 deck だけ V6 に切替」 案を 3-MLP で
+試行 (cross-bench 20g/opp、 ensemble.members=3):
+
+| matchup | 3-MLP + 我々 deck | + V6 deck | delta |
+|---|---|---|---|
+| Mega Lucario | 25.0% | **50.0%** | **+25pp** |
+| Dragapult | 25.0% | 5.0% | -20pp |
+| Iono | 15.0% | 10.0% | -5pp |
+| Mega Aboma | 25.0% | 10.0% | -15pp |
+| Crustle Dashi | 10.0% | 0.0% | -10pp |
+| V6 | 20.0% | 25.0% | +5pp |
+| **overall** | **20.0%** | **16.7%** | **-3.3pp** |
+
+- Mega Lucario **+25pp** は deck.csv 入替えの純粋な効果 (V6 deck は
+  Mega Lucario と同じ Fighting エネルギーで mirror に近い、 ex 弱点を
+  突けるなど)
+- ただし他 5 matchup で平均 -10pp 悪化、 overall **net negative**
+- 結論: 「**deck 切替えだけ**」 は不十分。 policy が features を
+  deck.csv (我々 Mega Aboma) で訓練済みのため、 deck 入替えで features
+  representation が崩れる
+- 真の解決は「features に自分の deck-id fingerprint も追加」 だが、
+  STATE_DIM 変更 → warm-start 不可 → 大規模再学習が必要
+
+### サマリ (V60 + deck 実験の総括)
+
+| アプローチ | overall | 結論 |
+|---|---|---|
+| 3-MLP + 我々 deck (現状) | 20.0% / 23.3%@80g | LB 679.6 baseline |
+| 3-MLP + V6 deck | 16.7% (20g) | net negative |
+| V60 EXT 5500ep | 21.1% (30g) | +0pp、 ノイズ内 |
+| V60 EXT2 8500ep | 20.0% | 振動 |
+| V60 BIG 128-64 fresh 3000ep | 16.7% | 容量不足解消せず |
+| V60 LINVAL fresh 3000ep | 9.4% | tanh は必要 |
+| V60 + V6 deck fresh 4000ep | 13.9% | 戦略空間複雑、 収束せず |
+| **3-MLP + V6 deck cross-bench** | 16.7% | deck 切替えは net negative |
+
+→ 単純な改造案は全部限界。 **真の本命は PIMC** (search で相手を読む)、
+  もしくは **deck-builder agent で新 deck 構築** (Task #107 v4+)。
+
 ## zoli800 Dragapult tempo-control を vendor (Task #106、 2026-06-18)
 
 `zoli800/top-dragapult-ex-tempo-control-agent` (4 votes) を取り込み:
