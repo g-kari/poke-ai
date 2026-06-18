@@ -2157,6 +2157,36 @@ policy 学習可能。
 Mega Lucario 50% + Crustle 改善 + overall 30%+ になる可能性。
 これが当たれば、 main.py + deck_romanrozen_v6.csv で **新提出候補** に。
 
+### V60 V6DECK (fresh 4000ep, lr=5e-4) 結果 — **失敗**
+
+  vs Mega Lucario:    8-22 (26.7%) ← cross-bench で 50% 期待 → 大幅低下
+  vs Dragapult:       2-28 ( 6.7%) ← 致命的悪化
+  vs Iono:            3-27 (10.0%) ← 改善せず
+  vs Mega Aboma:      1-29 ( 3.3%) ← 致命的
+  vs Crustle Dashi:   1-29 ( 3.3%) ← 致命的
+  vs V6 (mirror):    10-20 (33.3%)
+  overall:           25-155 (13.9%) ← V60 EXT 21.1% より -7.2pp
+
+仮説の **訂正**:
+- 当初仮説: 「V6 deck で訓練すれば Hariyama 戦略を学ぶ」
+- 実証結果: fresh 4000ep では収束不足、 各 matchup で大幅劣化
+- 「V6 deck = Lucario+Hariyama hybrid」 は **戦略空間が複雑**、
+  4000ep self-play では policy が active rotation や non-ex route などの
+  細かい判断を学べない
+
+**深い洞察 (= 新たな方針候補)**:
+- 前サイクルの cross-deck bench (V60 EXT + V6 deck = 50% Mega Lucario) は、
+  「我々 deck で訓練した policy が V6 deck **でも** ある程度機能する」
+  証拠だった
+- つまり「提出 deck = V6、 policy = 我々 deck で訓練 」 という分離が
+  実は有望
+- 実装: main.py が deck.csv (= V6 deck の rename copy) を提出し、
+  policy は train/mlp_policy.pt (= 我々 deck で訓練済み) を使う
+- これだと既存 3-MLP submission を deck 入替えだけで強化できる
+
+V6DECK policy を `train/archive/` に退避。
+EXT (5500ep tanh、 我々 deck) が引き続き作業ベースライン。
+
 ## zoli800 Dragapult tempo-control を vendor (Task #106、 2026-06-18)
 
 `zoli800/top-dragapult-ex-tempo-control-agent` (4 votes) を取り込み:
