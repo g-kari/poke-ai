@@ -1876,6 +1876,46 @@ shape mismatch でロード不可となり、3-MLP submission が壊れる
 これで Task #107 deck-builder agent の作業時、 「cards.json + matchups.json」
 を読んで card combination → 評価 → deck 出力、 という設計が可能になる。
 
+## deck-builder agent prototype v1 (Task #107、 2026-06-18)
+
+`scripts/build_deck.py` を新規実装、 cards.json を読んで 60 cards を heuristic
+で構築。 `--target-type R` で Fire 系を狙うことが可能。
+
+### v1 構築結果 (Fire 系 target)
+
+- **4x Hearthflame Mask Ogerpon ex** (HP 210, type {R})
+- **4x Mega Camerupt ex** (HP 340, type {R}, damage 280/1 energy = TOP)
+- Buddy-Buddy Poffin x4, Dusk Ball x4
+- Carmine x3, Lillie's Determination x3
+- Switch x2, Boss's Orders x2
+- Hero's Cape x1 (ACE SPEC)
+- Gravity Mountain x2 (stadium)
+- Basic Fire Energy x31
+
+### 設計上の制限 (= 次の改善ポイント)
+
+1. **進化チェーン整合性が無い**:
+   - Mega Camerupt ex は Numel → Camerupt → Mega Camerupt ex で進化
+   - 現状は Basic から直接置けると仮定 = 進化先 (Stage1/2) のみ含むデッキ
+     は本物の試合では evolve できない
+   - 修正: cards.json に `evolves_from` を追加、 evolution chain を構築
+2. **evaluate_deck は表面的**: HP 合計、 type 数だけ。 実際の試合性能と
+   相関しない
+3. **trainer staples が固定**: deck タイプ (attacker 系 / 壁系) によって
+   最適な supporter/item は違うはず
+4. **Energy 種別が 1 種のみ**: 一部 deck (V6 など) は dual-type で運用
+5. **ACE SPEC の有無**: Hero's Cape は wall 系向き、 attacker 系には
+   Hyper Aroma など他選択肢が望ましい
+
+### v2 改善方針
+
+1. evolves_from を card DB から抽出 (kaggle_data/EN_Card_Data.csv の
+   "Previous stage" 列を読む)
+2. evolution chain を deck-builder が辿る → 「Basic + Stage1 + Stage2」 を
+   正しく配置
+3. 実際に bench で勝率を測る評価関数 (= matchups.json 形式に揃える)
+4. GA / RL で deck pool を進化させる loop
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
