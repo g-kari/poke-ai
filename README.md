@@ -5,6 +5,12 @@
 📊 **メタデッキ・ダッシュボード**: <https://g-kari.github.io/poke-ai/>
 (対戦相性表、LB 環境、提出履歴を視覚化。`docs/` 配下を GitHub Pages で配信)
 
+📝 **ストラテジー部門レポート (締切 2026-09-14)**: [STRATEGY_REPORT.md](STRATEGY_REPORT.md)
+30 サイクル × 30 分 ≈ 15 時間の探索ログを 12 系統 × 5 deep-dive + 3 中心的学び で整理。
+
+📐 **PPO 実装計画 (未着手)**: [docs/PPO_DESIGN.md](docs/PPO_DESIGN.md)
+V60 振動制御の本命路線、 後継者が引き継げる設計書。
+
 🔄 **定期更新**: `scripts/cron_update_pages.sh` を呼ぶと kaggle CLI から最新 LB を
 取得して docs/index.html を更新 + git push (差分なしならスキップ)。 cron / /loop で
 定期実行に組み込めます。 `scripts/update_pages.py --no-fetch` でオフライン更新も可。
