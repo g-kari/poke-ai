@@ -110,16 +110,21 @@ CLAUDE.md             Claude Code 向け開発メモ
 | **3-MLP ensemble (seed=20260628 + 42 + 100, 各 2000ep)** | **vs 4 meta deck 32-88 (120 戦, 26.7%)** | 2-MLP の 22.5% から +4.2pp。default の policy |
 | V60 EXT3 (10500ep, features_v60 60-d) | 20.5% @ 30g/opp | LB 573.9 — 3-MLP (679.6) を下回り |
 
-### LB 履歴 (最新スナップショット 2026-06-19)
+### LB 履歴 (最新スナップショット 2026-06-19、 ランキング更新中)
 
 | Submission | スコア | 種別 |
 |---|---|---|
-| V6 (Crustle+Lucario hybrid) | **888.2** | 🥇 rule-based ベスト |
-| CrustleDashimaki | 874.7 | rule-based |
+| CrustleDashimaki | **874.7** | 🥇 rule-based ベスト (V6 を逆転) |
+| V6 (Crustle+Lucario hybrid) | 860.8 | rule-based (-27.4 decay) |
 | Iono | 762.2 | rule-based |
 | 3-MLP ensemble (seeds 20260628 + 42 + 100) | **679.6** | 🥇 DL ベスト |
 | 2-MLP ensemble (fix-only) | 613.3 | DL |
-| V60 EXT3 (single 10500ep) | 573.9 | DL |
+| V60 EXT3 (single 10500ep) | 594.7 | DL (+20.8 rise) |
+
+**LB 観察 (2026-06-19)**: V6 が CrustleDashimaki に逆転され、 ランキング
+中位帯では DL agents (V60 EXT3 ~594) と rule-based ボトム (Iono ~762)
+の間に依然 ~170 ポイントのギャップ。 BC 系列 (lab 5-14%) の試行は
+LB ~250-450 推定で、 提出する価値なしと判断。
 
 ## 環境
 
