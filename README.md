@@ -110,7 +110,7 @@ CLAUDE.md             Claude Code 向け開発メモ
 | **3-MLP ensemble (seed=20260628 + 42 + 100, 各 2000ep)** | **vs 4 meta deck 32-88 (120 戦, 26.7%)** | 2-MLP の 22.5% から +4.2pp。default の policy |
 | V60 EXT3 (10500ep, features_v60 60-d) | 20.5% @ 30g/opp | LB 573.9 — 3-MLP (679.6) を下回り |
 
-### LB 履歴 (最新スナップショット 2026-06-19、 ランキング更新中)
+### LB 履歴 (最新スナップショット 2026-06-19)
 
 | Submission | スコア | 種別 |
 |---|---|---|
@@ -119,21 +119,22 @@ CLAUDE.md             Claude Code 向け開発メモ
 | Iono | 762.2 | rule-based |
 | 3-MLP ensemble (seeds 20260628 + 42 + 100) | **679.6** | 🥇 DL ベスト |
 | 2-MLP ensemble (fix-only) | 613.3 | DL |
+| **BCRL2 (BC v2 + REINFORCE 7000ep)** | **583.1** | DL (BC+RL 成功) |
 | V60 EXT3 (single 10500ep) | 578.7 | DL |
-| **BCRL2 (BC v2 + REINFORCE 7000ep)** | **462.2** | DL (BC+RL 試行) |
 
-**LB → lab ratio の再校正 (= BCRL2 結果から)**:
+**LB → lab ratio (= 安定値)**:
 
 | 提出 | lab winrate | LB | ratio |
 |---|---|---|---|
-| 3-MLP | 26.7% | 679 | 25.4 |
+| 3-MLP | 26.7% | 679.6 | 25.4 |
+| **BCRL2** | 19.3% | **583.1** | **30.2** ← 最高 |
 | V60 EXT3 | 20.5% | 578.7 | 28.2 |
-| BCRL2 | 19.3% | 462.2 | **23.9** |
 
-BCRL2 は ratio 23.9 と他より低く、 **BC prior が特定相手 (Mega Aboma
-37.5%、 V6 27.5%) に過剰最適化** され、 LB 多様母集団では破綻した
-可能性。 ratio 平均 ~26 で再校正すると、 LB 700 を達成するには
-lab 27%+ が必要。
+**注**: BCRL2 LB は初期 462.2 → 後期 583.1 と +120 変動。 LB は match
+進行で安定するが、 提出直後の数十時間は variance 大きい (= TrueSkill σ
+が小さくなるまで)。 BCRL2 ratio 30.2 が最高、 BC prior + REINFORCE の
+組合せは健全。 ratio 平均 ~28 で再校正すると、 LB 700 を達成するには
+lab 25%+ が必要。
 
 ## 環境
 
