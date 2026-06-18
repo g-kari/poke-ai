@@ -2295,6 +2295,50 @@ NN value head の統合は **全 weight で baseline 以下**。 原因推察:
    進めれば signal が出る可能性。 ただし search_step cost と branching factor
    次第
 
+### PIMC v4: opp deck inference (2026-06-18)
+
+`train/pimc_agent.py:infer_opp_deck()` を追加: 相手の active/bench/discard
+で見えた card ID を集めて、 7 種 vendored deck (Iono, Crustle Dashi, Crustle
+Wall, Mega Lucario, Dragapult, Aboma, V6) との overlap が最大のものを
+opp_deck_assumption として動的に置換。
+
+bench 結果 (5 opp × 20g):
+
+  vs Mega Lucario: 10.0%
+  vs Dragapult:    20.0%
+  vs Iono:          5.0%
+  vs Crustle Dashi: 0.0%
+  vs V6:           15.0%
+  overall:        10.0% ← v2 baseline と同水準、 noise 内
+
+期待した「相手 deck を当てれば PIMC 精度上がる」 効果は **marginal**。
+
+### PIMC 路線の総括 (4 試行)
+
+| version | feature | subtotal | 結論 |
+|---|---|---|---|
+| v1 | 1-ply、 prize delta、 fixed Iono opp 仮定 | 8.3% (6 opp、 80g) | baseline、 動作確認 |
+| v2 | + field-aware (HP/bench/energy) heuristic | 10% (3 opp、 20g) | 微改善 |
+| v3 | + V60 EXT value head | 1.7-6.7% | **失敗** (selfplay 文脈ズレ) |
+| v4 | + opp deck inference | 10% (5 opp、 20g) | marginal |
+
+**PIMC 1-ply の天井は 10% 程度** と確認。 これ以上は:
+- multi-ply rollout (= search_step 連続 + 終局までシミュ)
+- PIMC 文脈で value head 専用訓練 (self-distillation)
+- 両方とも実装に複数サイクル必要
+
+### 次サイクル方針
+
+PIMC 路線は **基礎実装完了** で一旦区切る。 1-ply 10% は LB submission
+には程遠い (現状 V6 873)。
+
+次の打ち手候補 (優先順):
+1. **PIMC を multi-ply 化** (大型実装、 3-5 サイクル)
+2. **deck-builder v4** (実 bench fitness で deck を進化、 Task #107 続き)
+3. **他の Kaggle kernel を vendor** (まだ未試行: nursrijan、 pilkwang 等)
+4. **3-MLP / V60 EXT を LB に再提出** (現状 LB 評価で V6 が落ち着き始めた、
+   再評価で順位回復の可能性)
+
 ## zoli800 Dragapult tempo-control を vendor (Task #106、 2026-06-18)
 
 `zoli800/top-dragapult-ex-tempo-control-agent` (4 votes) を取り込み:

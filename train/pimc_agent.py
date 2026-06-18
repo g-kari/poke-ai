@@ -175,6 +175,52 @@ def _try_score_option(
             search_release(sid)
 
 
+def _seen_opp_card_ids(obs_class: Observation, your_index: int) -> set[int]:
+    """Collect card IDs we've seen on opponent's side (active, bench, discard).
+
+    These are public knowledge — engine reveals them in obs. We use the
+    multiset for deck-fingerprinting.
+    """
+    seen: set[int] = set()
+    opp = obs_class.current.players[1 - your_index]
+    for area in (opp.active, opp.bench, opp.discard):
+        for p in area or []:
+            if p is None:
+                continue
+            cid = getattr(p, "id", None)
+            if cid is None and isinstance(p, dict):
+                cid = p.get("id")
+            if cid:
+                seen.add(int(cid))
+    return seen
+
+
+def infer_opp_deck(
+    obs_class: Observation,
+    your_index: int,
+    candidate_decks: dict[str, list[int]],
+    default_deck: list[int],
+) -> tuple[list[int], str]:
+    """Score each candidate deck by overlap with seen opponent cards.
+
+    Returns (best_deck, best_label). Falls back to default_deck if no card
+    has been seen yet (very early game)."""
+    seen = _seen_opp_card_ids(obs_class, your_index)
+    if not seen:
+        return default_deck, "default"
+    best_name = "default"
+    best_deck = default_deck
+    best_score = -1
+    for name, deck in candidate_decks.items():
+        deck_set = set(deck)
+        overlap = len(seen & deck_set)
+        if overlap > best_score:
+            best_score = overlap
+            best_deck = deck
+            best_name = name
+    return best_deck, best_name
+
+
 def make_v60_value_fn(policy_path: str = "train/mlp_policy_v60_pool5_ext.pt"):
     """Build a callable nn_value_fn(obs_dict, your_index) -> float in [-1, 1]
     backed by the V60 EXT policy's tanh-bounded value head."""
@@ -199,14 +245,17 @@ def make_pimc_agent(
     time_budget_s: float = _TIME_BUDGET_S,
     nn_value_fn: Callable[[dict, int], float] | None = None,
     nn_weight: float = 30.0,
+    candidate_opp_decks: dict[str, list[int]] | None = None,
 ):
     """Build an agent(obs) function that does 1-ply PIMC scoring.
 
     deck: our 60-card deck (returned on initial deck-submission step).
-    opp_deck_assumption: a 60-card guess for opponent (e.g. an Iono deck).
+    opp_deck_assumption: default guess for opponent (used when nothing seen yet).
     nn_value_fn: optional V(s) function (= AlphaZero-style PIMC v3).
-        Called as nn_value_fn(obs_dict, your_index) -> float in [-1, 1].
-    nn_weight: weight on the NN value when blending with prize-delta.
+    nn_weight: weight on NN value when blending with prize-delta.
+    candidate_opp_decks: optional {label: deck} pool. If given, each turn
+        the inferred deck (highest overlap with seen opp cards) replaces
+        opp_deck_assumption for that decision (= PIMC v4 dynamic inference).
     """
     rng = random.Random(seed)
 
@@ -236,6 +285,18 @@ def make_pimc_agent(
         except Exception:  # noqa: BLE001
             return [0]
 
+        # PIMC v4: infer opp deck from observed cards.
+        if candidate_opp_decks:
+            try:
+                your_index = obs_class.current.yourIndex
+                opp_deck_for_search, _ = infer_opp_deck(
+                    obs_class, your_index, candidate_opp_decks, opp_deck_assumption
+                )
+            except Exception:  # noqa: BLE001
+                opp_deck_for_search = opp_deck_assumption
+        else:
+            opp_deck_for_search = opp_deck_assumption
+
         # Score the first N options under a time budget.
         n_to_score = min(_MAX_OPTIONS_TO_SCORE, len(opts))
         t0 = time.monotonic()
@@ -248,7 +309,7 @@ def make_pimc_agent(
                 obs_class,
                 i,
                 deck,
-                opp_deck_assumption,
+                opp_deck_for_search,
                 rng,
                 nn_value_fn=nn_value_fn,
                 nn_weight=nn_weight,
