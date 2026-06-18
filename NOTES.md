@@ -1790,6 +1790,44 @@ shape mismatch でロード不可となり、3-MLP submission が壊れる
 作業ブランチで feature 拡張 → 再 train → 評価 → main マージ、 が正しい順序。
 1 サイクル内では「features 増 + 学習 + 評価」を atomically 実行できない。
 
+## V60 (features_v60.py) 初版学習結果 (2026-06-18)
+
+`train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
+`train/mlp_policy_v60.py` / `train/mlp_train_v60.py` を新規実装。 v40 と並存可能。
+
+### 学習: pool5 fresh 2500ep, lr=5e-4, seed=42
+
+- 5 種 opp [Iono, CrustleDashi, V6, Lucario, Dragapult] でローテーション
+- recent 勝率: ep 250: 0.11 → ep 2500: 0.19 (上昇傾向)
+
+### V60 solo @ 30g
+
+| matchup | result |
+|---|---|
+| Mega Lucario | 23.3% |
+| Dragapult ex | 20.0% |
+| Iono | **3.3%** ← 改善せず |
+| Mega Abomasnow | 20.0% |
+| Crustle Dashi | **6.7%** ← 改善せず |
+| V6 | 13.3% |
+| **overall** | **14.4%** |
+
+V40 pool5 (warm-start 1500ep) ≈ 16.7% と同水準、 ノイズ内で差なし。
+
+**features60 の「相手識別」効果は確認できなかった**。仮説:
+1. fresh 2500ep では features60 容量に対して **学習不足** (3000-5000ep 必要)
+2. bucket hash だけでは「相手の active が Wattrel = Iono」を識別するシグナル弱
+3. policy 容量 (64-32) が features60 に対し不足
+
+### 次サイクル方針
+
+User の「単一 agent 強化」方針に従い:
+
+1. **v60 warm-start で更に 2500ep 学習** (合計 5000ep) → 収束させる
+2. policy 容量 128-64 に拡張 + warm-start
+3. value baseline を 0/1 + EMA に改修 (hard matchup gradient 安定化)
+4. PIMC + 学習 policy value head (本命、 並行)
+
 ## 🎯 方針転換 (2026-06-18 user 指示)
 
 ### 単一 agent への統一

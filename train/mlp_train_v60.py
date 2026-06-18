@@ -143,10 +143,17 @@ def train(
     log_every: int,
     metrics_out: str | None,
     opponent_pool: str,
+    warm_start: str | None = None,
 ) -> None:
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
     policy = MlpPolicyV60()
+    if warm_start and os.path.exists(warm_start):
+        try:
+            policy = MlpPolicyV60.load(warm_start, device=policy.device)
+            print(f"loaded warm start from {warm_start}")
+        except Exception as exc:
+            print(f"warm-start load failed ({exc}); training from scratch")
     print(f"policy v60: pi={policy.hidden_pi} v={policy.hidden_v} device={policy.device}")
     pool = [_load_opponent(n.strip()) for n in opponent_pool.split(",") if n.strip()]
     pool = [p for p in pool if p is not None]
@@ -207,6 +214,7 @@ def main():
         default="",
         help="Comma-separated opponent modules (e.g. rule_based_iono,rule_based_crustle_dashimaki)",
     )
+    p.add_argument("--warm-start", default=None, help="Path to existing .pt to warm-start from")
     args = p.parse_args()
     train(
         args.episodes,
@@ -216,6 +224,7 @@ def main():
         args.log_every,
         args.metrics_out,
         args.opponent_pool,
+        args.warm_start,
     )
 
 
