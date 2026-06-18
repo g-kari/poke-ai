@@ -2061,6 +2061,47 @@ EXT2 振動の原因は tanh ではなく以下のいずれかと推定:
 3. **PPO** (clipped surrogate objective、 variance 削減)
 4. **PIMC** (本命、 別軸)
 
+### big (128-64 policy + 64-32 value) fresh 3000ep 結果
+
+  vs Mega Lucario:    4-26 (13.3%) ← small EXT 26.7% より -13.4pp
+  vs Dragapult ex:    7-23 (23.3%) ← -3.4pp
+  vs Iono:            4-26 (13.3%) ← 0
+  vs Mega Aboma:      9-21 (30.0%) ← 0
+  vs Crustle Dashi:   0-30 ( 0.0%) ← **6 連続 0%!**
+  vs V6:              6-24 (20.0%) ← +3.3pp
+  overall:           30-150 (16.7%) ← -4.4pp from small EXT 21.1%
+
+big も fresh 3000ep では収束不足、 small EXT 5500ep に届かず。
+容量を増やしても学習量と比例して必要なので、 fresh 3000ep では十分な収束ない。
+
+### 🚨 Crustle Dashi 0% の構造的限界
+
+これまで 6 連続 v60 policy 学習で、 Crustle Dashi vs:
+
+| policy | win rate |
+|---|---|
+| small fresh 2500ep | 6.7% |
+| small EXT 5500ep | 13.3% |
+| small EXT2 8500ep | 0% |
+| LINVAL fresh 3000ep | 0% |
+| **BIG fresh 3000ep** | **0%** |
+
+Crustle Dashi は「ふしぎなロックイン」 (ex Pokemon の attack を 0 にする) +
+Jumbo Ice Cream (回復 80) + Hero's Cape で **詰み構造** を作る。
+
+我々の deck.csv は Mega Abomasnow ex 軸 (= ex pokemon) なので、 active ATK が
+完全に通らず、 V60 policy が「ABILITY や DISCARD で抜ける」 戦略を学べていない。
+
+これは **deck × policy combination の根本問題**。 解決策候補:
+1. **deck を non-ex 化** (我々のデッキ自体を Hariyama 等の non-ex に変える、
+   ただし overall 性能が落ちる可能性大)
+2. **option type 16 SPECIAL_CONDITION / 11 DISCARD を policy が選ぶよう features 強化**
+3. **deck-builder agent (Task #107) で anti-Crustle 構築**
+   (Fire 系 attacker、 V6 のような Hariyama 採用パターン)
+
+「単一 policy 強化」 路線では Crustle Dashi 問題は features と deck 両方の
+変更なしでは突破できない見込み。 User 方針再確認が必要。
+
 ## zoli800 Dragapult tempo-control を vendor (Task #106、 2026-06-18)
 
 `zoli800/top-dragapult-ex-tempo-control-agent` (4 votes) を取り込み:
