@@ -2508,6 +2508,53 @@ scripts/run.sh python3 scripts/bench_v60.py --weights train/mlp_policy_v60_pool5
     -f submission_v60.tar.gz -m "V60 EXT3 (10500ep) — first deep-learning submission"
 ```
 
+### EXT3 完了 + 初の deep-learning submission (2026-06-18 夕方)
+
+**学習結果**: 5000ep × ~340ms/ep = 28 分、 recent 0.17-0.25 で振動。
+
+### single + ensemble bench @ 30g/opp (210 games)
+
+| matchup | EXT1 (5500) | EXT3 (10500) | EXT1+EXT3 ens |
+|---|---|---|---|
+| Mega Lucario | 35% | 13% | 13% |
+| Dragapult | 25% | **37%** | 23% |
+| Iono | 10% | 10% | 10% |
+| Mega Aboma | **40%** | 37% | 20% |
+| Crustle Wall | 15% | **30%** | 27% |
+| Crustle Dashi | 5% | 3% | **10%** |
+| V6 | 10% | 13% | **23%** |
+| **overall** | **20.1%** | **20.5%** | **18.1%** |
+
+### 重要観察
+
+1. **EXT3 と EXT1 は overall ほぼ同水準** (+0.4pp) だが **matchup mix が違う**:
+   - EXT3 は Dragapult/Crustle Wall +、 Mega Lucario -
+   - 学習継続で「特定 matchup に偏った policy」 になった (振動の結果)
+2. **ensemble は overall -2pp 悪化**: matchup mix の中庸化が逆効果
+   - ただし Crustle Dashi +5pp、 V6 +10pp の **個別改善** あり
+   - EXT1 の Mega Aboma 40% を ens が引き下げて 20% に
+3. **3-MLP 23.3% (80g) に届かない**: noise floor を考慮すれば実質同水準だが、
+   LB 評価で **3-MLP (679.6) と同程度の 700 前後** が予想
+
+### 53810836: V60 EXT3 single を submit (user 判断)
+
+User 選択 = 「反さず submit して記録に残す」。 single 20.5% (ensemble 18.1%
+より強い) を bundle、 EXT1 は train/archive/ に退避。
+
+```bash
+.venv/bin/kaggle competitions submit -c pokemon-tcg-ai-battle \
+    -f submission_v60.tar.gz \
+    -m "V60 EXT3 single (10500ep, lab 20.5%) — first deep-learning LB submission"
+```
+
+ref **53810836** PENDING、 評価結果は次サイクル以降。 これは我々自身の
+**深層学習 agent の初の LB 投稿** という記録に意味あり (V6 921 を超える
+見込みは皆無、 3-MLP 並みの 700 前後を期待)。
+
+### LB 観察 (2026-06-18 夕方)
+- V6: 896.5 (前 921 から微減)
+- CrustleDashi: **888.2** (前 866 から **+22 上昇!**)
+
 ## V60 (features_v60.py) 初版学習結果 (2026-06-18)
 
 `train/features_v60.py` (STATE_DIM=60、 deck-ID fingerprint 16+4 buckets) と
