@@ -2551,6 +2551,38 @@ ref **53810836** PENDING、 評価結果は次サイクル以降。 これは我
 **深層学習 agent の初の LB 投稿** という記録に意味あり (V6 921 を超える
 見込みは皆無、 3-MLP 並みの 700 前後を期待)。
 
+### 🚨 53810836 → ERROR (2026-06-18 夜)
+
+V60 EXT3 submission が **Kaggle で動作失敗**。 publicScore 0、 ERROR。
+
+ローカル sandbox check (= scripts/check_main_exec.py 相当)で:
+- bundle 構造 OK (deck.csv、 train/{features_v60, mlp_policy_v60, ext3.pt})
+- _POLICY load 成功 (MlpPolicyV60 with pi=(64,32) v=(32,))
+- agent(deck-submission obs) → 60 cards
+- agent(select obs) → [1]
+
+→ **ローカルでは完全動作、 Kaggle 環境固有の crash**
+
+### 仮説 (次サイクルで検証)
+
+1. **Kaggle ランタイムに torch がない** → `import torch` 失敗
+   - main_v60 の `_try_load_v60` は except 済みなので、 _POLICY=None で
+     engine-prior fallback になるはず
+   - ただし、 fallback path に何か bug があるかも (= 確認必要)
+2. **試合中の torch 推論が timeout**
+   - Kaggle CPU で MlpPolicyV60.logits() が遅い、 1 ターン制限 (~3秒) 超過
+3. **main_v60 の deck.csv 読み込み path 問題**
+   - `_HERE = Path.cwd()` (= __file__ なしの場合) が想定外の場所
+4. **bundle の何かが Kaggle と非互換**
+   - tar 構造、 encoding 等
+
+### 次サイクル方針
+
+1. **kaggle.com で 53810836 のエラーログを直接確認**
+2. ローカルで「torch 環境を消した sandbox 試験」 を実装
+3. 必要なら **main_v60 を完全 PyTorch-free 化** (numpy のみで V60 推論)
+   - mlp_policy_v60.py の forward を pure numpy 版にすれば torch 不要
+
 ### LB 観察 (2026-06-18 夕方)
 - V6: 896.5 (前 921 から微減)
 - CrustleDashi: **888.2** (前 866 から **+22 上昇!**)

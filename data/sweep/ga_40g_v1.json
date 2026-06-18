@@ -1,0 +1,259 @@
+{
+  "seed_deck": "deck_builder_v4_top.csv",
+  "rng_seed": 31,
+  "games_per_eval": 8,
+  "generations": 20,
+  "best_fitness": 0.2,
+  "best_deck": [
+    103,
+    103,
+    103,
+    103,
+    861,
+    861,
+    861,
+    1141,
+    4,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    1086,
+    1086,
+    1086,
+    1086,
+    1102,
+    1102,
+    1102,
+    1102,
+    1123,
+    1123,
+    1182,
+    1182,
+    1192,
+    1192,
+    1192,
+    1227,
+    1227,
+    1227,
+    1252,
+    1141,
+    1159,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+  ],
+  "history": [
+    {
+      "gen": 0,
+      "deck": [
+        103,
+        103,
+        103,
+        103,
+        861,
+        861,
+        861,
+        861,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        1086,
+        1086,
+        1086,
+        1086,
+        1102,
+        1102,
+        1102,
+        1102,
+        1123,
+        1123,
+        1182,
+        1182,
+        1192,
+        1192,
+        1192,
+        1227,
+        1227,
+        1227,
+        1252,
+        1252,
+        1159,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "fitness": 0.1125,
+      "accepted": true,
+      "swap": null
+    },
+    {
+      "gen": 1,
+      "swap": {
+        "idx": 0,
+        "from": 103,
+        "to": 1159
+      },
+      "fitness": 0.0,
+      "accepted": false
+    },
+    {
+      "gen": 2,
+      "swap": {
+        "idx": 7,
+        "from": 861,
+        "to": 1141
+      },
+      "fitness": 0.1625,
+      "accepted": true
+    },
+    {
+      "gen": 3,
+      "swap": {
+        "idx": 25,
+        "from": 3,
+        "to": 5
+      },
+      "fitness": 0.15,
+      "accepted": false
+    },
+    {
+      "gen": 4,
+      "swap": {
+        "idx": 43,
+        "from": 1227,
+        "to": 2
+      },
+      "fitness": 0.1,
+      "accepted": false
+    },
+    {
+      "gen": 5,
+      "swap": {
+        "idx": 8,
+        "from": 3,
+        "to": 4
+      },
+      "fitness": 0.2,
+      "accepted": true
+    },
+    {
+      "gen": 6,
+      "swap": {
+        "idx": 34,
+        "from": 1123,
+        "to": 8
+      },
+      "fitness": 0.125,
+      "accepted": false
+    },
+    {
+      "gen": 7,
+      "swap": {
+        "idx": 45,
+        "from": 1252,
+        "to": 1141
+      },
+      "fitness": 0.2,
+      "accepted": true
+    },
+    {
+      "gen": 8,
+      "swap": {
+        "idx": 8,
+        "from": 4,
+        "to": 5
+      },
+      "fitness": 0.075,
+      "accepted": false
+    },
+    {
+      "gen": 9,
+      "swap": {
+        "idx": 47,
+        "from": 3,
+        "to": 2
+      },
+      "fitness": 0.1125,
+      "accepted": false
+    },
+    {
+      "gen": 10,
+      "swap": {
+        "idx": 42,
+        "from": 1227,
+        "to": 2
+      },
+      "fitness": 0.1125,
+      "accepted": false
+    },
+    {
+      "gen": 11,
+      "swap": {
+        "idx": 8,
+        "from": 4,
+        "to": 8
+      },
+      "fitness": 0.125,
+      "accepted": false
+    },
+    {
+      "gen": 12,
+      "swap": {
+        "idx": 34,
+        "from": 1123,
+        "to": 1252
+      },
+      "fitness": 0.1,
+      "accepted": false
+    }
+  ]
+}
