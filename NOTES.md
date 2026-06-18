@@ -2822,6 +2822,33 @@ POKE_AI_TRAIN_DECK=deck_romanrozen_v6.csv \\
 deck 切替えの shock を warm-start で緩和できるか。 完了後 V6 deck で bench、
 20% 以上なら deck.csv 入替えの submission 候補。 28 分予測。
 
+### Cross-bench で Task #113 の期待値プレ計測 — 残念な結果
+
+V60 EXT3 を **V6 deck で動かす** (deck.csv のみ変更、 policy はそのまま):
+
+  vs Mega Lucario: 10-20 (33.3%) ← 我々 deck 13% から **+20pp**
+  vs Dragapult:     0-30 ( 0.0%) ← 37% から **-37pp 大幅悪化**
+  vs Iono:          2-28 ( 6.7%) ← -3pp
+  vs Mega Aboma:    2-28 ( 6.7%) ← 37% から **-30pp**
+  vs Crustle Wall:  0-30 ( 0.0%) ← 30% から **-30pp**
+  vs Crustle Dashi: 1-29 ( 3.3%) ← 持続
+  vs V6:            6-24 (20.0%) ← +7pp
+  **overall: 21-189 (10.0%)** ← 我々 deck 20.5% から **-10.5pp 大幅悪化**
+
+3 opp 限定 (= Mega Lucario / Crustle Dashi / Iono) では +6.6pp だったが、
+7 opp 全体では **deck 入替えは壊滅的**。
+
+### 含意 (Task #113 への期待値修正)
+
+- V6 deck 自体は **我々の policy では正しく setup できない** (Dragapult /
+  Mega Aboma / Crustle Wall で 0% 全滅)
+- features_v60 は **deck-id fingerprint で相手を識別** するが、 自分の deck
+  の strategy は policy weight に焼き込まれている
+- Task #113 (V6 deck warm-start) で 20%+ 達成は難しい予想 (前回 fresh 13.9%
+  から大幅上昇必要)
+- 我々の **deck.csv (Mega Aboma)** が V60 best deck の事実は変わらず
+- 53812882 (= 我々 deck + EXT3) が引き続き V60 best、 これ以上の改善は困難
+
 ### scripts/check_main_exec.py に --strict-cwd 追加
 
 今後の submission ERROR を **submit 前に local で検出** する体制:
