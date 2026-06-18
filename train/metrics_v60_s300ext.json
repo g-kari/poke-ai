@@ -1,0 +1,122 @@
+[
+  {
+    "ep": 200,
+    "wins": 46,
+    "losses": 154,
+    "draws": 0,
+    "win_rate_recent": 0.23,
+    "elapsed_s": 61.8
+  },
+  {
+    "ep": 400,
+    "wins": 80,
+    "losses": 320,
+    "draws": 0,
+    "win_rate_recent": 0.17,
+    "elapsed_s": 124.5
+  },
+  {
+    "ep": 600,
+    "wins": 128,
+    "losses": 472,
+    "draws": 0,
+    "win_rate_recent": 0.24,
+    "elapsed_s": 189.2
+  },
+  {
+    "ep": 800,
+    "wins": 161,
+    "losses": 639,
+    "draws": 0,
+    "win_rate_recent": 0.165,
+    "elapsed_s": 251.4
+  },
+  {
+    "ep": 1000,
+    "wins": 201,
+    "losses": 799,
+    "draws": 0,
+    "win_rate_recent": 0.2,
+    "elapsed_s": 310.3
+  },
+  {
+    "ep": 1200,
+    "wins": 249,
+    "losses": 951,
+    "draws": 0,
+    "win_rate_recent": 0.24,
+    "elapsed_s": 368.2
+  },
+  {
+    "ep": 1400,
+    "wins": 302,
+    "losses": 1098,
+    "draws": 0,
+    "win_rate_recent": 0.265,
+    "elapsed_s": 428.4
+  },
+  {
+    "ep": 1600,
+    "wins": 350,
+    "losses": 1250,
+    "draws": 0,
+    "win_rate_recent": 0.24,
+    "elapsed_s": 492.3
+  },
+  {
+    "ep": 1800,
+    "wins": 385,
+    "losses": 1415,
+    "draws": 0,
+    "win_rate_recent": 0.175,
+    "elapsed_s": 558.0
+  },
+  {
+    "ep": 2000,
+    "wins": 424,
+    "losses": 1576,
+    "draws": 0,
+    "win_rate_recent": 0.195,
+    "elapsed_s": 620.2
+  },
+  {
+    "ep": 2200,
+    "wins": 474,
+    "losses": 1726,
+    "draws": 0,
+    "win_rate_recent": 0.25,
+    "elapsed_s": 685.1
+  },
+  {
+    "ep": 2400,
+    "wins": 522,
+    "losses": 1878,
+    "draws": 0,
+    "win_rate_recent": 0.24,
+    "elapsed_s": 746.0
+  },
+  {
+    "ep": 2600,
+    "wins": 568,
+    "losses": 2032,
+    "draws": 0,
+    "win_rate_recent": 0.23,
+    "elapsed_s": 807.6
+  },
+  {
+    "ep": 2800,
+    "wins": 615,
+    "losses": 2185,
+    "draws": 0,
+    "win_rate_recent": 0.235,
+    "elapsed_s": 870.7
+  },
+  {
+    "ep": 3000,
+    "wins": 659,
+    "losses": 2341,
+    "draws": 0,
+    "win_rate_recent": 0.22,
+    "elapsed_s": 933.1
+  }
+]
