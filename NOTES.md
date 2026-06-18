@@ -1944,6 +1944,32 @@ ensemble なしの 3 つ分に肉薄)。
 4. **submission 化**: v60 policy を `main_learned_v60.py` でラップして submit
    候補に加える (User 指示「単一 agent 強化」の到達目標)
 
+### value baseline 修正 (linear-value flag、 2026-06-18)
+
+EXT2 振動の主因と推定する `tanh(V(s))` を bypass できるオプションを追加。
+`train/mlp_train_v60.py --linear-value`:
+- 従来: `v_pred = torch.tanh(policy.v(sf))` → V(s) は [-1, 1] に拘束
+- 改修: `v_pred = policy.v(sf)` → V(s) は任意の実数
+- reward は ±1 のままで、 advantage = reward - V(s) が自由に動ける
+
+仮説: hard matchup (5-15% 勝率) では V(s) は **絶対値が 1 を超える負値**を取りたい
+(= 「ここから挽回不能」を表現)が、 tanh で -1 に張り付いて表現力を失っていた。
+linear にすれば advantage が gradient signal を正しく伝える。
+
+fresh init で seed=7、 3000ep、 lr=5e-4 で 学習中 (background)。
+
+## zoli800 Dragapult tempo-control を vendor (Task #106、 2026-06-18)
+
+`zoli800/top-dragapult-ex-tempo-control-agent` (4 votes) を取り込み:
+- `deck_zoli_dragapult.csv` (60 cards、 Dreepy/Drakloak/Dragapult ex 軸)
+- `scripts/rule_based_zoli_dragapult.py` (25 KB、 DECK が hardcoded のため
+  deck path patch 不要)
+- smoke OK: agent callable、 deck head [119, 119, 119, 119, 120]
+- 既存 Kiyota Dragapult は 1 energy attack 即発動型、 zoli800 は
+  tempo-control 派生
+
+bench は次サイクル (subjects に追加して 80g/opp 計測)。
+
 ### V60 EXT2 (8500ep, lr=1e-4) 結果 — 振動を観測
 
   vs Mega Lucario:    4-26 (13.3%) ← EXT1 26.7% から **-13.4pp**

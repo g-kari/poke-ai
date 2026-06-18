@@ -97,7 +97,11 @@ def run_episode(
     return trace0, [], env.steps[-1][1].reward, None
 
 
-def reinforce_update(policy, optimizer, trace, reward):
+def reinforce_update(policy, optimizer, trace, reward, linear_value: bool = False):
+    """REINFORCE with value baseline. linear_value=True drops the tanh clip
+    on V(s) — lets the value function express negative-magnitude expected
+    rewards in hard matchups (= where prior tanh saturated at -1 and broke
+    the advantage gradient)."""
     if not trace:
         return None
     device = policy.device
@@ -114,7 +118,8 @@ def reinforce_update(policy, optimizer, trace, reward):
         ranks = torch.arange(n, device=device, dtype=torch.float32)
         logits = logits + policy.b_order * (n - 1 - ranks) / max(1, n - 1)
         log_probs = torch.log_softmax(logits, dim=0)
-        v_pred = torch.tanh(policy.v(sf.unsqueeze(0)).squeeze())
+        v_raw = policy.v(sf.unsqueeze(0)).squeeze()
+        v_pred = v_raw if linear_value else torch.tanh(v_raw)
         advantage = (reward_t - v_pred).detach()
         policy_loss = policy_loss - advantage * log_probs[s.picked]
         value_loss = value_loss + (v_pred - reward_t).pow(2)
@@ -144,6 +149,7 @@ def train(
     metrics_out: str | None,
     opponent_pool: str,
     warm_start: str | None = None,
+    linear_value: bool = False,
 ) -> None:
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
@@ -165,10 +171,11 @@ def train(
     wins = losses = draws = 0
     recent: list[int] = []
     metrics: list[dict] = []
+    print(f"value head: {'linear (no tanh)' if linear_value else 'tanh-bounded'}")
     for ep in range(1, episodes + 1):
         trace0, _, r0, _ = run_episode(policy, rng, pool or None)
         if r0 is not None:
-            reinforce_update(policy, optimizer, trace0, float(r0))
+            reinforce_update(policy, optimizer, trace0, float(r0), linear_value)
         if r0 == 1:
             wins += 1
         elif r0 == -1:
@@ -215,6 +222,11 @@ def main():
         help="Comma-separated opponent modules (e.g. rule_based_iono,rule_based_crustle_dashimaki)",
     )
     p.add_argument("--warm-start", default=None, help="Path to existing .pt to warm-start from")
+    p.add_argument(
+        "--linear-value",
+        action="store_true",
+        help="Drop tanh on V(s) so it can express negative-magnitude expected rewards.",
+    )
     args = p.parse_args()
     train(
         args.episodes,
@@ -225,6 +237,7 @@ def main():
         args.metrics_out,
         args.opponent_pool,
         args.warm_start,
+        args.linear_value,
     )
 
 

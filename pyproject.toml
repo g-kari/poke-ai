@@ -13,6 +13,7 @@ exclude = [
     "scripts/rule_based_crustle_dashimaki.py", # vendored dashimaki Day-1 #1 Crustle bot
     "scripts/rule_based_romanrozen_v6.py", # vendored romanrozen V6 LB 860+ kernel
     "scripts/rule_based_kojimar.py",   # vendored kojimar validated agent
+    "scripts/rule_based_zoli_dragapult.py", # vendored zoli800 Dragapult tempo control
     "submission_rule_based.tar.gz",    # build artifact, gitignored anyway
     "submission_rule_based_iono.tar.gz",
     "submission_rule_based_crustle_dashimaki.tar.gz",
