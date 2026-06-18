@@ -2260,6 +2260,41 @@ heuristic value function の改造では本質解決にならない。
   PIMC 結果 + V(s) で argmax
 - (2) multi-ply: 高 cost、 後回し
 
+### PIMC v3: V60 EXT value head 統合 — **失敗**
+
+`train/pimc_agent.py:make_v60_value_fn()` を追加、 V60 EXT (5500ep selfplay)
+の `.value()` を nn_value_fn として PIMC に注入。 weight を 5/10/30 で sweep:
+
+| weight | subtotal (3 opp, 20g/opp) |
+|---|---|
+| 5.0 | **1.7%** ← 最弱 |
+| 10.0 | 5.0% |
+| 30.0 | 6.7% |
+| **0 (v2 baseline)** | **10.0%** ← ベスト |
+
+NN value head の統合は **全 weight で baseline 以下**。 原因推察:
+1. V60 EXT policy の value head は **selfplay 文脈で訓練済み** = 「自分が
+   playing する deck の局面分布」 に偏る
+2. PIMC は opp_hand を uniform random でサンプル → search_step で展開した
+   obs は selfplay と全く違う局面分布
+3. その奇妙な obs に対する V(s) は **noise signal** を発する
+4. weight が大きいほど prize delta heuristic を歪める
+
+**結論**: AlphaZero スタイル PIMC + NN value は、 value head の質に強く依存。
+我々の V60 EXT は **selfplay 局面分布で偏った value head** を持つので、 PIMC
+のような「未知の opp 仮定」 文脈では信頼できない。
+
+### PIMC v4 への方針 (本サイクル末尾)
+
+1. **value head 専用訓練が必要**: PIMC の rollout 文脈 (= search_step の
+   obs) で V(s) を学習させる必要。 これは self-distillation 系の手法、
+   大規模実装
+2. **opp deck inference を先に**: heuristic 限界の中で、 「opp_hand を
+   見えた actions から推定する」 ほうが先効果。 PIMC v4 は inference + v2
+3. **multi-ply rollout**: 1-ply 後の prize delta は情報量が少なく、 3-5 ply
+   進めれば signal が出る可能性。 ただし search_step cost と branching factor
+   次第
+
 ## zoli800 Dragapult tempo-control を vendor (Task #106、 2026-06-18)
 
 `zoli800/top-dragapult-ex-tempo-control-agent` (4 votes) を取り込み:

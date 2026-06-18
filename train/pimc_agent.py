@@ -20,6 +20,7 @@ from __future__ import annotations
 import contextlib
 import random
 import time
+from collections.abc import Callable
 
 from cg.api import (
     Observation,
@@ -120,9 +121,16 @@ def _try_score_option(
     your_deck: list[int],
     opp_deck: list[int],
     rng: random.Random,
+    nn_value_fn: Callable[[dict, int], float] | None = None,
+    nn_weight: float = 30.0,
 ) -> float | None:
     """Run search_begin + search_step([option_idx]) and score the result.
-    Returns None on any failure; caller treats None as 'cannot evaluate'."""
+    Returns None on any failure; caller treats None as 'cannot evaluate'.
+
+    If nn_value_fn is provided (AlphaZero-style PIMC v3), the heuristic
+    score is augmented with the learned value estimate of the resulting
+    position.
+    """
     cur = obs_class.current
     your_index = cur.yourIndex
     opp_player = cur.players[1 - your_index]
@@ -152,7 +160,14 @@ def _try_score_option(
         next_obs_class = to_observation_class(next_obs) if isinstance(next_obs, dict) else next_obs
         if next_obs_class.current is None:
             return 0.0
-        return _prize_delta(next_obs_class, your_index)
+        score = _prize_delta(next_obs_class, your_index)
+        if nn_value_fn is not None and isinstance(next_obs, dict):
+            with contextlib.suppress(Exception):
+                v = nn_value_fn(next_obs, your_index)
+                # nn_value_fn returns a value in [-1, 1] (tanh-bounded);
+                # we add it as a learned-Q correction to the heuristic.
+                score += v * nn_weight
+        return score
     except Exception:  # noqa: BLE001
         return None
     finally:
@@ -160,16 +175,38 @@ def _try_score_option(
             search_release(sid)
 
 
+def make_v60_value_fn(policy_path: str = "train/mlp_policy_v60_pool5_ext.pt"):
+    """Build a callable nn_value_fn(obs_dict, your_index) -> float in [-1, 1]
+    backed by the V60 EXT policy's tanh-bounded value head."""
+    from train.mlp_policy_v60 import MlpPolicyV60  # local import — torch heavy
+
+    policy = MlpPolicyV60.load(policy_path)
+    policy.eval()
+
+    def _v(obs_dict: dict, _your_index: int) -> float:
+        # policy.value() already applies tanh internally.
+        with contextlib.suppress(Exception):
+            return float(policy.value(obs_dict))
+        return 0.0
+
+    return _v
+
+
 def make_pimc_agent(
     deck: list[int],
     opp_deck_assumption: list[int],
     seed: int = 0,
     time_budget_s: float = _TIME_BUDGET_S,
+    nn_value_fn: Callable[[dict, int], float] | None = None,
+    nn_weight: float = 30.0,
 ):
     """Build an agent(obs) function that does 1-ply PIMC scoring.
 
     deck: our 60-card deck (returned on initial deck-submission step).
     opp_deck_assumption: a 60-card guess for opponent (e.g. an Iono deck).
+    nn_value_fn: optional V(s) function (= AlphaZero-style PIMC v3).
+        Called as nn_value_fn(obs_dict, your_index) -> float in [-1, 1].
+    nn_weight: weight on the NN value when blending with prize-delta.
     """
     rng = random.Random(seed)
 
@@ -206,7 +243,16 @@ def make_pimc_agent(
         for i in range(n_to_score):
             if time.monotonic() - t0 > time_budget_s:
                 break
-            s = _try_score_option(obs, obs_class, i, deck, opp_deck_assumption, rng)
+            s = _try_score_option(
+                obs,
+                obs_class,
+                i,
+                deck,
+                opp_deck_assumption,
+                rng,
+                nn_value_fn=nn_value_fn,
+                nn_weight=nn_weight,
+            )
             if s is not None:
                 scores.append((i, s))
 
