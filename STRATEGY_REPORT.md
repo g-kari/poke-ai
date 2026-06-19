@@ -688,30 +688,57 @@ B. それより上を狙うなら: deck.csv 自体の最適化、 PPO 実装、 
   hard matchup では tanh の clip で advantage が固定 → policy update が
   全 action に均等に伝播してしまい、 Crustle 等の対策学習が進まない
 
-**ベンチ詳細 (80g/opp, 560 games total)**:
+**ベンチ詳細 (= 7-opp suite で 40g/opp, 280 games total、 LB-対応版)**:
 
-  vs Mega Lucario:   20-60 (25.0%)
-  vs Dragapult ex:   16-64 (20.0%)
-  vs Iono:            9-71 (11.2%)
-  vs Mega Aboma:     17-63 (21.2%)
-  vs Crustle Wall:   31-49 (38.8%)
-  vs Crustle Dashi:  19-61 (23.8%)
-  overall:          112-368 (23.3%)
+  vs Mega Lucario:    9-31 (22.5%)
+  vs Dragapult ex:   10-30 (25.0%)
+  vs Iono:            5-35 (12.5%)
+  vs Mega Aboma:      8-32 (20.0%)
+  vs Crustle Wall:   15-25 (37.5%) ← 最強
+  vs Crustle Dashi:   4-36 (10.0%)
+  vs V6:              2-38 (5.0%)  ← 最大弱点
+  overall:           53-227 (**18.9%**)
 
-最強 matchup は Crustle Wall 38.8% (haru 版)。 Iono が 11.2% で最大弱点。
+注: 旧 STRATEGY では **lab 23.3%** と書いたが、 それは
+`bench_meta.py` (= 4 Kiyota opp のみ) の値。 LB との対応は **7-opp
+suite (上記)** の方が良く、 ratio 計算には 18.9% を使う。
+
+**個別 seed の lab (= 13.2% per seed)**:
+- mlp_policy.pt (seed=0): **13.2%** (Iono 10%, V6 15%)
+- mlp_policy_seed2.pt (seed=2): **13.2%** (Mega Lucario 20%, V6 22.5%)
+- mlp_policy_seed100.pt (seed=100): 推定 ~13% (= 単独 bench 未測定)
+
+→ **ensemble lift = +5.7pp** (13.2 → 18.9)
 
 **LB スコアの推移**:
 - 53776705 (2-MLP): ERROR (__file__ 罠)
 - 53776818 (2-MLP fix): 613.3
-- 53778627 (3-MLP, current best): **679.6**
+- **53778627 (3-MLP, current best): 679.6** ← 不動チャンピオン
+- **ratio = 679.6 / 18.9 = 35.9**, 我々の DL submission 中 **最高効率**
+
+**5/5 改善試行の結果 (= 全失敗)**:
+
+| 試行 | 改造内容 | lab | LB | ratio |
+|---|---|---|---|---|
+| 3-MLP base (チャンピオン) | (なし) | 18.9% | **679.6** | **35.9** |
+| 4-MLP base | +seed=200 | 20.4% | 502.3 | 22.2 |
+| Mixed | seed=0 ext で置換 | 20.4% | 470.9 | 23.1 |
+| Mix v3 | seed=100 ext で置換 | 19.4% | 411.8 | 21.2 |
+| Alt v3 | seed=2/100/300 (no 0) | 22.2% | **184.0** | 8.3 |
+| 3-MLP-ext | 全 seed ext | 16.1% | (未提出) | n/a |
+
+特に Alt v3 は lab で最高なのに LB で最低 = ensemble の LB 対応は
+構成変更で簡単に崩れる。
 
 **転用可能な insight**:
 1. value head の clip (tanh) は variance 削減に必須、 lr/sample 量を上げても
    linear V(s) では収束しない
-2. ensemble member は **独立 seed の fresh 学習** から選ぶ。 warm-start 系を
-   member にすると base policy の偏りが重複して悪化する
+2. ensemble member は **独立 seed の fresh 学習 + 2000ep 固定 + no
+   entropy** で選ぶ。 warm-start / entropy / 4 seed のいずれも崩壊
 3. self-play REINFORCE は initial policy が engine prior に近い時、
    `b_order` で artificially 強化すると訓練が安定する
+4. **チャンピオン構成は触らない**: 一度 LB 679 級を達成したら、 同 tar を
+   保護し、 改造は別 tar として提出する
 
 ### A.2 V60 features の 7 サイクル投資 — 大失敗の根本原因
 
