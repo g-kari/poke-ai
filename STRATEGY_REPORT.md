@@ -934,6 +934,64 @@ ensemble (18.9%) すら下回り、 全候補で最下位。
 3. **single policy submission が現状の最適戦略であることが更に確定**:
    PPO_v40 seed=100 single = 全探索の lab PEAK = 提出候補 #1
 
+#### 5.3l 補遺 3: PPO_v40 base s100 + PPO seed=500 (= PEAK 再現性 NO、 outlier 確定)
+
+PPO_v40 seed=100 が lab 23.3% で PEAK を達成したが、 これが **PPO の
+random seed (= 0) に依存する outlier か再現可能か** を検証。 同じ base
+(seed=100)、 同じ lr=3e-5、 同じ entropy=0.01、 同じ batch_size=32、
+同じ iter=40 で、 **PPO の random seed のみ 500 に変えて** 1280 ep
+再訓練。
+
+**訓練ログ** (recent winrate per iter):
+- iter 1: 0.19 (warm-start 直後、 元 seed=100 とほぼ同じ)
+- iter 5-10: 0.22-0.25
+- iter 15: 0.34 (high peak)
+- iter 20: 0.16 (dip)
+- iter 25-30: 0.28-0.34
+- iter 35: 0.12 (= dip と同じ深さ)
+- iter 40: 0.25
+
+**累積勝率**: 297/(297+982+1) = **23.2%** (= 元 seed=100 の 23.3% と
+ほぼ同じ! train 中の signal だけ見ると同等)。
+
+**bench (700g)**:
+```
+vs Mega Lucario: 13.0% (元 27%, -14)  ← 大暴落
+vs Dragapult ex: 26.0% (元 30%, -4)
+vs Iono: 7.0% (元 10%, -3)
+vs Mega Abomasnow: 28.0% (元 32%, -4)
+vs Crustle Wall: 27.0% (元 37%, -10)  ← 大暴落
+vs Crustle Dashi: 10.0% (元 7%, +3)
+vs V6: 19.0% (元 20%, -1)
+overall: 130-569 (18.6%) — 元 PEAK 23.3% から -4.7pp
+```
+
+**重大発見**:
+- **同じ base + 同じ hyperparams で PPO random seed のみ変えるだけで
+  lab が 23.3% → 18.6% に -4.7pp 暴落**
+- 訓練中の累積勝率は同等 (23.2% vs 23.3%) なのに、 bench で大差が出る
+  = 「rule_based 6 pool に対する勝率」 と「7-opp bench (大規模) の勝率」
+  に大きな乖離がある = overfitting signal
+- Mega Lucario -14pp、 Crustle Wall -10pp = 特定 matchup での特殊学習
+  が seed=100 に偏っていた可能性
+
+**結論**:
+- **PPO_v40 seed=100 PEAK は special outlier solution、 再現性 NO**
+- PPO training trajectory は random seed に強く依存する non-convex な
+  optimization landscape を持つ
+- 明日提出する seed=100 single は依然として唯一の lab 23.3% sample =
+  ratio 35 仮説の単点検証用、 価値は変わらず
+- ただし「seed=100 は overfit」 仮説が成立する場合、 LB は ratio 25-30
+  に着地して LB 580-700 程度に落ちる可能性 (= もし LB < 700 ならこの
+  仮説で説明される)
+
+**含意 (戦略的)**:
+- 探索の "lab PEAK" は信用できない場合がある: noise floor が一見 ±3pp
+  でも、 PPO random seed effect は ±5pp 級
+- 「同じ手法を別 seed で 5 回試して中央値を取る」 が本来必要だが、
+  計算予算的に未実施 (= seed=100 が偶然引いた強い trajectory の可能性)
+- 将来の PPO 探索では複数 seed の median lab を真の signal とすべき
+
 #### 5.3l 補遺 2: PPO_v40 s100 ext (= "PEAK 延長" 仮説 棄却)
 
 PPO_v40 seed=100 (lab 23.3%) を warm-start し、 lr=1e-5 (= 元の 1/3)
