@@ -44,7 +44,7 @@ deep-learning best は 3-MLP base (seed=0/2/100, lab 18.9%, LB 679.6)。
 | **最大の罠** | 初期 LB スナップショットでの誤判断 (Mix v1 711 → 490 の例) |
 | **shippable 再利用部品** | bench_v40/v60.py / collect_bc_dataset.py / bench_v60_ensemble.py |
 
-### 7 つの中心的な学び (最終版 = 補遺 14 まで反映)
+### 8 つの中心的な学び (最終版 = 補遺 17 まで反映)
 
 1. **「lab 改善 ≠ LB 改善」**: lab winrate は ensemble の改善を直線で
    反映するが、 LB は **diversity composition** に強く依存。 4-MLP base
@@ -92,7 +92,20 @@ deep-learning best は 3-MLP base (seed=0/2/100, lab 18.9%, LB 679.6)。
    - LB は 軸 A + 軸 B の混合 metric の可能性、 既存 ratio 35 校正
      サンプルは全 balanced (= 軸 A 中 + 軸 B 中)
 
-### 探索終了状態 (= 補遺 14 + PIMC Phase 1 完了時点)
+8. **「PIMC アーキテクチャは rollout 質と無関係に limit」** (= 補遺 15-17
+   で確定、 最後の path 探索):
+   - PIMC v1-v5 (= linear rollout) は 100g で 51-49 tie
+   - PIMC v6 (= PPO_v40 s500 MlpPolicy rollout、 = 3-MLP base を 77.5%
+     で勝つ強い policy) も 50g で 52-48 tie
+   - **rollout policy の質を上げても改善なし** = PIMC アーキテクチャ
+     自体の限界
+   - 3 つの構造的問題: (a) 1-ply 浅さ、 (b) Naive opp sampling、 (c)
+     rollout-to-terminal noise
+   - 残された path: AlphaZero (= MCTS + value head)、 異 features、
+     deck 切替、 League learning
+   - docs/ALPHAZERO_DESIGN.md に Phase 1-5 計画記載
+
+### 探索終了状態 (= 補遺 17 + PIMC v6 棄却時点)
 
 **完了済探索** (= 全試行 + 結論):
 - PPO_v40 4 seed (0/42/500/2026): ガチャ性質 ±7pp、 ~50% で 23% 級
@@ -100,13 +113,20 @@ deep-learning best は 3-MLP base (seed=0/2/100, lab 18.9%, LB 679.6)。
 - PPO_v40 4 ensemble (3-MLP-PPO, mixed PPO+base, s100+s2026, s100+s500):
   5 パターン全失敗
 - 完全 1v1 対戦表 (4 PPO × 3-MLP base): 非推移性 + 2 軸 trade-off 確定
-- PIMC Phase 1: cg.api 動作確認 PASSED
+- PIMC v1-v6 (= linear rollout + MlpPolicy rollout): 全 backend tie 確定、
+  アーキテクチャ自体の限界
 
 **残された path** (= 9/14 STRATEGY 部門締切まで):
-- PIMC Phase 2-4 (= pimc_choose minimum → main.py 統合 → n_samples sweep)
+- **AlphaZero (= MCTS + value head)**: PIMC 3 限界を構造的に解決
+  (docs/ALPHAZERO_DESIGN.md に Phase 1-5 計画)
 - 異 features 試行 (v40 でも v60 でもない card-level embedding)
 - deck 切替 (= deck-policy strong coupling を活かす)
-- League learning (= 過去 policy を rollout pool に)
+- League learning (= 過去 policy を opponent pool に)
+
+**3 つの design doc**:
+- docs/PPO_DESIGN.md (= 実装済、 LB 0 → 570 達成)
+- docs/PIMC_DESIGN.md (= v1-v6 試行済、 tie で path 棄却)
+- docs/ALPHAZERO_DESIGN.md (= 9/14 締切までの本命路線)
 
 ### features × ensemble × entropy の 3 軸 trade-off (= 大発見)
 
