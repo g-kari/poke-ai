@@ -1,0 +1,17 @@
+Value head smoke test (PPO_v40 s500, 5 games, 14 V samples):
+  V range: [-0.816, +0.189]
+  V mean: -0.364, std: 0.268
+  V sign matches outcome sign: 5/14 (35.7%) ← chance 50% より低い
+
+Per-phase:
+  early: N=4, V mean=-0.411, sign match 1/4 (25%)
+  mid:   N=9, V mean=-0.404, sign match 3/9 (33%)
+  late:  N=1, V mean=+0.189, sign match 1/1 (100%)
+
+詳細:
+- Game 1-4 で P0 outcome = +1 (我々の勝ち) なのに mid V は全て負 (-0.07 ~ -0.43)
+- Game 5 のみ P0 outcome = -1 (負け)、 V は深く負で正しい予測
+
+結論: value head は systematic な悲観バイアスを持つ。 PPO の value_loss
+学習は機能したが、 学習データの bias (= 多数の負け試合) で訓練された
+可能性。 AlphaZero MCTS で使うには calibration or 再学習が必要。

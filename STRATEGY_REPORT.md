@@ -1429,6 +1429,69 @@ Draws: 0/50 (0.0%)
 - これは 9/14 STRATEGY 締切までの最重要設計判断
 - 明日 UTC LB 着地後の analysis では PIMC v6 失敗を踏まえた path 選択
 
+#### 5.3l 補遺 18: PPO_v40 s500 value head の悲観バイアス発見 (= AlphaZero Phase 1 必須 確定)
+
+AlphaZero design doc で「既存 PPO_v40 s500 の `self.v` を value head に
+流用」 と書いたが、 smoke test で **既存 value head は使えない**ことが
+判明。
+
+**scripts/value_head_smoke.py 結果** (5 games, 14 V samples):
+```
+V range: [-0.816, +0.189]
+V mean: -0.364, std: 0.268
+V sign matches outcome sign: 5/14 (35.7%) ← chance 50% より低い!
+
+Per-phase:
+  early: V mean=-0.411, sign match 1/4 (25%)
+  mid:   V mean=-0.404, sign match 3/9 (33%)
+  late:  V mean=+0.189, sign match 1/1 (100%)
+```
+
+**衝撃の発見**:
+- 5 games 中 4 game で **P0 outcome = +1 (= 我々の勝ち)** なのに mid V
+  は全て負 (-0.07 ~ -0.43)
+- value head は **systematic な悲観バイアス**を持つ
+- mean V = -0.364、 mean outcome は +0.6 程度 (= 5 games で 4 勝 1 敗)
+- bias の幅は ~1.0 (= V を約 +1 シフトする必要)
+
+**原因仮説**:
+- PPO 学習データ (= rule_based 6 opp pool で 80% 程度負ける) で訓練
+  された value head は、 学習時の負け勝率分布に biased
+- 学習中の累積勝率 23% (n=4 試行) → value head は基本「負け」 を予測
+  するのが平均的に正確だった
+- これは AlphaZero MCTS で leaf 評価に使うと **全 leaf を過小評価** し、
+  search の signal が消える
+
+**含意 — AlphaZero 計画の修正**:
+- 設計 doc の「Phase 1 = value head 不要」 は **誤り**
+- 既存 value head は biased で再学習が必要
+- AlphaZero Phase 1 = value head の **再学習 or calibration**:
+  - **Option A (再学習)**: PPO_v40 s500 の `self.v` を別途 MSE 学習
+    (= self-play で 終局 reward を教師に、 1000 games)
+  - **Option B (calibration)**: 100 game の outcome 分布で V → V'
+    変換 (= bias 補正、 軽量)
+  - **Option C (search-aware learning)**: AlphaZero 標準の policy +
+    value 同時 self-play (= AlphaGo Zero 方式)
+
+**実装の優先順 (= 補遺 18 で更新)**:
+- Phase 1a (Option B = calibration): 軽量、 1 サイクルで完了可能
+- Phase 1b (Option A = value head 別 MSE): 中規模、 3-5 サイクル
+- Phase 1c (Option C = AlphaGo Zero): 重い、 9/14 締切までの本命だが
+  計算コスト大
+
+**判断**:
+- まず Phase 1a (calibration) で AlphaZero MCTS が動くか確認
+- もし MCTS の動作確認できれば、 Phase 1b/c に進む
+- もし calibrated V でも MCTS が機能しないなら、 features 改善 / deck
+  切替 / League learning の他 path に移行
+
+**残された path の優先順 update (= 補遺 18 後)**:
+1. AlphaZero Phase 1a (= value head calibration、 軽量試行)
+2. AlphaZero Phase 1b (= value head 別 MSE 再学習)
+3. 異 features (= card-level embedding)
+4. deck 切替 (= deck-policy strong coupling)
+5. League learning (= 過去 policy を opponent pool に)
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1453,6 +1516,7 @@ Draws: 0/50 (0.0%)
 | 補遺 15 | PIMC 既存実装の発見 | train/pimc.py v1-v5 100-game bench | **PIMC-ON ≈ PIMC-OFF (51-49 tie)**、 既に default-OFF で運用中。 PPO_v40 s500 rollout 化が次の試行候補 |
 | 補遺 16 | PIMC v6 smoke test (= MlpPolicy rollout) | pick_best_option(s500) 単体テスト | **PASSED** (196 ms / call、 Kaggle budget 内)。 next: 100-game mirror match |
 | 補遺 17 | PIMC v6 mirror match 50g | PIMC-ON vs PIMC-OFF (both s500) | **52-48 tie (CI [38%, 66%])** = v5 (51-49) と完全一致、 **PIMC アーキテクチャ自体の限界**確定。 残る path: AlphaZero / 異 features / deck 切替 |
+| 補遺 18 | PPO_v40 s500 value head smoke | 5 games, V vs outcome 比較 | **V mean -0.364 (悲観バイアス)、 sign match 35.7%** = AlphaZero Phase 1 (= value head 再学習 or calibration) 必須 |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
