@@ -894,6 +894,46 @@ PPO_v40 では消失。 期待: 23.3% × 1.244 ≈ 28.9% (= base ensemble の
 期待 LB ~815。 失敗時の信号: ratio が 35 から大きく外れる (= もし LB
 < 700 なら、 v40 PPO は overfit 性質を持つ証拠)。
 
+#### 5.3l 補遺: Mixed PPO+base ensemble (= "checkpoint diversity 復活" 仮説 棄却)
+
+PPO_v40 seed=100 (lab 23.3%) + 3-MLP base seed=0 (lab 13.2%) + base
+seed=2 (lab 13.2%) の logit averaging を bench した:
+
+```
+vs Mega Lucario: 28.0%, vs Dragapult: 23.0%, vs Iono: 10.0%
+vs Mega Abomasnow: 25.0%, vs Crustle Wall: 22.0%
+vs Crustle Dashi: 4.0%, vs V6: 18.0%
+overall: 130-570 (18.6%) across 700g
+```
+
+**仮説**: PPO fine-tuning が seed diversity を消す問題を回避するため、
+PPO 後の seed=100 と PPO 前の base seed=0/2 を混ぜれば、 PPO の
+improvement を活かしつつ base の decorrelation を回復できるはず。
+
+**実測**: 18.6% — single PPO (23.3%) から -4.7pp、 純 base 3-MLP
+ensemble (18.9%) すら下回り、 全候補で最下位。
+
+**新発見 (= 第 3 の ensemble 失敗パターン)**:
+- **弱い policy 2 つ + 強い policy 1 つ の logit averaging は dilution
+  (希釈)** を起こす: 弱い側 (base 13.2%) の logits が強い側 (PPO 23.3%)
+  の高 confidence な選択を平均化で薄め、 結果として弱い側のレベルに引き
+  ずられる
+- これは [[5.3e]] (v60 seed ensemble) と [[5.3l]] (PPO ensemble) と
+  並ぶ第 3 の ensemble 失敗事例、 ただし原因が異なる:
+  - 5.3e: features (v60) が seed diversity を消す
+  - 5.3l 本体: PPO fine-tuning が seed diversity を消す
+  - 5.3l 補遺: **policy strength の不均衡** が dilution を起こす
+- **ensemble の必須条件**: 構成 policies は (a) 同レベルの strength、
+  (b) feature space で実質的な diversity、 の両方を満たす必要がある
+
+**含意**:
+1. PPO 後の "checkpoint ensemble" 案も棄却された
+2. 残された ensemble 復活案: **PPO で同じ base から異なる random seed
+   の training trajectory** (= seed diversity を維持しつつ improvement
+   を取る) — ただし v40 PPO seed=0/2/100 で既に試行済み、 19.1% で失敗
+3. **single policy submission が現状の最適戦略であることが更に確定**:
+   PPO_v40 seed=100 single = 全探索の lab PEAK = 提出候補 #1
+
 ### 5.4 Transformer features
 
 card-level representation (= 各カードを embedding、 self-attention で
