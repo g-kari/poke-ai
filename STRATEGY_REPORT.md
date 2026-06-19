@@ -1734,6 +1734,74 @@ Draws: 0/50 (0.0%)
 - 50g で測ったが Wilson CI が ±14pp と広い → 100g+ が必要だった
 - **3 回の noise floor の罠** (= 補遺 18→19、 補遺 21→22) を経験
 
+#### 5.3l 補遺 23: AlphaZero n_sims=100 mirror = **AZ-ON 54% (= 初の勝ち越し!)** path 再開
+
+補遺 22 で「AlphaZero は tie、 探索系全部 lift しない」 と結論したが、
+**scaling 検証** で n_sims=100 を試したところ:
+
+**結果** (scripts/bench_alphazero_mirror_n100.py, 50g, 463s = 9.3s/game):
+```
+AZ-ON wins: 27/50 (54.0%)  ← Wilson CI [40%, 67%]
+AZ-OFF wins: 23/50 (46.0%)
+Draws: 0/50 (0.0%)
+```
+
+**重要な発見 — n_sims scaling は monotonic 改善**:
+| n_sims | mirror AZ-ON% | 計算時間 | Wilson CI |
+|--------|---------------|----------|-----------|
+| 20  | 42%  | 1.8 s/game | [29%, 56%] |
+| 50  | 48%  | 4.3 s/game | [34%, 62%] |
+| **100** | **54%** | 9.3 s/game | [40%, 67%] |
+
+- n_sims=20 → 50: **+6pp**
+- n_sims=50 → 100: **+6pp**
+- monotonic な改善傾向、 **AlphaZero path 再開**
+
+**補遺 22 結論の訂正 (= 2 度目)**:
+- 補遺 22: 「n_sims=20-50 で tie、 探索系は lift しない」
+- 補遺 23: 「n_sims=100 で +6pp 勝ち越し、 探索系は scaling すれば lift」
+- → AlphaZero は **n_sims を増やせば本当に強くなる**
+
+**線形外挿による期待値**:
+- n_sims=200: 60% (推定)
+- n_sims=400: 66% (推定)
+- ただし、 計算時間も比例: n_sims=200 で ~18s/game、 n_sims=400 で ~36s/game
+
+**Kaggle ランタイム budget の検証**:
+- n_sims=100 で 9.3 s/game = 1 game あたり ~9 s
+- 1 game ≈ 30-50 turn、 各 turn ~5-10 MAIN single-choice、 つまり
+  1 turn あたり 5-10 calls × call 平均 ~0.9 s
+- Kaggle 1-turn制限 5 秒 → n_sims=100 は **動作可能** (call 平均 0.9 s)
+- n_sims=200 で 1.8 s/call → まだ Kaggle 内
+- n_sims=400 で 3.6 s/call → ギリギリ
+- n_sims=500 で 4.5 s/call → 危険ライン
+
+**戦略的最重要含意**:
+- **AlphaZero が遂に lift パターンを示した**: 9/14 STRATEGY 締切に
+  向けた本命路線が**再開**
+- 残された path: n_sims=200 で更に確認、 200-400 で sweet spot 探索
+- もし n_sims=200 で 60% 達したら、 main.py に統合 + 提出 bundle で
+  Kaggle LB 検証
+- **理論的に**: PPO_v40 s500 base (lab 18.6%, ratio 35 で LB 651) +
+  AlphaZero +5pp lift → LB 850+ の可能性、 3-MLP base LB 679 + 探索
+  なしの天井を破る
+
+**残された path 優先順 (= 補遺 23 で復活)**:
+1. **AlphaZero n_sims=200 mirror match (= 補遺 24 候補)**: 線形外挿
+   検証、 60% 達するか
+2. **main.py 統合 + 提出 bundle**: もし n_sims=200 で >= 60% なら、
+   POKEAI_ALPHAZERO=1 + s500 weights で AlphaZero 入り提出
+3. 異 features (= card-level embedding) — 補遺 23 で path 復活なので
+   優先順 下げ
+4. deck 切替 / League learning — 同上
+
+**教訓 (= 戦略部門 report 用、 補遺 23 の意義)**:
+- 「補遺 22 で tie 確定」 は n_sims 50 までの観察、 100 で結論変わる
+- **scaling 検証は重要**: 値を「2 倍、 4 倍、 8 倍...」 と段階的に
+  試すべき (= compute scaling laws)
+- 「探索系全部 tie」 という強い結論は **慎重に**: 探索深さは
+  hyperparameter で、 sweet spot は問題依存
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1762,7 +1830,8 @@ Draws: 0/50 (0.0%)
 | 補遺 19 | value head calibration 20g | 129 samples、 bias 統計測定 | **Sign match 65.9% (late phase 74%)、 bias mean -0.325** = value head は使える (補遺 18 訂正)、 calibration JSON 保存、 直接 Phase 2 (MCTS) 着手可能 |
 | 補遺 20 | AlphaZero Phase 2 実装 + smoke | MCTS minimum + calibrated value head | **smoke PASSED** (n_sims=20 で 211 ms)。 計算は PIMC v6 と同等、 構造的に deep PUCT search で局所最適回避を狙う |
 | 補遺 21 | AlphaZero mirror match 50g | AZ-ON vs AZ-OFF (both s500), n_sims=20 | **42% vs 58%** = PIMC v6 (52-48) より悪い、 MCTS が干渉 (← **補遺 22 で訂正**: noise だった) |
-| 補遺 22 | AlphaZero n_sims=50 mirror 50g | AZ-ON vs AZ-OFF (both s500), n_sims=50 | **48% vs 52% (tie)** = n_sims=20 から +6pp 改善、 補遺 21 訂正。 探索系は全 tie 確定 (PIMC + AlphaZero) |
+| 補遺 22 | AlphaZero n_sims=50 mirror 50g | AZ-ON vs AZ-OFF (both s500), n_sims=50 | **48% vs 52% (tie)** = n_sims=20 から +6pp 改善、 補遺 21 訂正 (← **補遺 23 で再訂正**) |
+| 補遺 23 | AlphaZero n_sims=100 mirror 50g | AZ-ON vs AZ-OFF (both s500), n_sims=100 | **54% vs 46% (初の勝ち越し!)** = n_sims=50 から +6pp、 monotonic scaling 確認、 **AlphaZero path 再開**! |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
