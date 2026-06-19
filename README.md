@@ -110,25 +110,25 @@ CLAUDE.md             Claude Code 向け開発メモ
 | **3-MLP ensemble (seed=20260628 + 42 + 100, 各 2000ep)** | **vs 4 meta deck 32-88 (120 戦, 26.7%)** | 2-MLP の 22.5% から +4.2pp。default の policy |
 | V60 EXT3 (10500ep, features_v60 60-d) | 20.5% @ 30g/opp | LB 573.9 — 3-MLP (679.6) を下回り |
 
-### LB 履歴 (最新スナップショット 2026-06-19、 mixed ensemble 追加)
+### LB 履歴 (最新スナップショット 2026-06-19、 **DL チャンピオン交代!**)
 
 | Submission | スコア | 種別 |
 |---|---|---|
 | CrustleDashimaki | **874.7** | 🥇 rule-based ベスト |
 | V6 (Crustle+Lucario hybrid) | 860.8 | rule-based |
 | Iono | 762.2 | rule-based |
-| 3-MLP ensemble (seed=0/2/100 base, 2000ep 各) | **679.6** | 🥇 DL ベスト |
-| **Mixed ensemble (seed=0 ext + 2 base + 100 base)** | **659.7** | 🥈 DL 2位 (新!) |
+| **Mixed ensemble (seed=0 ext + 2 base + 100 base)** | **🏆 711.2** | **🥇 DL ベスト (新!)** |
+| 3-MLP ensemble (seed=0/2/100 base) | 679.6 | DL 2位 |
 | 2-MLP ensemble | 613.3 | DL |
 | BCRL2 (BC v2 + REINFORCE 7000ep) | 570.4 | DL |
 | V60 EXT3 (single 10500ep) | 562.4 | DL |
 
-**LB ↔ lab ratio (= 7-opp suite で再校正)**:
+**LB ↔ lab ratio (= 7-opp suite で再校正、 Mix v1 LB 上昇後)**:
 
 | 提出 | 7-opp lab | LB | ratio |
 |---|---|---|---|
-| **3-MLP base** | **18.9%** | **679.6** | **35.9** ← 最高効率 |
-| Mixed ensemble | 20.4% | 659.7 | 32.3 |
+| **Mixed ensemble (Mix v1)** | **20.4%** | **🏆 711.2** | **34.9** |
+| 3-MLP base | 18.9% | 679.6 | 35.9 |
 | BCRL2 | 19.3% | 570.4 | 29.5 |
 | V60 EXT3 | 20.5% | 562.4 | 27.4 |
 
