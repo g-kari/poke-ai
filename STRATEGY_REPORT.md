@@ -767,12 +767,41 @@ v40 seed=0/2/100 を entropy_coef=0.02 で warm-start 2000ep 延長:
 - PPO1 の実 LB が ~665 に着地するか (= ratio 35 仮説の最終証明)
 - PPO の sample 効率 (= 1280ep) は BCRL2 の 7000ep に比べ **5x 効率**
 
-**PPO アーキの最終判決**:
+**PPO アーキの最終判決** (= 8 variants 完全検証後):
 - **Single PPO**: 1280 ep で best (= PPO1)、 単独 submission に最適
 - **Ensemble PPO**: 不可能、 v60 features の構造的問題
 - **Large-scale PPO**: counter-productive (= overtraining)
+- **Self-play PPO**: 失敗 (= lab 16.1% = BCRL2 baseline、 transfer なし)
 - **長期 PPO で本格 LB 700+ を狙うなら**: features_v60 を再設計 (= deck
   fingerprint の hash collision を緩和) または PPO + PIMC hybrid が必要
+
+### 5.3k Self-play 失敗の構造的考察 (= AlphaZero 直観の反例)
+
+PPO6 (= 1280 ep mirror self-play、 cumulative 59.5%, peak 0.72) が
+rule_based 7-opp bench で lab **16.1% = BCRL2 baseline と完全一致**:
+
+- Self vs self 中で policy は確実に改善 (= 中間 peak 0.72 が証明)
+- しかし rule_based 相手では BCRL2 と同じ振る舞い (= transfer なし)
+- vs V6 (+9pp 改善)、 vs Crustle Wall (-13pp 大幅劣化) で異なる
+  specialization profile
+
+**仮説**:
+1. **v60 deck-fingerprint hash collision**: self-play で生成される state
+   distribution は self の deck (= 自分用 hash) しか含まない → opponent
+   の deck variety を学習しない
+2. **policy の internal symmetry**: mirror match の reward は ±1 に
+   集中、 GAE で分散しても advantage の方向性が不明確
+3. **rule_based の探索範囲外**: self-play 中の state は rule_based 相手
+   時と異なる → 学んだ tactics が rule_based pool で機能しない
+
+**含意 (重要)**:
+- **AlphaZero 直観 (= "self-play is best") は features に依存する**:
+  features が opponent identity を強く encode する場合 (= 我々の v60)、
+  self-play では「自分の対応戦略」 しか学べず汎化しない
+- **解決策**: League learning (= 過去 policy 保存 + 対戦)、 deck-aware
+  hall of fame、 または rule_based + self-play hybrid pool
+- **我々の compute 制約下**: rule_based pool に絞った PPO1 (= 19.0%) が
+  実用的 best
 
 ### 5.4 Transformer features
 
