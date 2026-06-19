@@ -1,0 +1,23 @@
+Self-play: PPO_v40 seed=100 vs PPO_v40 base s100 + PPO seed=500 — 40 games
+  rng seed: 42, deck.csv (= our shared deck), policy.probs softmax sampling
+  alternating side (20 games each as P0 / P1)
+
+  Note: same base policy (mlp_policy_seed100.pt), only PPO trajectory differs.
+  s100 lab: 23.3% (n=4 PEAK on 7-opp 700g)
+  s500 lab: 18.6% (n=4 median, -4.7pp from s100)
+
+after 10: s100 5,  s500 5,  draws 0
+after 20: s100 13, s500 7,  draws 0
+after 30: s100 15, s500 15, draws 0
+after 40: s100 19, s500 21, draws 0  ← s500 が +2 で勝ち越し
+
+Final: s100 47.5% / s500 52.5%
+
+Key finding: lab 4.7pp 差 (= s100 が rule-based 7-opp に対して強い)
+だが、 same-deck 1v1 では s500 が僅かに勝つ。 つまり lab metric は
+"rule-based specialization の度合い" を測っており、 absolute strength
+(= 同 deck における strategic depth) とは別物。
+
+含意: ratio 35 仮説の前提が揺らぐ。 lab → LB の linear translation は、
+LB の母集団が rule-based 7-opp に近い場合のみ成立する。 PPO_v40 seed=100
+が LB 815 に届かない可能性。 詳細は STRATEGY_REPORT 5.3l 補遺 9。

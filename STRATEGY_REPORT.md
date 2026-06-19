@@ -931,6 +931,68 @@ Final: 50.0% / 50.0%
 - s2026 LB ≫ s100 LB: V6 系統が LB 母集団で支配的 (= 既存 V6 deck の
   LB 860.8 と整合)
 
+#### 5.3l 補遺 9: s100 vs s500 直接対戦 (= lab 4.7pp 差 → self-play 4.7%pt 差 → ratio 35 仮説の前提が揺らぐ)
+
+s100 (lab 23.3%) vs s500 (lab 18.6%) は 7-opp suite bench で **-4.7pp の
+差**。 これが「絶対強さ」 を表すなら直接対戦で s100 が大差勝ちのはず。
+仮説検証: 40 games (alternating side, rng=42, softmax sampling)。
+
+**結果**:
+```
+after 10: s100 5,  s500 5,  draws 0
+after 20: s100 13, s500 7,  draws 0
+after 30: s100 15, s500 15, draws 0
+after 40: s100 19, s500 21, draws 0  ← s500 が +2!
+
+Final: s100 47.5% / s500 52.5%
+```
+
+**驚きの発見** (= ratio 35 仮説への重大な反証):
+- lab 4.7pp 差 (s100 > s500) なのに、 直接対戦では **s500 が僅かに勝つ**
+- 即ち **lab winrate と 1v1 winrate は別物**
+- s100 が lab で強いのは "rule-based 7 opp に対する specialization"
+  であって、 absolute strength ではない
+
+**新仮説: lab は specialization の度合いを測る metric である**:
+- s100: rule-based 7 opp 全種 (Lucario/Drag/Iono/Aboma/Crustle/CrustleDashi/V6)
+  に対する勝率を最大化する学習過程で偶然 PEAK に到達
+- s500: 同じ rule-based pool に対しては中庸 (18.6%) だが、 同 deck の
+  1v1 では s100 と同等以上の strategic depth
+- "rule-based specialization 度合い" と "absolute strategic depth" は
+  異なる軸で測られている
+
+**ratio 35 仮説への含意**:
+- 我々の lab → LB ratio 35 仮説は「3-MLP base (lab 18.9%, LB 679.6)」、
+  「BCRL2 (lab 16.1%, LB 570.4)」、 「V60 EXT3 (lab 17.0%, LB 562.4)」
+  の 3 サンプルで校正
+- これらは全て "rule-based 7 opp specialization 度合いの近い" submission
+  だった可能性 (= 3-MLP base / BCRL2 / V60 EXT3 は全て同じ training
+  procedure = REINFORCE-based)
+- PPO_v40 seed=100 は profile が異なる可能性: rule-based に特化しすぎて、
+  LB の母集団 (= 他参加者の policy 分布) に対する強さは別
+
+**明日 UTC 4 枠投入の解釈の再考**:
+- s100 LB が 815 にならない場合 (= ratio 25-30): 上記仮説の支持証拠
+- s100 LB ≈ s500 LB (= 両者 600-700 で接近): "rule-based specialization
+  は LB に translate しない" の決定的証拠
+- s100 LB ≫ s500 LB: ratio 35 仮説は維持、 lab metric は依然 LB の予測力
+
+**戦略的含意 (= 補遺 9 の最大の含意)**:
+- PPO の "rule-based pool 専用" な過学習を疑うべき
+- LB は「Kaggle 参加者の policy 分布」 という未知母集団に対する勝率で、
+  rule-based 7 opp は近似に過ぎない
+- 真の LB 改善には **diverse opponent pool** での学習が必要 (= league
+  learning、 self-play with policy library) — 明日の結果が悪ければ
+  次の路線
+
+**残された仮説検証 (= 明日以降の analysis)**:
+- s100 vs random self-play でも s500 と同等? → lab は random との戦闘力すら
+  測っていない可能性
+- 3-MLP base vs s500 の self-play は? → "DL champion" の strength を
+  s500 と比較
+- PIMC で s100 に search 加えれば self-play 勝率上がる? → search が
+  rule-based specialization を超えて strategic depth を補える可能性
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -946,6 +1008,7 @@ Final: 50.0% / 50.0%
 | 補遺 6 | s100 + s2026 ensemble | 同 strength × 異 profile を試行 | 失敗 (= 20.3%、 specialization 境界 confusion) |
 | 補遺 7 | s2026 ext (= 2nd PEAK 延長) | s2026 を warm-start し +1280 ep | 失敗 (= 19.4%、 -3.5pp、 V6 特化消失) |
 | 補遺 8 | s100 vs s2026 直接対戦 | 40 games alternating side | **50-50 引き分け** = absolute strength 同等、 profile 相殺 |
+| 補遺 9 | s100 vs s500 直接対戦 | 40 games alternating side | **47.5%-52.5% (s500 勝ち)** = lab metric は specialization 度合いを測る、 ratio 35 仮説の前提が揺らぐ |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
