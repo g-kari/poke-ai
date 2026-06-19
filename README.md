@@ -119,31 +119,36 @@ CLAUDE.md             Claude Code 向け開発メモ
 | Iono | 762.2 | rule-based |
 | 3-MLP ensemble (seed=0/2/100 base) | **679.6** | 🥇 DL ベスト (継続) |
 | 2-MLP ensemble | 613.3 | DL |
+| 4-MLP ensemble (seed=0/2/100/200 base, 新) | 599.8 | DL (lab+1.5pp なのに LB-79.8) |
 | BCRL2 (BC v2 + REINFORCE 7000ep) | 570.4 | DL |
 | V60 EXT3 (single 10500ep) | 562.4 | DL |
-| Mixed (seed=0 ext + 2/100 base) | 490.3 | DL (失敗) |
-| Mix v3 (seed=100 ext + 0/2 base) | 404.5 | DL (失敗) |
+| Mixed (seed=0 ext + 2/100 base) | 470.9 | DL (失敗、 settling 中) |
+| Mix v3 (seed=100 ext + 0/2 base) | 307.8 | DL (失敗、 settling 中) |
 
 **🚨 訂正**: 前回スナップショットで Mixed が LB 711.2 と観測しましたが、
 TrueSkill σ settling 後 **490.3 まで下降**。 transient peak でした。
 3-MLP base 679.6 がチャンピオン継続です。
 
-**LB ↔ lab ratio (= 7-opp suite、 settling 後の確定値)**:
+**LB ↔ lab ratio (= 7-opp suite、 最新スナップショット)**:
 
 | 提出 | 7-opp lab | LB | ratio |
 |---|---|---|---|
 | **3-MLP base** | **18.9%** | **679.6** | **35.9** (最高効率 = チャンピオン) |
+| 4-MLP base (seed +200) | 20.4% | 599.8 | 29.4 |
 | BCRL2 | 19.3% | 570.4 | 29.5 |
 | V60 EXT3 | 20.5% | 562.4 | 27.4 |
-| Mixed (Mix v1) | 20.4% | 490.3 | 24.0 (ext seed が ensemble 破壊) |
-| Mix v3 | 19.4% | 404.5 | 20.9 |
+| Mixed (Mix v1) | 20.4% | 470.9 | 23.1 |
+| Mix v3 | 19.4% | 307.8 | 15.9 |
 
-**結論**: lab winrate が高くても ensemble に ext seed を混ぜると LB
-ratio が大幅低下。 entropy + warm-start で deterministic になった seed
-は ensemble の中立性 (= 多数決ではなく logit 平均) を破壊する。
+**驚きの発見 (2026-06-19)**: **4-MLP base (= 純粋 exploratory + seed 1 つ追加)** は lab +1.5pp 上がったのに LB は -79.8 下降、 ratio 29.4 まで落ちました。
 
-**真理**: 3-MLP base (純粋 exploratory ensemble) が最適。 ext は
-**single policy 提出** に有効、 ensemble には不適。
+**仮説**:
+- 3-MLP base の ratio 35.9 は **seed 3 つの偶然の diversity match**
+- 4 seed に増やすと diversity character が変わり ratio が下がる
+- ensemble size と LB efficacy の関係は monotonic ではない
+
+**真理**: 3-MLP base (seed 3, base only) は **本質的に難しい再現性**
+を持つチャンピオン。 拡張は安易ではない。
 
 **注**: 3-MLP base の ratio 35.9 は群を抜く。 ensemble の diversity
 が LB の多様な相手分布に強い証拠。 Mixed (1 seed だけ entropy ext) は
