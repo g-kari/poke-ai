@@ -1053,6 +1053,71 @@ Final: 3-MLP base 22.5% / s500 **77.5%**
 - **同じ features で PPO 再訓練 → 全 deep learning submission を超える** 可能性
 - PIMC は更に上に積める (= rollout policy としての PPO + search)
 
+#### 5.3l 補遺 11 + 12: 3-MLP base vs s100/s2026 直接対戦 (= 非推移性発見、 2 軸 policy profile model 確立)
+
+補遺 10 で 3-MLP base が s500 に大敗した結果を踏まえ、 3-MLP base が
+他の PPO_v40 PEAK policy (= s100, s2026) にどう振る舞うかを検証。
+
+**結果** (各 40 games, alternating side, rng=42):
+```
+3-MLP base vs s100:  3-MLP 25 vs s100 15  (62.5% / 37.5%, 3-MLP 大勝!)
+3-MLP base vs s2026: 3-MLP 24 vs s2026 16 (60.0% / 40.0%, 3-MLP 大勝!)
+```
+
+**衝撃の発見 — 非推移性 (Non-transitivity)**:
+- 3-MLP base ≪ s500 (= 補遺 10、 22.5%)
+- 3-MLP base ≫ s100 (= 補遺 11、 62.5%)
+- 3-MLP base ≫ s2026 (= 補遺 12、 60.0%)
+- s100 ≈ s2026 (補遺 8)、 s100 ≈ s500 (補遺 9)
+
+つまり **じゃんけん的関係** (rock-paper-scissors):
+- s500 → 3-MLP base (勝つ)
+- 3-MLP base → s100, s2026 (勝つ)
+- s100, s2026 → s500 (拮抗)
+- これは「strategic depth」 単一軸では説明できない
+
+**2 軸 policy profile model (= 完全対戦表から導出)**:
+
+| Policy | 軸 A: rule-based specialization (= lab) | 軸 B: 中庸 policy への対応力 |
+|--------|---|---|
+| 3-MLP base | 中 (18.9%) | 中 (= REINFORCE-based 標準) |
+| PPO_v40 s100 | **高** (23.3%) | 低 (3-MLP に弱い) |
+| PPO_v40 s2026 | **高** (22.9%) | 低 (3-MLP に弱い) |
+| PPO_v40 s500 | 中 (18.6%) | **高** (3-MLP を圧倒) |
+| PPO_v40 s42 | 低 (16.3%) | 不明 (未試行) |
+
+仮説 — PPO ガチャは **2 つの直交 mode** を持つ:
+- Mode A: rule-based pool に specialization → lab 高、 中庸 player に弱い
+- Mode B: 中庸 player を狩る play style → lab 中、 中庸 player に強い
+- Mode A と Mode B は trade-off (両立しない)
+- s100/s2026 は Mode A、 s500 は Mode B にガチャで偶然着地した
+
+**ratio 35 仮説への新たな解釈**:
+- 既存校正 3 サンプル (3-MLP base, BCRL2, V60 EXT3) は全て **Mode 中庸**
+  系統 (= REINFORCE-based の標準 play style)
+- ratio 35 は **「Mode 中庸 policy 同士の lab → LB」 の局所法則** だった
+- Mode A の s100/s2026 や Mode B の s500 は ratio が異なる可能性
+
+**戦略的含意 (= 明日 UTC への大幅な path 更新)**:
+- 4 枠投入で **Mode A (s100/s2026) と Mode B (s500) と 中庸 (3-MLP base)
+  の 3 mode を同時に LB に投入** することで、 LB の母集団がどの mode を
+  重視するか判明
+- 真の最強 path は LB 結果次第:
+  - もし LB ≫ Mode B → s500 系統 (= 中庸 player 狩り) が支配 → PPO で
+    seed sweep して Mode B policies を量産
+  - もし LB ≫ Mode A → s100/s2026 系統 (= specialization) が支配 → 既存
+    3-MLP base の延長線、 ratio 35 維持
+  - もし mode 拮抗 → "mode-mix ensemble" が LB を破る可能性 (= 補遺 6
+    で失敗した ensemble の再評価が必要)
+
+**Ensemble 失敗パターン #4 (= 補遺 6) の再解釈**:
+- s100 + s2026 ensemble = lab 20.3% (-3pp、 specialization 境界 confusion)
+- 補遺 11+12 の結論を踏まえると、 これは **両 Mode A の ensemble** で、
+  互いに近すぎて diversity 効果なかっただけ
+- もし **Mode A + Mode B の ensemble (= s100 + s500)** なら、 diverse
+  mode の組み合わせで lab/LB 両方で lift する可能性
+- これは未試行で、 重要な検証対象
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1070,6 +1135,8 @@ Final: 3-MLP base 22.5% / s500 **77.5%**
 | 補遺 8 | s100 vs s2026 直接対戦 | 40 games alternating side | **50-50 引き分け** = absolute strength 同等、 profile 相殺 |
 | 補遺 9 | s100 vs s500 直接対戦 | 40 games alternating side | **47.5%-52.5% (s500 勝ち)** = lab metric は specialization 度合いを測る、 ratio 35 仮説の前提が揺らぐ |
 | 補遺 10 | 3-MLP base vs s500 直接対戦 | 40 games alternating side | **22.5%-77.5% (s500 大勝)** = DL champion ですら strategic depth で PPO に大敗、 **lab/LB は specialization metric 確定** |
+| 補遺 11 | 3-MLP base vs s100 直接対戦 | 40 games alternating side | **62.5%-37.5% (3-MLP 大勝)** = 非推移性発見! s100 ≠ s500 (補遺 10 と矛盾) |
+| 補遺 12 | 3-MLP base vs s2026 直接対戦 | 40 games alternating side | **60.0%-40.0% (3-MLP 大勝)** = s2026 も s100 と同 mode、 **2 軸 policy profile model 確立** |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
