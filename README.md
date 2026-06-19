@@ -119,11 +119,12 @@ CLAUDE.md             Claude Code 向け開発メモ
 | Iono | 762.2 | rule-based |
 | 3-MLP ensemble (seed=0/2/100 base) | **679.6** | 🥇 DL ベスト (継続) |
 | 2-MLP ensemble | 613.3 | DL |
-| 4-MLP ensemble (seed=0/2/100/200 base, 新) | 599.8 | DL (lab+1.5pp なのに LB-79.8) |
 | BCRL2 (BC v2 + REINFORCE 7000ep) | 570.4 | DL |
 | V60 EXT3 (single 10500ep) | 562.4 | DL |
-| Mixed (seed=0 ext + 2/100 base) | 470.9 | DL (失敗、 settling 中) |
-| Mix v3 (seed=100 ext + 0/2 base) | 307.8 | DL (失敗、 settling 中) |
+| Alt v3 (seed=2/100/300、 no seed=0) | 515.8 | DL (lab 22.2% で過去最高、 LB は不調) |
+| 4-MLP ensemble (seed=0/2/100/200) | 502.3 | DL (settling 後収束) |
+| Mixed (seed=0 ext + 2/100 base) | 470.9 | DL |
+| Mix v3 (seed=100 ext + 0/2 base) | 411.8 | DL |
 
 **🚨 訂正**: 前回スナップショットで Mixed が LB 711.2 と観測しましたが、
 TrueSkill σ settling 後 **490.3 まで下降**。 transient peak でした。
@@ -140,15 +141,24 @@ TrueSkill σ settling 後 **490.3 まで下降**。 transient peak でした。
 | Mixed (Mix v1) | 20.4% | 470.9 | 23.1 |
 | Mix v3 | 19.4% | 307.8 | 15.9 |
 
-**驚きの発見 (2026-06-19)**: **4-MLP base (= 純粋 exploratory + seed 1 つ追加)** は lab +1.5pp 上がったのに LB は -79.8 下降、 ratio 29.4 まで落ちました。
+**驚きの発見 (2026-06-19)**: 5 個の DL submission 試行 (4-MLP / Mixed /
+Mix v3 / Alt v3) すべて ratio 22-23 で 3-MLP base の 35.9 を再現できず:
 
-**仮説**:
-- 3-MLP base の ratio 35.9 は **seed 3 つの偶然の diversity match**
-- 4 seed に増やすと diversity character が変わり ratio が下がる
-- ensemble size と LB efficacy の関係は monotonic ではない
+| 試行 | 構成 | lab | LB | ratio |
+|---|---|---|---|---|
+| **3-MLP base** | 0/2/100 | 18.9% | **679.6** | **35.9** |
+| 4-MLP base | 0/2/100/200 | 20.4% | 502.3 | 22.2 |
+| Mixed | **0 ext**/2/100 | 20.4% | 470.9 | 23.1 |
+| Mix v3 | 0/2/**100 ext** | 19.4% | 411.8 | 21.2 |
+| Alt v3 | 2/100/**300** (no 0) | 22.2% | 515.8 | 23.2 |
 
-**真理**: 3-MLP base (seed 3, base only) は **本質的に難しい再現性**
-を持つチャンピオン。 拡張は安易ではない。
+**最終結論 (重要な構造的発見)**:
+- 3-MLP base (seed=0/2/100 base only) は **特定の seed 組合せで生じる
+  特殊解**。 ratio 35.9 = 我々の最高効率
+- 「より多くの seed」「seed の差し替え」「entropy 追加」 のいずれも
+  ratio を **23 付近に着地** させ、 LB 500 前後に強制収束
+- ensemble の LB 効率は **seed 多様性の偶然のマッチ** で決まる、 一意
+  に再現できない
 
 **注**: 3-MLP base の ratio 35.9 は群を抜く。 ensemble の diversity
 が LB の多様な相手分布に強い証拠。 Mixed (1 seed だけ entropy ext) は

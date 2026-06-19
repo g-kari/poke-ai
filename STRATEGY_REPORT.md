@@ -228,20 +228,30 @@ Mix v1 (submission_mixed.tar.gz):
 
 ### 4.5 lab 改善 ≠ LB 改善: 構造的非単調性
 
-複数の試行で同 lab・異 LB を観測:
+5 個の DL submission 試行で 3-MLP base 18.9% を上回る lab を達成
+できたが、 全て LB で大敗:
 
-| 試行 | lab | LB |
-|---|---|---|
-| 3-MLP base (seed 0/2/100) | 18.9% | **679.6** |
-| Mixed (1 ext + 2 base) | 20.4% | 470.9 |
-| 4-MLP base (seed 0/2/100/200) | 20.4% | 452.1 |
+| 試行 | 構成 | lab | LB | ratio |
+|---|---|---|---|---|
+| **3-MLP base** | 0/2/100 base | 18.9% | **679.6** | **35.9** |
+| 4-MLP base | 0/2/100/200 base | 20.4% | 502.3 | 22.2 |
+| Mixed | 0 ext/2/100 base | 20.4% | 470.9 | 23.1 |
+| Mix v3 | 0/2/100 ext | 19.4% | 411.8 | 21.2 |
+| Alt v3 | 2/100/300 (no 0) | **22.2%** | 515.8 | 23.2 |
 
-**両 mixed と 4-MLP は lab で 3-MLP base に勝つが、 LB で大敗**。
-ensemble 構成が LB の opponent 分布に「うまく対応するか」 で ratio
-が大きく変わる。
+**含意 (重要)**:
+- ensemble 構成変更 (seed 追加/差し替え/entropy) は **必ず ratio が
+  23 付近に落ち**、 LB 500 前後に着地
+- 3-MLP base (seed=0/2/100, no entropy, 2000ep each) の **特定 6 軸
+  (3 seed × 2 アーキ要素 × 0 entropy) の偶然 match** がチャンピオン
+- 「seed=0 を含めれば常に良い」 でもなく、 「seed 数を増やせば改善」
+  でもない、 ensemble 内部の **正確な policy diversity の interplay**
+  が ratio を決める
 
-**含意**: lab winrate を最大化する戦略 (= overfit to lab opps) は
-LB 最適化と乖離。 lab は ranking signal として弱いが正しく使うべし。
+**実用的教訓**:
+- lab winrate は ensemble の改善を反映するが LB の改善とは別物
+- 一度 LB 700 級を達成できた構成は **触らない** ことが正解
+- 改善試行は **必ず別 tar として提出** し、 元の構成を保護
 
 ## 5. 未実装の方向
 
