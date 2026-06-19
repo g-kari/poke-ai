@@ -1,0 +1,9 @@
+V60 bench: train/mlp_policy_v60_ppo5.pt @ 100g/opp
+  vs Mega Lucario      : 19-81-0  (19.0%)
+  vs Dragapult ex      : 19-81-0  (19.0%)
+  vs Iono              : 9-91-0  (9.0%)
+  vs Mega Abomasnow    : 34-66-0  (34.0%)
+  vs Crustle Wall      : 13-87-0  (13.0%)
+  vs Crustle Dashi     : 2-98-0  (2.0%)
+  vs V6                : 25-75-0  (25.0%)
+overall: 121-579 (17.3%) across 700g  [211s]
