@@ -417,7 +417,28 @@ features は opponent 情報が乏しいので、 各 seed が異なる「内部
 - **次の挑戦**: v40 seed を entropy bonus で延長して 18-20% に上げる
   → 3-MLP ensemble で 30%+ → LB 700-800 期待
 
-### 5.3h Entropy bonus は **single policy 向け**、 ensemble を壊す (= 新発見)
+### 5.3i 訂正: TrueSkill σ settling で Mix v1 LB は 711 → 490 に下降
+
+前 section (5.3h) で **Mix v1 (= seed=0 ext + 2 base + 100 base) が LB
+711.2 で 3-MLP base 679 を超えた** と記述したが、 24時間以内に再 fetch
+すると **490.3 まで下降**。 transient peak だった事が判明。
+
+| 提出 | 提出直後 LB | 24時間後 LB | Δ |
+|---|---|---|---|
+| Mix v1 | 659.7 → 711.2 → **490.3** | -220.9 から peak | (波乱) |
+| Mix v3 | 540+ → **404.5** | (初期高値から下降) | (波乱) |
+| BCRL2 | 462 → 583 → **570.4** | 安定方向収束 | (sealed) |
+| 3-MLP base | (記録なし)→ **679.6** | 安定 |  — |
+
+**学び**:
+- 初期 LB の数十時間は **±100-200 point variance** あり、 transient
+  high/low に騙されない
+- ensemble に entropy ext を入れると LB ratio が **24% (Mix v1) と
+  21% (Mix v3) まで落ち**、 base ensemble の 35.9 に比べ大幅悪化
+- **最終結論**: ext seed は ensemble を必ず害する。 3-MLP base 679 が
+  我々の真の DL チャンピオン
+
+### 5.3h Entropy bonus は **single policy 向け**、 ensemble を壊す
 
 v40 seed=0/2/100 を entropy_coef=0.02 で warm-start 2000ep 延長:
 

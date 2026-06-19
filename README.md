@@ -110,27 +110,40 @@ CLAUDE.md             Claude Code 向け開発メモ
 | **3-MLP ensemble (seed=20260628 + 42 + 100, 各 2000ep)** | **vs 4 meta deck 32-88 (120 戦, 26.7%)** | 2-MLP の 22.5% から +4.2pp。default の policy |
 | V60 EXT3 (10500ep, features_v60 60-d) | 20.5% @ 30g/opp | LB 573.9 — 3-MLP (679.6) を下回り |
 
-### LB 履歴 (最新スナップショット 2026-06-19、 **DL チャンピオン交代!**)
+### LB 履歴 (最新スナップショット 2026-06-19、 **訂正版 — TrueSkill settling 後**)
 
 | Submission | スコア | 種別 |
 |---|---|---|
 | CrustleDashimaki | **874.7** | 🥇 rule-based ベスト |
 | V6 (Crustle+Lucario hybrid) | 860.8 | rule-based |
 | Iono | 762.2 | rule-based |
-| **Mixed ensemble (seed=0 ext + 2 base + 100 base)** | **🏆 711.2** | **🥇 DL ベスト (新!)** |
-| 3-MLP ensemble (seed=0/2/100 base) | 679.6 | DL 2位 |
+| 3-MLP ensemble (seed=0/2/100 base) | **679.6** | 🥇 DL ベスト (継続) |
 | 2-MLP ensemble | 613.3 | DL |
 | BCRL2 (BC v2 + REINFORCE 7000ep) | 570.4 | DL |
 | V60 EXT3 (single 10500ep) | 562.4 | DL |
+| Mixed (seed=0 ext + 2/100 base) | 490.3 | DL (失敗) |
+| Mix v3 (seed=100 ext + 0/2 base) | 404.5 | DL (失敗) |
 
-**LB ↔ lab ratio (= 7-opp suite で再校正、 Mix v1 LB 上昇後)**:
+**🚨 訂正**: 前回スナップショットで Mixed が LB 711.2 と観測しましたが、
+TrueSkill σ settling 後 **490.3 まで下降**。 transient peak でした。
+3-MLP base 679.6 がチャンピオン継続です。
+
+**LB ↔ lab ratio (= 7-opp suite、 settling 後の確定値)**:
 
 | 提出 | 7-opp lab | LB | ratio |
 |---|---|---|---|
-| **Mixed ensemble (Mix v1)** | **20.4%** | **🏆 711.2** | **34.9** |
-| 3-MLP base | 18.9% | 679.6 | 35.9 |
+| **3-MLP base** | **18.9%** | **679.6** | **35.9** (最高効率 = チャンピオン) |
 | BCRL2 | 19.3% | 570.4 | 29.5 |
 | V60 EXT3 | 20.5% | 562.4 | 27.4 |
+| Mixed (Mix v1) | 20.4% | 490.3 | 24.0 (ext seed が ensemble 破壊) |
+| Mix v3 | 19.4% | 404.5 | 20.9 |
+
+**結論**: lab winrate が高くても ensemble に ext seed を混ぜると LB
+ratio が大幅低下。 entropy + warm-start で deterministic になった seed
+は ensemble の中立性 (= 多数決ではなく logit 平均) を破壊する。
+
+**真理**: 3-MLP base (純粋 exploratory ensemble) が最適。 ext は
+**single policy 提出** に有効、 ensemble には不適。
 
 **注**: 3-MLP base の ratio 35.9 は群を抜く。 ensemble の diversity
 が LB の多様な相手分布に強い証拠。 Mixed (1 seed だけ entropy ext) は
