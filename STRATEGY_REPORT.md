@@ -44,7 +44,7 @@ deep-learning best は 3-MLP base (seed=0/2/100, lab 18.9%, LB 679.6)。
 | **最大の罠** | 初期 LB スナップショットでの誤判断 (Mix v1 711 → 490 の例) |
 | **shippable 再利用部品** | bench_v40/v60.py / collect_bc_dataset.py / bench_v60_ensemble.py |
 
-### 5 つの中心的な学び (改訂版)
+### 7 つの中心的な学び (最終版 = 補遺 14 まで反映)
 
 1. **「lab 改善 ≠ LB 改善」**: lab winrate は ensemble の改善を直線で
    反映するが、 LB は **diversity composition** に強く依存。 4-MLP base
@@ -65,13 +65,48 @@ deep-learning best は 3-MLP base (seed=0/2/100, lab 18.9%, LB 679.6)。
    再 bench すると 18.9% に。 LB との対応は **7-opp の方が精度高い**。
 
 5. **「PPO fine-tuning は seed diversity を消す → ensemble lift 喪失」**
-   (= 最終探索の新発見):
+   (= 5.3l 本体の発見):
    - PPO_v40 seed=100 single lab **23.3%** (= 全探索の single PEAK)
    - 同じ手法で 3 seed PPO 訓練後の ensemble lab **19.1%** (= -4.2pp)
    - 期待された +5.7pp lift (3-MLP base パターン) は完全消失
-   - **含意**: ensemble lift は features (v40) だけでなく training
-     procedure (= 短時間 REINFORCE) にも依存する。 PPO の収束力が
-     diversity を均質化する。 [[5.3l]] に詳細。
+   - PPO の収束力が diversity を均質化する。 [[5.3l]] に詳細。
+
+6. **「v40 PPO ensemble は何をやっても機能しない」** (= 5 つの失敗パターン
+   完全分類、 補遺 13 で確定):
+   - features 起因 (v60 deck hash) — 5.3e
+   - PPO 収束で seed diversity 消失 — 5.3l 本体
+   - policy strength 不均衡 (dilution) — 5.3l 補遺
+   - specialization 境界 confusion (同 mode) — 5.3l 補遺 6
+   - mode mismatch confusion (異 mode) — 5.3l 補遺 13
+   - **v40 PPO single + single は原理的に lift しない**
+
+7. **「PPO 学習は 2 軸 trade-off」** (= 補遺 10-14 で完全証拠、 戦略的に
+   最重要な発見):
+   - **軸 A**: rule-based specialization (= lab metric の値)
+   - **軸 B**: 中庸 player (= 3-MLP base) への対応力 (= 1v1 winrate)
+   - PPO は 1 つの policy で両軸を最大化できない (trade-off)
+   - lab と 1v1 winrate に **負の相関**: s100 (lab 23.3% → vs 3-MLP base
+     37.5%), s500 (lab 18.6% → 77.5%), s42 (lab 16.3% → 55.0%)
+   - **3-MLP base ですら s500 に 1v1 で 22.5% で大敗** (= DL champion
+     の優位は rule-based pool 専用)
+   - LB は 軸 A + 軸 B の混合 metric の可能性、 既存 ratio 35 校正
+     サンプルは全 balanced (= 軸 A 中 + 軸 B 中)
+
+### 探索終了状態 (= 補遺 14 + PIMC Phase 1 完了時点)
+
+**完了済探索** (= 全試行 + 結論):
+- PPO_v40 4 seed (0/42/500/2026): ガチャ性質 ±7pp、 ~50% で 23% 級
+- PPO_v40 2 ext (s100/s2026): 全 PEAK で 2nd stage 必ず劣化
+- PPO_v40 4 ensemble (3-MLP-PPO, mixed PPO+base, s100+s2026, s100+s500):
+  5 パターン全失敗
+- 完全 1v1 対戦表 (4 PPO × 3-MLP base): 非推移性 + 2 軸 trade-off 確定
+- PIMC Phase 1: cg.api 動作確認 PASSED
+
+**残された path** (= 9/14 STRATEGY 部門締切まで):
+- PIMC Phase 2-4 (= pimc_choose minimum → main.py 統合 → n_samples sweep)
+- 異 features 試行 (v40 でも v60 でもない card-level embedding)
+- deck 切替 (= deck-policy strong coupling を活かす)
+- League learning (= 過去 policy を rollout pool に)
 
 ### features × ensemble × entropy の 3 軸 trade-off (= 大発見)
 
