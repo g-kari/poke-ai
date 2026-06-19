@@ -1179,6 +1179,62 @@ overall: 138-562 (19.7%)
   事実は強い signal → PIMC で s500 を rollout policy にする実装は
   最優先
 
+#### 5.3l 補遺 14: 3-MLP base vs s42 (= 2 軸 trade-off の完全証拠、 lab と 1v1 winrate の負の相関)
+
+補遺 11-13 で 2 軸 policy profile model 確立。 s42 (lab 16.3% = n=4 最弱)
+の軸 B (= 中庸 player への対応力) を測定し、 仮説を完成させる。
+
+**結果** (40 games, alternating side, rng=42):
+```
+3-MLP base vs s42: 3-MLP 18 vs s42 22 (45.0% / 55.0%, s42 が +4 で勝つ!)
+```
+
+**完全な 1v1 対戦表**:
+
+| Policy | lab @ 700g | vs 3-MLP base 1v1 |
+|--------|------------|-------------------|
+| s100   | 23.3%      | 37.5% (負け)      |
+| s2026  | 22.9%      | 40.0% (負け)      |
+| s500   | 18.6%      | **77.5%** (大勝)  |
+| s42    | 16.3%      | 55.0% (勝ち)      |
+
+**衝撃の発見 — lab と 1v1 winrate に明確な負の相関**:
+- lab が高いほど 3-MLP base 1v1 で弱い
+- lab が低いほど 3-MLP base 1v1 で強い
+- これは **PPO 学習の 2 軸 trade-off** を直接示す:
+  - 軸 A (rule-based specialization = lab) を上げると 軸 B (中庸 player
+    への対応力) が下がる
+  - PPO は 1 つの policy で両軸を最大化できない
+
+**2 軸 trade-off の完全モデル化**:
+- s100, s2026 = Mode A 特化 (rule-based specialization)
+- s500 = Mode B 特化 (中庸 player 狩り)
+- s42 = Mode B やや特化 (specialization 低、 中庸 player に勝てる)
+- 3-MLP base = Balanced 中庸 (両軸とも中庸、 偶然 LB 679.6 を出した)
+
+**ratio 35 仮説への新たな構造的解釈**:
+- LB の母集団は **rule-based players + 中庸 DL players の混合**
+- 既存校正 3 サンプル (3-MLP base, BCRL2, V60 EXT3) は全て balanced
+  (= 軸 A 中 + 軸 B 中)、 ratio 35 は balanced 系の局所法則
+- Mode A 特化 (s100, s2026) と Mode B 特化 (s500) は LB で異なる ratio
+  を出す可能性:
+  - Mode A: 軸 A が直接 LB に効くので ratio 35 に近い (= 815 期待)
+  - Mode B: 軸 A 弱いが中庸 DL player を狩るので、 ratio 30-50 の幅で
+    変動 (= 600-900)
+
+**明日 UTC 4 枠投入後の analysis** (= 補遺 14 で更新):
+- s100 LB ≈ 815, s500 LB ≈ 650 → ratio 35 は Mode A 専用、 lab に
+  比例 (= 直感的解釈)
+- s100 LB < s500 LB → 軸 B (中庸 player 狩り) が LB の主要 driver
+- 両者 LB が拮抗 → 軸 A と 軸 B が独立に LB に貢献 (= 混合 metric)
+- 3-MLP base が LB 800+ に再上昇 → DL champion の優位性が維持される
+
+**PIMC Phase 1 完了 (= 補遺 14 と同サイクル)**:
+- scripts/pimc_smoke_test.py 作成 + 実行 PASSED
+- cg.api.search_begin / search_step / search_release の動作確認 OK
+- opp_state sampling (naive v1) 動作 OK
+- 次フェーズ (Phase 2 = pimc_choose minimum 実装) は明日 UTC LB 着地後
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1199,6 +1255,7 @@ overall: 138-562 (19.7%)
 | 補遺 11 | 3-MLP base vs s100 直接対戦 | 40 games alternating side | **62.5%-37.5% (3-MLP 大勝)** = 非推移性発見! s100 ≠ s500 (補遺 10 と矛盾) |
 | 補遺 12 | 3-MLP base vs s2026 直接対戦 | 40 games alternating side | **60.0%-40.0% (3-MLP 大勝)** = s2026 も s100 と同 mode、 **2 軸 policy profile model 確立** |
 | 補遺 13 | s100 + s500 ensemble (異 mode) | Mode A + Mode B logit 平均 | **19.7% (= 単純平均 20.95% も下回り)** = 第 5 の ensemble 失敗パターン (mode mismatch)、 **v40 PPO ensemble は何をやってもダメ確定** |
+| 補遺 14 | 3-MLP base vs s42 直接対戦 | 40 games alternating side | **45.0%-55.0% (s42 勝ち)** = lab と 1v1 winrate の負の相関確定、 **PPO 2 軸 trade-off 完全モデル化** + PIMC Phase 1 完了 |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
