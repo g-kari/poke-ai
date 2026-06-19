@@ -214,6 +214,35 @@ local sandbox では完璧に動いたが、 **`--strict-cwd` 相当の simulati
 が後付け**だった。 deep-learning 移植時に「ロードの頑健性」 を 3-MLP
 main.py から継承し損ねた。
 
+### 4.4 TrueSkill σ settling 中の LB スナップショット誤読
+
+Mix v1 (submission_mixed.tar.gz):
+- 提出後 0時間: LB 659.7
+- 提出後 ~1時間: LB **711.2** (3-MLP 679 を超えた! と早合点)
+- 提出後 12時間: LB 490.3 (大幅下落)
+- 提出後 24時間: LB 470.9 (安定収束)
+
+**罠**: 提出直後の数十時間は σ が大きく、 ±150-200 振れる。 1 回の
+スナップショットで「チャンピオン交代」 と判断 → 訂正 commit を後で
+打つ羽目になった。 lab→LB の評価は **24+ 時間後の値** を見るべし。
+
+### 4.5 lab 改善 ≠ LB 改善: 構造的非単調性
+
+複数の試行で同 lab・異 LB を観測:
+
+| 試行 | lab | LB |
+|---|---|---|
+| 3-MLP base (seed 0/2/100) | 18.9% | **679.6** |
+| Mixed (1 ext + 2 base) | 20.4% | 470.9 |
+| 4-MLP base (seed 0/2/100/200) | 20.4% | 452.1 |
+
+**両 mixed と 4-MLP は lab で 3-MLP base に勝つが、 LB で大敗**。
+ensemble 構成が LB の opponent 分布に「うまく対応するか」 で ratio
+が大きく変わる。
+
+**含意**: lab winrate を最大化する戦略 (= overfit to lab opps) は
+LB 最適化と乖離。 lab は ranking signal として弱いが正しく使うべし。
+
 ## 5. 未実装の方向
 
 ### 5.1 PPO (Proximal Policy Optimization)
