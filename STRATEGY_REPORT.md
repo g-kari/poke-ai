@@ -199,17 +199,50 @@ violate される (V6 は lab 57.9% で LB 926 だが、 lab 64.0% Iono は LB 7
 
 ## 4. 教訓と反省
 
-### 4.1 sunk cost fallacy
+### 4.1 sunk cost fallacy (= 3 つの事例、 すべて 5 サイクル目で見切るべきだった)
 
-V60 路線に **7 サイクル投資** したが LB 523 で 3-MLP 679 を超えず。 5
-サイクル目で「これ以上の改善は構造的に困難」 と判明していたのに継続した。
-fast-iterate / fast-pivot のバランスが課題。
+**事例 1**: V60 路線に **7 サイクル投資** したが LB 562 で 3-MLP 679 を
+超えず。 5 サイクル目で「これ以上の改善は構造的に困難」 と判明していた
+のに継続。
 
-### 4.2 noise floor の認識遅れ
+**事例 2** (Day 3 で新発見): BC (Behavioral Cloning) v1 → v2 → BCRL1 →
+BCRL2 → BCRL3 → BCRL3-ent **6 サイクル連続投資**。 BCRL2 で LB 570 達成
+した後、 +5000ep 延長 (BCRL3) で lab 15.4% 大幅 regression。 entropy
+bonus (BCRL3-ent) も 17.1% で BCRL2 を超えず。 BCRL2 で **見切るべき
+だった**。
 
-GA loop 初回 (3g/eval = 30 games/fitness、 Wilson CI ±25pp) で 23.3% の
-"improvement" を観測したが、 40g 本格 bench で 13.2% に縮小 = 完全に
-noise。 評価早期で fitness CI を意識する習慣が必要。
+**事例 3** (Day 3 最終): 3-MLP base champion 達成後の 5/5 改善試行
+(4-MLP / Mixed / Mix v3 / Alt v3 / 3-MLP-ext)。 1 試行目 (4-MLP) で
+LB 502 と劣化が確定した時点で **「改善試行は LB を必ず下げる」 と判明**
+していたのに、 残り 4 試行で連続的に submission slot を浪費。
+
+**共通パターン**: 「次こそ突破できる」 という楽観で **退却 timing を
+誤る**。 fast-iterate / fast-pivot のバランス調整は本質的に難しい。
+
+**対策**: 5/5 を「先に決めた基準」 で評価する (= 例: 「+2pp 改善
+なければ路線放棄」)。 「次は違う」 を 5 回連続で繰り返したら確実に
+退却する rule of thumb が必要。
+
+### 4.2 noise floor の認識遅れ (= 複数事例)
+
+**事例 1**: GA loop 初回 (3g/eval = 30 games/fitness、 Wilson CI ±25pp)
+で 23.3% の "improvement" を観測したが、 40g 本格 bench で 13.2% に
+縮小 = 完全に noise。
+
+**事例 2** (Day 3 で発覚): 旧 STRATEGY で引用していた「3-MLP lab 26.7%」
+は実は `bench_meta.py` (= 4 Kiyota opp) の値で、 7-opp suite では 18.9%。
+**benchmark の選び方** で 8pp も乖離する。 LB との対応も 4-opp では弱く、
+7-opp で初めて綺麗に取れる。
+
+**事例 3** (Day 3 で発覚): 初期 LB スナップショットも noise 源 — Mix v1
+が初期 711 → settling で 470 と **240 point 下落**。 提出直後の数十時間は
+TrueSkill σ 大きく、 即決判断は誤る。
+
+**対策**:
+- bench は **7-opp suite × 40+ g/opp** が最低ライン (= Wilson CI ±5pp)
+- LB は **24h 待ってから評価**、 初期値で判断しない
+- 異なる bench suite (4-opp / 7-opp / full) の数値は **互換性ない**、
+  混ぜて引用しない
 
 ### 4.3 Submission build 体制の自動化遅れ
 
