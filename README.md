@@ -130,17 +130,23 @@ CLAUDE.md             Claude Code 向け開発メモ
 TrueSkill σ settling 後 **490.3 まで下降**。 transient peak でした。
 3-MLP base 679.6 がチャンピオン継続です。
 
-**LB ↔ lab ratio (= 7-opp suite、 校正後の確定値)**:
+**LB ↔ lab ratio (= 7-opp suite × 700g 大規模 bench で校正)**:
 
-| 提出 | 7-opp lab | LB | ratio |
+| 提出 | 700g lab | LB | ratio |
 |---|---|---|---|
-| **3-MLP base** | **19.3% ± 3pp** (700g) | **679.6** | **35.2** (最高効率 = チャンピオン) |
-| BCRL2 | 19.3% | 570.4 | 29.5 |
-| V60 EXT3 | 20.5% | 562.4 | 27.4 |
-| 4-MLP base | 20.4% | 521.6 | 25.6 |
-| Mixed (Mix v1) | 20.4% | 470.9 | 23.1 |
-| Mix v3 | 19.4% | 411.8 | 21.2 |
-| Alt v3 | 22.2% | 184.0 | 8.3 (歴史的最低) |
+| **3-MLP base** | **19.3%** | **679.6** | **35.2** |
+| BCRL2 | **16.1%** | 570.4 | **35.4** |
+| V60 EXT3 | **17.0%** | 562.4 | **33.1** |
+
+**🎯 重要発見**: 大規模 bench 3 サンプルで ratio が **33-35 の narrow range
+に収束**。 「3-MLP base が特別な特殊解 ratio 35.9」 とは思っていたが、
+実は **DL submission の lab → LB は ratio ~35 で線形対応** が正しい
+解釈。 旧 280g sample で見えた ratio 22-29 の散らばりは **bench noise +
+TrueSkill σ settling** の混入だった。
+
+**Practical implication**: lab 20% (= 700g 真値) を達成すれば LB ~700。
+PPO で BCRL2 (16.1%) → 18-20% への改善が可能なら LB 630-700 が現実
+的視野。
 
 **驚きの発見 (2026-06-19)**: 5 個の DL submission 試行 (4-MLP / Mixed /
 Mix v3 / Alt v3) すべて ratio 22-23 で 3-MLP base の 35.9 を再現できず:

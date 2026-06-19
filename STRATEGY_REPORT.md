@@ -119,10 +119,25 @@ policy 学習の困難:
 
 ## 3. 発見した法則
 
-### 3.1 lab → LB は **bench に依存し、 ratio 21-36 と幅広く分散**
+### 3.1 lab → LB は ratio ~35 で universal (= 700g 大規模 bench で確定)
 
-旧 STRATEGY では「lab 1pp ≈ LB 43」 と書いたが、 **撤回**。 実際には
-bench の opp 構成と ensemble 構造で ratio が大きく変動:
+旧 STRATEGY では「lab 1pp ≈ LB 43」 と書き、 中間版では「ratio 22-36
+と幅広く分散」 と書いたが、 **両方とも撤回**。 280g bench の large
+variance (±2pp) を 700g (±3pp Wilson CI) で取り除いた結果、 ratio は
+**universal な 33-35** だった:
+
+| 提出 | 700g lab | LB | ratio |
+|---|---|---|---|
+| 3-MLP base | 19.3% | 679.6 | **35.2** |
+| BCRL2 | 16.1% | 570.4 | **35.4** |
+| V60 EXT3 | 17.0% | 562.4 | **33.1** |
+
+**含意**: lab → LB は係数 ~35 でほぼ線形。 LB 700 を達成するには
+**lab 20%** を 700g で確保すれば良い。 「特殊解 35.9」 という解釈は
+誤り、 純粋に 280g の noise だった。
+
+(旧 280g テーブル — bench に依存し ratio 21-36 と分散 — は noise
+floor 内の見かけの分散と判明、 削除)。
 
 | 提出 | 7-opp lab | LB | ratio |
 |---|---|---|---|
