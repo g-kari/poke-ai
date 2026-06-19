@@ -738,11 +738,26 @@ v40 seed=0/2/100 を entropy_coef=0.02 で warm-start 2000ep 延長:
 - ratio ~35 universal を活用、 lab を 18-20% に押し上げる
 - 期待 LB **630-700** (= LB 700 突破の最有力候補)
 
-**残る不確実性**:
-- PPO が REINFORCE と同様の late-stage overfit を起こさないか
-  (= entropy_coef による regularization が機能するかは未検証)
-- 1280 ep が十分か (= 完全な PPO は 100k+ ep が rule of thumb、 我々は
-  warm-start + 短期 fine-tune を想定)
+**実際の結果** (= 当日 3 つの PPO variant を訓練 + bench):
+
+| PPO 試行 | 設定 | 700g lab | 備考 |
+|---|---|---|---|
+| **PPO1 (= 主候補)** | seed=0, lr=3e-5, 1280ep | **19.0%** | **consistent profile** |
+| PPO2 | PPO1 + 1280ep, lr=2e-5 | 19.1% | specialized (Drag/Aboma peak) |
+| PPO3 | seed=42, lr=3e-5, 1280ep | 18.1% | V6/Aboma peak, CW regress |
+| PPO1+PPO2 ens | logit 平均 | 19.1% | no lift (= 由来が近い) |
+
+**学び**:
+- PPO は BCRL2 から **+2.9pp 改善** (= REINFORCE warm-start の regression
+  を完全防止 + 改善)
+- 1280 ep で 95% 収束、 追加 1280 ep の diminishing return が明確
+- lr 影響は限定的 (3e-5 / 2e-5 で同 lab)
+- seed 違い (PPO3) は per-opp specialization を生むが lab は劣後
+- 期待 LB (ratio 35): PPO1 → ~665、 3-MLP base 679 に肉薄
+
+**残る検証** (明日 UTC reset 後):
+- PPO1 の実 LB が ~665 に着地するか (= ratio 35 仮説の最終証明)
+- PPO の sample 効率 (= 1280ep) は BCRL2 の 7000ep に比べ **5x 効率**
 
 ### 5.4 Transformer features
 
