@@ -148,6 +148,15 @@ TrueSkill σ settling** の混入だった。
 PPO で BCRL2 (16.1%) → 18-20% への改善が可能なら LB 630-700 が現実
 的視野。
 
+### 明日の path (UTC reset 後の 5 slot)
+
+1. **3-MLP base 再提出** (= control experiment、 期待 LB ~679 再現)
+2. **PPO + BCRL2 warm-start** (= 1280 ep PPO 訓練済み、 lab 18-20% 期待)
+3. **残り 3 slot 温存** (= PPO 結果次第で延長版 or 別 seed PPO)
+
+PPO は本日の cron 内で訓練 + bench 完了済みになる予定。 明日の slot は
+**bench で lab 18%+ 確認後にのみ提出** する厳格 gate を設ける。
+
 **驚きの発見 (2026-06-19)**: 5 個の DL submission 試行 (4-MLP / Mixed /
 Mix v3 / Alt v3) すべて ratio 22-23 で 3-MLP base の 35.9 を再現できず:
 
