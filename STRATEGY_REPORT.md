@@ -894,9 +894,46 @@ PPO_v40 では消失。 期待: 23.3% × 1.244 ≈ 28.9% (= base ensemble の
 control の 4 枠投入 (= s100, s2026, s500, 3-MLP base)、 submit_tomorrow_plan.sh
 を準備済み。
 
+#### 5.3l 補遺 8: s100 vs s2026 直接対戦 (= absolute strength 同等、 profile が打ち消し合う)
+
+n=4 PPO_v40 chain で lab 23% 級を 2 つ引いた (s100=23.3% Crustle Wall
+特化、 s2026=22.9% V6 特化)。 これらの **絶対強さ** を直接対戦で測定:
+40 games (alternating side、 rng seed=42、 softmax sampling)。
+
+**結果**:
+```
+after 10: s100 6,  s2026 4,  draws 0
+after 20: s100 12, s2026 8,  draws 0
+after 30: s100 16, s2026 14, draws 0
+after 40: s100 20, s2026 20, draws 0  ← 完全引き分け
+
+Final: 50.0% / 50.0%
+```
+
+**含意**:
+- s100 と s2026 は **絶対強さで同等**: 異なる specialization profile を
+  持ちながら、 直接対戦は完全に 50-50
+- これは **profile が互いを打ち消し合う** 構造を示唆:
+  - s100 (Crustle Wall 特化) は s2026 の V6 戦略を破る
+  - s2026 (V6 特化) は s100 の Crustle 戦略を破る
+  - net で釣り合い、 absolute strength のみが残る
+- **ratio 35 仮説下では両者の LB 期待値も同等水準** (= ~810): もし
+  明日 UTC の LB で s100 vs s2026 に大差が出れば、 それは「LB の相手
+  分布が specialization profile に強く影響」 の証拠となる
+- 逆に LB が両者で同等水準なら、 「LB は absolute strength でほぼ
+  決まる、 specialization は局所効果のみ」 が支持される
+
+**明日 UTC 4 枠投入後の analysis に新たな decision point**:
+- s100 LB ≈ s2026 LB: absolute strength 仮説 (= 7-opp suite bench が
+  LB に直接 translate)
+- s100 LB ≫ s2026 LB: Crustle Wall 系統が LB 母集団で支配的、 V6 系統は
+  劣後 (= 明日提出する Kaggle 環境のメタ分布を学ぶ機会)
+- s2026 LB ≫ s100 LB: V6 系統が LB 母集団で支配的 (= 既存 V6 deck の
+  LB 860.8 と整合)
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
-5.3l 本体に続く 7 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
+5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
 された。 仮説修正の流れを混乱しないよう、 以下の mapping を参照:
 
 | # | 補遺タイトル | 試行内容 | 結論 |
@@ -908,6 +945,7 @@ control の 4 枠投入 (= s100, s2026, s500, 3-MLP base)、 submit_tomorrow_pla
 | 補遺 5 | seed=2026 試行 (n=4 拡張) | s100 base + PPO seed=2026 | **仮説修正: PPO ガチャ 50% で 23% 級** |
 | 補遺 6 | s100 + s2026 ensemble | 同 strength × 異 profile を試行 | 失敗 (= 20.3%、 specialization 境界 confusion) |
 | 補遺 7 | s2026 ext (= 2nd PEAK 延長) | s2026 を warm-start し +1280 ep | 失敗 (= 19.4%、 -3.5pp、 V6 特化消失) |
+| 補遺 8 | s100 vs s2026 直接対戦 | 40 games alternating side | **50-50 引き分け** = absolute strength 同等、 profile 相殺 |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization

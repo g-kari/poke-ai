@@ -1,0 +1,10 @@
+Self-play: PPO_v40 seed=100 vs PPO_v40 seed=2026 — 40 games
+  rng seed: 42, deck.csv (= our shared deck), policy.probs softmax sampling
+  alternating side (20 games each as P0 / P1)
+
+after 10: s100 6,  s2026 4,  draws 0
+after 20: s100 12, s2026 8,  draws 0
+after 30: s100 16, s2026 14, draws 0
+after 40: s100 20, s2026 20, draws 0
+
+Final: s100 20-20 s2026 (= 50.0% / 50.0%, full draw)
