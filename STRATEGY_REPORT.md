@@ -607,29 +607,54 @@ B. それより上を狙うなら: deck.csv 自体の最適化、 PPO 実装、 
 - **deck-builder agent**: 推定 LB 700-800 の到達点だが、 agent-deck
   joint 設計が前提
 
-## 7. 補遺: 試行 timeline
+## 7. 補遺: 試行 timeline (改訂版、 全 35+ サイクル分)
 
-15 時間の試行を時系列で:
+35+ サイクルの試行を時系列で:
 
-  T+0:    線形 policy → 3-MLP ensemble (LB 679)
-  T+3h:   vendored rule-based 路線、 V6 (LB 926) 取得
-  T+5h:   deck-builder v1-v9 で 構造的限界判明
-  T+8h:   PIMC v1-v5、 heuristic 天井判明
-  T+10h:  Crustle 検出 agent v8-v11、 reactive 限界
-  T+11h:  V60 features (deck-id fingerprint) 設計
-  T+13h:  V60 EXT1-EXT4、 振動から抜けず
-  T+14h:  V60 submission 53810836/53812115/53812882 (3 回目で COMPLETE)
-  T+15h:  V60 V6 deck warm-start、 最終決算
+  Day 1 (2026-06-17):
+    T+0:     線形 policy → 2-MLP ensemble (LB 613)
+    T+3h:    3-MLP ensemble (LB 679) — DL ベスト確定
 
-各 phase で「これが正解だろう」と思った瞬間が複数あり、 それぞれが
-**noise floor 内の偽陽性** や **未検証の前提** だった事を後付けで認識。
+  Day 2 (2026-06-18):
+    T+0h:    vendored rule-based 路線、 Iono (762)/CrustleDashi (874)/V6 (860) 提出
+    T+5h:    deck-builder v1-v9 で 構造的限界判明
+    T+8h:    PIMC v1-v5、 heuristic 天井判明
+    T+10h:   Crustle 検出 agent v8-v11、 reactive 限界
+    T+11h:   V60 features (deck-id fingerprint) 設計
+    T+13h:   V60 EXT1-EXT4、 振動から抜けず (lab 17-21%)
+    T+14h:   V60 submission 53810836/53812115/53812882 (3 回目で COMPLETE LB 562)
+    T+15h:   V60 V6 deck warm-start、 一旦決算
+
+  Day 3 (2026-06-19):
+    T+0h:    BC from V6 (acc 69.6%, lab 5.7% → 提出見送り)
+    T+1h:    BC v2 wins-only filter (lab 10.4%)
+    T+2h:    BCRL1 (BC v2 warm-start + REINFORCE 2000ep, lab 12.1%)
+    T+3h:    BCRL2 (+5000ep, lab 19.3%) → 提出、 LB **570.4**
+    T+5h:    BCRL3 / BCRL3-ent / Bigger MLP / v60 ensemble — 全て失敗
+    T+6h:    v40 seed=0/2/100 base 単独 bench (= 13.2% / 13.2% / ~13%)
+    T+7h:    **重要発見**: 3-MLP base 真の lab は 18.9% (= 26.7% は別 bench)
+    T+8h:    v40 entropy extension (seed=0 ext lab 20.5%、 +7.3pp!)
+    T+9h:    3-MLP-ext ensemble → lab 16.1% 大失敗 (= entropy が ensemble 破壊)
+    T+10h:   Mixed (seed=0 ext + 2 base + 100 base) lab 20.4% → 提出
+             初期 LB 711 → 24h後 LB 470 (= settling 罠)
+    T+11h:   4-MLP base (seed +200) → LB 502 (= 3-MLP base 超えず)
+    T+12h:   Alt v3 (seed=2/100/300, no seed=0) lab 22.2% → 提出 LB 515 → 426
+             5/5 改善試行が全て失敗、 3-MLP base 35.9 が特殊解と確定
+
+**学んだ法則** (順序通り):
+- T+7h: bench suite 選択 (4-opp vs 7-opp) で lab 数値が大きく異なる
+- T+9h: entropy bonus は **single policy 向け、 ensemble を破壊**
+- T+10h: TrueSkill σ settling は ±150-200 振れる、 24h 待つべし
+- T+12h: ensemble の LB ratio (22-36) は **seed 組合せの偶然 match** で決まる、
+  再現困難
 
 ---
 
-最終的に、 競技用には **V6 (LB 926)** 提出、 深層学習 best は **3-MLP
-(LB 679)** という二本立ての結論。 ストラテジー部門では「我々自身が
-作った deep-learning は 3-MLP が天井」 という事実 + 12 系統の失敗ログ +
-発見した法則 の 3 点を report の核とする。
+最終的に、 競技用には **CrustleDashi (LB 874)** 提出、 深層学習 best は
+**3-MLP base (LB 679, seed 0/2/100, lab 18.9%)** という二本立ての結論。
+ストラテジー部門では「3-MLP base が天井」 + 「5/5 改善試行が失敗」 +
+「lab→LB ratio の非単調性」 + 「entropy × ensemble の interaction」 +
+「TrueSkill settling trap」 の 5 点を report の核とする。
 
 ---
 
