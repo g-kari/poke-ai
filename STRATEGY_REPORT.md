@@ -238,11 +238,30 @@ LB 502 と劣化が確定した時点で **「改善試行は LB を必ず下げ
 が初期 711 → settling で 470 と **240 point 下落**。 提出直後の数十時間は
 TrueSkill σ 大きく、 即決判断は誤る。
 
+**事例 4** (Day 3 最終発見): 全く同じ bench コマンド (= 同 weights, 同
+script, 同 opp) を 2 回実行すると **per-opp で ±27.5pp 変動**:
+
+  vs Mega Lucario:  22.5% → 10.0% (-12.5pp)
+  vs Crustle Wall:  37.5% → 10.0% (-27.5pp)
+  vs V6:             5.0% → 32.5% (+27.5pp)
+  vs Mega Aboma:    20.0% → 32.5% (+12.5pp)
+  overall:          18.9% → 17.5% (-1.4pp、 安定)
+
+原因: rule-based 相手は Python `random` モジュール (= bench 側で
+`random.seed(0)` 設定するが、 各 game で `make("cabt")` env が
+fresh state を持ち、 opp の random は再現性なし)。 我々の policy は
+`np.random.default_rng(0)` で deterministic だが、 相手の確率行動が
+ノイズ源。
+
 **対策**:
 - bench は **7-opp suite × 40+ g/opp** が最低ライン (= Wilson CI ±5pp)
+- **overall winrate は安定** だが **per-opp の差は ±25pp 内** で
+  情報量少。 単一 bench の per-opp 比較は意味薄
 - LB は **24h 待ってから評価**、 初期値で判断しない
 - 異なる bench suite (4-opp / 7-opp / full) の数値は **互換性ない**、
   混ぜて引用しない
+- ratio 計算 (lab → LB) は **±3 程度の幅** で考える (= 我々の 3-MLP
+  ratio 35.9 は 32-40 の範囲)
 
 ### 4.3 Submission build 体制の自動化遅れ
 
