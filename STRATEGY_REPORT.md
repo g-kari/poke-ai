@@ -1270,6 +1270,58 @@ overall: 138-562 (19.7%)
 - opp_state sampling (naive v1) 動作 OK
 - 次フェーズ (Phase 2 = pimc_choose minimum 実装) は明日 UTC LB 着地後
 
+#### 5.3l 補遺 15: PIMC v1-v5 既に実装済 + 100-game bench で PIMC-ON ≈ PIMC-OFF (重大な訂正)
+
+PIMC Phase 2 着手の準備中に、 **train/pimc.py (= 2026-06-17 commit) に
+v1-v5 まで既に実装済み** であることを発見。 docs/PIMC_DESIGN.md で
+「未実装」 と書いたのは私の重大な見落とし。
+
+**既存 train/pimc.py の結論** (= 同ファイル docstring より):
+```
+Definitive 100-game results (multi-world N=2, linear rollout):
+  PIMC-ON vs PIMC-OFF mirror:  51-49 (51%) — Wilson 95% CI [41%, 61%]
+  PIMC-ON vs random:           92-8  (92%) — Wilson 95% CI [85%, 96%]
+  PIMC-OFF vs random:          91-9  (91%) — Wilson 95% CI [84%, 95%]
+
+So PIMC-ON adds no measurable strength but costs ~24x more per move
+(2.86s vs 0.12s on this image).
+```
+
+**3 つの backend を試行済み**:
+- Backend A (1-ply + trained linear value head): PIMC-ON loses to OFF (variance)
+- Backend B (single-world rollout-to-terminal): same (variance)
+- Backend C (multi-world N=2 linear rollout): definitive tie at 100 games
+
+**設定**: DEFAULT_TIME_BUDGET_MS=500, DEFAULT_ROLLOUT_DEPTH=80,
+DEFAULT_N_WORLDS=2, DEFAULT_ROLLOUT_ENGINE_PRIOR=False
+
+**判明 (= 補遺 15 で確定)**:
+- PIMC は既に試行済み、 default-OFF が現状の設定
+- 線形 policy rollout では PIMC は no measurable lift
+- ただし **PPO_v40 s500 (= Mode B) を rollout に使った試行は未実施**:
+  既存 backend C は linear policy 想定で実装
+
+**残された PIMC 探索の可能性** (= 補遺 14 の 2 軸 model からの新仮説):
+- 既存 PIMC (= linear rollout) は 軸 A 中庸 で stuck していた可能性
+- **PPO_v40 s500 (= 軸 B 特化 = 中庸 player 狩り)** を rollout に使えば、
+  PIMC + Mode B の組み合わせで lift する可能性
+- ただし、 既存実装は `policy: LinearPolicy` 引数想定なので、 MlpPolicy
+  を受け入れる adapter が必要
+- 100-game bench で再評価が必要、 もし PPO 系統 rollout で PIMC-ON が
+  >60% mirror match なら default-ON 化を検討
+
+**修正方針**:
+- docs/PIMC_DESIGN.md の「Phase 1 着手」 等の記述は誤り、 既存実装の
+  存在を踏まえて訂正必要
+- Phase 1 (= API 動作確認) は実は **過去のサイクルで完了済み**
+- Phase 2-4 は「既存 pimc.py の rollout policy を MlpPolicy で差し替え
+  + 100-game bench で再評価」 という形に再定義
+- PIMC Task #142 を「PIMC v6 = MlpPolicy rollout 化 + 再評価」 に再定義
+
+**(scripts/pimc_smoke_test.py は依然有用)**:
+- cg.api の動作確認 script として残す価値あり
+- PIMC v6 開発時の reference 実装としても役立つ
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1290,7 +1342,8 @@ overall: 138-562 (19.7%)
 | 補遺 11 | 3-MLP base vs s100 直接対戦 | 40 games alternating side | **62.5%-37.5% (3-MLP 大勝)** = 非推移性発見! s100 ≠ s500 (補遺 10 と矛盾) |
 | 補遺 12 | 3-MLP base vs s2026 直接対戦 | 40 games alternating side | **60.0%-40.0% (3-MLP 大勝)** = s2026 も s100 と同 mode、 **2 軸 policy profile model 確立** |
 | 補遺 13 | s100 + s500 ensemble (異 mode) | Mode A + Mode B logit 平均 | **19.7% (= 単純平均 20.95% も下回り)** = 第 5 の ensemble 失敗パターン (mode mismatch)、 **v40 PPO ensemble は何をやってもダメ確定** |
-| 補遺 14 | 3-MLP base vs s42 直接対戦 | 40 games alternating side | **45.0%-55.0% (s42 勝ち)** = lab と 1v1 winrate の負の相関確定、 **PPO 2 軸 trade-off 完全モデル化** + PIMC Phase 1 完了 |
+| 補遺 14 | 3-MLP base vs s42 直接対戦 | 40 games alternating side | **45.0%-55.0% (s42 勝ち)** = lab と 1v1 winrate の負の相関確定、 **PPO 2 軸 trade-off 完全モデル化** + PIMC Phase 1 完了 (= 訂正必要) |
+| 補遺 15 | PIMC 既存実装の発見 | train/pimc.py v1-v5 100-game bench | **PIMC-ON ≈ PIMC-OFF (51-49 tie)**、 既に default-OFF で運用中。 PPO_v40 s500 rollout 化が次の試行候補 |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
