@@ -121,10 +121,10 @@ CLAUDE.md             Claude Code 向け開発メモ
 | 2-MLP ensemble | 613.3 | DL |
 | BCRL2 (BC v2 + REINFORCE 7000ep) | 570.4 | DL |
 | V60 EXT3 (single 10500ep) | 562.4 | DL |
-| Alt v3 (seed=2/100/300、 no seed=0) | 515.8 | DL (lab 22.2% で過去最高、 LB は不調) |
-| 4-MLP ensemble (seed=0/2/100/200) | 502.3 | DL (settling 後収束) |
+| 4-MLP ensemble (seed=0/2/100/200) | **558.2** | DL (still settling +20.2/h、 目標 752) |
 | Mixed (seed=0 ext + 2/100 base) | 470.9 | DL |
 | Mix v3 (seed=100 ext + 0/2 base) | 411.8 | DL |
+| Alt v3 (seed=2/100/300、 no seed=0) | 184.0 | DL (=構造的失敗) |
 
 **🚨 訂正**: 前回スナップショットで Mixed が LB 711.2 と観測しましたが、
 TrueSkill σ settling 後 **490.3 まで下降**。 transient peak でした。
