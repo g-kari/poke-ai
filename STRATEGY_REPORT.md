@@ -313,9 +313,9 @@ Mix v1 (submission_mixed.tar.gz):
 - 一度 LB 700 級を達成できた構成は **触らない** ことが正解
 - 改善試行は **必ず別 tar として提出** し、 元の構成を保護
 
-## 5. 未実装の方向 (= LB 700+ を目指すなら)
+## 5. 未実装の方向 → **Phase 1-4 完成**! (= LB 700+ を目指すなら)
 
-### 5.1 PPO (Proximal Policy Optimization) — 最有力路線
+### 5.1 PPO (Proximal Policy Optimization) — 最有力路線、 実装完了
 
 V60 / BCRL 路線最大の問題は **policy gradient variance** で振動 + late-
 stage の **catastrophic overfit to training pool** (= 3 事例で確認)。
@@ -323,11 +323,15 @@ PPO の clipped surrogate objective で 1 batch あたりの policy 変化を
 [1-ε, 1+ε] にクリップ → late-stage の暴走を防げる。
 
 **実装の優先順位** (PPO_DESIGN.md 参照):
-1. **Phase 1**: replay buffer + log-prob 記録 (1 サイクル)
-2. **Phase 2**: GAE (Generalized Advantage Estimation) 計算 (1 サイクル)
-3. **Phase 3**: clipped surrogate + value MSE + entropy 損失 (1 サイクル)
-4. **Phase 4**: BCRL2 weights から warm-start で 5000ep PPO 学習 (1-2 サイクル)
-5. **Phase 5**: bench + submission (1 サイクル)
+1. **Phase 1** ✅: replay buffer + log-prob + value 記録
+   (`train/ppo_buffer.py`、 `PPOStep` / `PPOEpisode` / `PPOBuffer`)
+2. **Phase 2** ✅: GAE (Generalized Advantage Estimation) 計算
+   (`train/ppo_gae.py`、 sparse-reward PTCG 対応)
+3. **Phase 3** ✅: clipped surrogate + value MSE + entropy 損失
+   (`train/ppo_loss.py`、 k_epochs mini-batch 対応)
+4. **Phase 4** ✅: 完全な training loop
+   (`train/ppo_train.py`、 BCRL2 warm-start 対応 CLI)
+5. **Phase 5** 未実装: 実際の 50-iteration 訓練 + bench + submission
 
 **期待効果**:
 - 個別 single policy lab を 19.3% (BCRL2) → 23-25% に伸ばせる可能性
