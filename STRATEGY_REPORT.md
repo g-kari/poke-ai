@@ -740,26 +740,38 @@ v40 seed=0/2/100 を entropy_coef=0.02 で warm-start 2000ep 延長:
 - ratio ~35 universal を活用、 lab を 18-20% に押し上げる
 - 期待 LB **630-700** (= LB 700 突破の最有力候補)
 
-**実際の結果** (= 当日 3 つの PPO variant を訓練 + bench):
+**実際の結果** (= 全 5 PPO variant + 2 ensemble の 700g 大規模 bench):
 
 | PPO 試行 | 設定 | 700g lab | 備考 |
 |---|---|---|---|
 | **PPO1 (= 主候補)** | seed=0, lr=3e-5, 1280ep | **19.0%** | **consistent profile** |
 | PPO2 | PPO1 + 1280ep, lr=2e-5 | 19.1% | specialized (Drag/Aboma peak) |
 | PPO3 | seed=42, lr=3e-5, 1280ep | 18.1% | V6/Aboma peak, CW regress |
+| **PPO4** | **5120ep**, batch=64, lr=3e-5 | **18.1%** | overtraining (CW 21%→7% regression) |
 | PPO1+PPO2 ens | logit 平均 | 19.1% | no lift (= 由来が近い) |
+| PPO1+PPO3 ens | logit 平均 | 17.0% | regression (= v60 ensemble 法則) |
 
-**学び**:
+**学び (= PPO chain 完全検証後の確定知見)**:
 - PPO は BCRL2 から **+2.9pp 改善** (= REINFORCE warm-start の regression
   を完全防止 + 改善)
-- 1280 ep で 95% 収束、 追加 1280 ep の diminishing return が明確
+- **1280 ep が PPO sweet spot** (= PPO4 5120ep は overtraining で
+  Crustle Wall -14pp regression、 lab 18.1% に劣化)
 - lr 影響は限定的 (3e-5 / 2e-5 で同 lab)
 - seed 違い (PPO3) は per-opp specialization を生むが lab は劣後
+- **v60 PPO ensemble は失敗** (= 旧 5.3e の base ensemble 同様、 deck
+  fingerprint feature が seed diversity を吸収)
 - 期待 LB (ratio 35): PPO1 → ~665、 3-MLP base 679 に肉薄
 
 **残る検証** (明日 UTC reset 後):
 - PPO1 の実 LB が ~665 に着地するか (= ratio 35 仮説の最終証明)
 - PPO の sample 効率 (= 1280ep) は BCRL2 の 7000ep に比べ **5x 効率**
+
+**PPO アーキの最終判決**:
+- **Single PPO**: 1280 ep で best (= PPO1)、 単独 submission に最適
+- **Ensemble PPO**: 不可能、 v60 features の構造的問題
+- **Large-scale PPO**: counter-productive (= overtraining)
+- **長期 PPO で本格 LB 700+ を狙うなら**: features_v60 を再設計 (= deck
+  fingerprint の hash collision を緩和) または PPO + PIMC hybrid が必要
 
 ### 5.4 Transformer features
 
