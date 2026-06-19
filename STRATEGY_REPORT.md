@@ -586,14 +586,17 @@ opp 但し seed 固定で fresh 試合) では悪化。
 
 ### 5.3g v40 vs v60 features の **ensemble lift** 構造的差異 (= 新発見)
 
-各 seed 単独の lab winrate と ensemble の lab winrate を比較:
+各 seed 単独の lab winrate と ensemble の lab winrate を比較 (7-opp suite):
 
 | features | 単独 seed lab | 3-policy ensemble lab | lift |
 |---|---|---|---|
-| **v40 (40-d)** | seed=0 alone: **13.2%** | **26.7%** | **+13.5pp** |
+| **v40 (40-d)** | seed=0 alone: **13.2%** | **17-19%** | **+4-6pp** |
 | v60 (60-d, deck fingerprint) | EXT3 alone: 20.5% | 17.5% (fair members) | **-3.0pp** |
 
-**v40 は ensemble に強い、 v60 は ensemble で逆に下がる**。
+注: 当初「v40 ensemble 26.7%」 と書いたのは bench_meta.py (= 4 Kiyota opp)
+の値。 7-opp suite では 17-19% (bench reproducibility variance 込み)。
+
+**v40 は ensemble に正の lift、 v60 は ensemble で逆に下がる**。
 
 **仮説**: v60 features の **deck fingerprint hash bucket** が opponent
 identity を強く encode するため、 各 seed が同じ「相手別 specialization」
@@ -606,10 +609,14 @@ features は opponent 情報が乏しいので、 各 seed が異なる「内部
   に依存
 - v60 features を追加するなら、 ensemble を諦めて **単独 policy で
   長期学習** (= EXT3 路線) するべき
-- 単独 seed v40 を改善できれば、 ensemble lift で更に伸び代がある
-  (= 13.2% × 2 = 26.7% の係数で、 18% → 36% の可能性)
-- **次の挑戦**: v40 seed を entropy bonus で延長して 18-20% に上げる
-  → 3-MLP ensemble で 30%+ → LB 700-800 期待
+- 単独 seed v40 改善で ensemble lift も狙えると当時推測した (= 13.2%
+  単独 × ~1.4 倍 = 18% ensemble の係数で、 単独 +5pp → ensemble +7pp の
+  期待)
+
+**実際の結果 (= 当時の予想は外れた)**:
+- v40 seed=0 を entropy bonus で延長 → 単独 13.2% → 20.5% (+7.3pp! 成功)
+- 3 個全部 ext で ensemble → 16.1% (= 個別改善が ensemble に転じない)
+- **「単独改善 ≠ ensemble 改善」 が確定** (= section 4.5、 5.3h で詳述)
 
 ### 5.3i 訂正: TrueSkill σ settling で Mix v1 LB は 711 → 490 に下降
 
@@ -645,10 +652,10 @@ v40 seed=0/2/100 を entropy_coef=0.02 で warm-start 2000ep 延長:
 個別 seed は全部改善 (= entropy bonus が warm-start regression を防止)。
 ところが ensemble bench:
 
-| 構成 | lab winrate |
+| 構成 | lab winrate (7-opp suite) |
 |---|---|
-| 3-MLP base ensemble (= LB 679) | **26.7%** |
-| **3-MLP-ext ensemble** | **16.1%** (-10.6pp regression!) |
+| 3-MLP base ensemble (= LB 679) | **17-19%** |
+| **3-MLP-ext ensemble** | **16.1%** (= ほぼ同じか少し下) |
 
 **ensemble lift の逆転**:
 - base: 単独 ~13% → ensemble 26.7% = **+13.5pp** (logit averaging works)
