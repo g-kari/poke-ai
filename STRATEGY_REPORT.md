@@ -44,7 +44,7 @@ deep-learning best は 3-MLP base (seed=0/2/100, lab 18.9%, LB 679.6)。
 | **最大の罠** | 初期 LB スナップショットでの誤判断 (Mix v1 711 → 490 の例) |
 | **shippable 再利用部品** | bench_v40/v60.py / collect_bc_dataset.py / bench_v60_ensemble.py |
 
-### 8 つの中心的な学び (最終版 = 補遺 17 まで反映)
+### 9 つの中心的な学び (最終版 = 補遺 21 まで反映)
 
 1. **「lab 改善 ≠ LB 改善」**: lab winrate は ensemble の改善を直線で
    反映するが、 LB は **diversity composition** に強く依存。 4-MLP base
@@ -101,9 +101,20 @@ deep-learning best は 3-MLP base (seed=0/2/100, lab 18.9%, LB 679.6)。
      自体の限界
    - 3 つの構造的問題: (a) 1-ply 浅さ、 (b) Naive opp sampling、 (c)
      rollout-to-terminal noise
-   - 残された path: AlphaZero (= MCTS + value head)、 異 features、
-     deck 切替、 League learning
-   - docs/ALPHAZERO_DESIGN.md に Phase 1-5 計画記載
+
+9. **「探索系 (PIMC / AlphaZero) は PTCG ABC で機能しない」** (= 補遺 18-21
+   で完全確定、 全 path 終了):
+   - AlphaZero v1 (= MCTS + calibrated value head, n_sims=20) mirror match
+     50g で **AZ-ON 42% / AZ-OFF 58% (AZ-ON 負け!)**
+   - 期待 (= 設計 doc で +5pp 改善) と真逆、 **MCTS が干渉**
+   - PIMC tie (= 52-48) + AlphaZero loss (= 42-58) で、 「探索付き
+     inference」 path 全完全閉鎖
+   - **構造的原因**: AlphaGo Zero は囲碁の **完全情報 + 短期決着** に
+     依存、 PTCG ABC のような **不完全情報 + 長期戦** には合わない
+   - 真の path は **state representation 根本見直し** (= card-level
+     embedding) or **deck 構成の戦略的変更** (= meta-deck 制覇)
+   - 計算予算内の DL submission の天井は **3-MLP base LB 679.6** で
+     確定の可能性
 
 ### 探索終了状態 (= 補遺 17 + PIMC v6 棄却時点)
 
