@@ -110,31 +110,43 @@ CLAUDE.md             Claude Code 向け開発メモ
 | **3-MLP ensemble (seed=20260628 + 42 + 100, 各 2000ep)** | **vs 4 meta deck 32-88 (120 戦, 26.7%)** | 2-MLP の 22.5% から +4.2pp。default の policy |
 | V60 EXT3 (10500ep, features_v60 60-d) | 20.5% @ 30g/opp | LB 573.9 — 3-MLP (679.6) を下回り |
 
-### LB 履歴 (最新スナップショット 2026-06-19)
+### LB 履歴 (最新スナップショット 2026-06-19、 mixed ensemble 追加)
 
 | Submission | スコア | 種別 |
 |---|---|---|
-| CrustleDashimaki | **874.7** | 🥇 rule-based ベスト (V6 を逆転) |
-| V6 (Crustle+Lucario hybrid) | 860.8 | rule-based (-27.4 decay) |
+| CrustleDashimaki | **874.7** | 🥇 rule-based ベスト |
+| V6 (Crustle+Lucario hybrid) | 860.8 | rule-based |
 | Iono | 762.2 | rule-based |
-| 3-MLP ensemble (seeds 20260628 + 42 + 100) | **679.6** | 🥇 DL ベスト |
-| 2-MLP ensemble (fix-only) | 613.3 | DL |
-| **BCRL2 (BC v2 + REINFORCE 7000ep)** | **583.1** | DL (BC+RL 成功) |
-| V60 EXT3 (single 10500ep) | 578.7 | DL |
+| 3-MLP ensemble (seed=0/2/100 base, 2000ep 各) | **679.6** | 🥇 DL ベスト |
+| **Mixed ensemble (seed=0 ext + 2 base + 100 base)** | **659.7** | 🥈 DL 2位 (新!) |
+| 2-MLP ensemble | 613.3 | DL |
+| BCRL2 (BC v2 + REINFORCE 7000ep) | 570.4 | DL |
+| V60 EXT3 (single 10500ep) | 562.4 | DL |
 
-**LB → lab ratio (= 安定値)**:
+**LB ↔ lab ratio (= 7-opp suite で再校正)**:
 
-| 提出 | lab winrate | LB | ratio |
+| 提出 | 7-opp lab | LB | ratio |
 |---|---|---|---|
-| 3-MLP | 26.7% | 679.6 | 25.4 |
-| **BCRL2** | 19.3% | **583.1** | **30.2** ← 最高 |
-| V60 EXT3 | 20.5% | 578.7 | 28.2 |
+| **3-MLP base** | **18.9%** | **679.6** | **35.9** ← 最高効率 |
+| Mixed ensemble | 20.4% | 659.7 | 32.3 |
+| BCRL2 | 19.3% | 570.4 | 29.5 |
+| V60 EXT3 | 20.5% | 562.4 | 27.4 |
 
-**注**: BCRL2 LB は初期 462.2 → 後期 583.1 と +120 変動。 LB は match
-進行で安定するが、 提出直後の数十時間は variance 大きい (= TrueSkill σ
-が小さくなるまで)。 BCRL2 ratio 30.2 が最高、 BC prior + REINFORCE の
-組合せは健全。 ratio 平均 ~28 で再校正すると、 LB 700 を達成するには
-lab 25%+ が必要。
+**注**: 3-MLP base の ratio 35.9 は群を抜く。 ensemble の diversity
+が LB の多様な相手分布に強い証拠。 Mixed (1 seed だけ entropy ext) は
+lab 改善 (+1.5pp) したが ratio 低下 (-3.6)、 結果 LB -19.9pp の trade。
+
+### 重要な構造的発見 (2026-06-19)
+
+1. **3-MLP の lab は bench 依存**: bench_meta.py (4 opp) で 26.7%、
+   bench_v40.py (7 opp) で **18.9%**。 LB との対応は 7-opp の方が良い
+2. **個別 seed 改善 ≠ ensemble 改善**: entropy_coef=0.02 で個別 v40
+   seed は lab +3.6~+7.3pp 改善 (= 単独 ratio 期待)、 だが 3 個全部 ext
+   した ensemble は lab 16.1% で **-10.6pp regression**
+3. **ensemble は exploratory policies に強い**: entropy 抑えた base
+   policies は logit averaging で良い中庸を取れる、 entropy + ext は
+   確信的になり averaging が破綻
+4. **「1 ext + 2 base」の mixed が良い妥協点**: lab 20.4%, LB 659.7
 
 ## 環境
 
