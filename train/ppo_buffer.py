@@ -107,13 +107,9 @@ def compute_log_prob_and_value(
     """
     probs = policy.probs_from_arrays(sf, of_all) if hasattr(policy, "probs_from_arrays") else None
     if probs is None:
-        # Fallback: recompute via logits().
-        # Build a minimal obs+sel stub for policy.logits(); not great but works.
-        # In practice the caller (=make_training_agent_ppo) will pass sf/of_all
-        # already computed, so we just do the math here.
+        # Fallback: recompute via policy.pi / policy.v directly.
+        # Features-agnostic: works with both MlpPolicy (v40) and MlpPolicyV60.
         import torch  # noqa: PLC0415
-
-        from train.features_v60 import option_features as _ofn  # noqa: F401, PLC0415
 
         device = policy.device
         sf_t = torch.from_numpy(sf).to(device)
