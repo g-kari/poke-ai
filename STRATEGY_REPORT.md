@@ -314,17 +314,21 @@ Mix v1 (submission_mixed.tar.gz):
 | Mix v3 | 0/2/100 ext | 19.4% | 411.8 | 21.2 |
 | Alt v3 | 2/100/300 (no 0) | **22.2%** | 515.8 | 23.2 |
 
-**含意 (重要)**:
-- ensemble 構成変更 (seed 追加/差し替え/entropy) は **必ず ratio が
-  23 付近に落ち**、 LB 500 前後に着地
-- 3-MLP base (seed=0/2/100, no entropy, 2000ep each) の **特定 6 軸
-  (3 seed × 2 アーキ要素 × 0 entropy) の偶然 match** がチャンピオン
-- 「seed=0 を含めれば常に良い」 でもなく、 「seed 数を増やせば改善」
-  でもない、 ensemble 内部の **正確な policy diversity の interplay**
-  が ratio を決める
+**含意 (修正版、 settling time 考慮)**:
+- 旧見解: 「ensemble 構成変更で ratio が必ず低い」 と判断した
+- **新見解 (700g bench + settling time 観察後)**:
+  - **48h+ settled** な submission は ratio ~35 を達成 (3-MLP base, BCRL2,
+    V60 EXT3)
+  - **数時間しか settle してない** submission は人工的に低い ratio を
+    示す (4-MLP base: 21.5% × 24.3 = LB 521.6、 実は ratio 35 への
+    convergence 途中)
+  - 4-MLP base LB は 432.9 → 502.3 → 521.6 → 538.0 と継続上昇、 4 hours
+    で +105、 完全 settle なら **lab 21.5% × 35 = LB 752** の可能性
 
 **実用的教訓**:
-- lab winrate は ensemble の改善を反映するが LB の改善とは別物
+- lab winrate は ensemble の改善を反映、 LB は 24h+ の TrueSkill σ
+  settling 後に反映される
+- 「提出直後 LB low = 失敗」 判定は時期尚早、 24-48h は様子見
 - 一度 LB 700 級を達成できた構成は **触らない** ことが正解
 - 改善試行は **必ず別 tar として提出** し、 元の構成を保護
 
