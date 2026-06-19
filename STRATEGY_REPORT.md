@@ -1362,6 +1362,53 @@ elapsed: 196 ms (= 1 call)
 - もし lift あり → Mode B (s500) を rollout に組込んだ提出 bundle で
   LB 800+ チャレンジ
 
+#### 5.3l 補遺 17: PIMC v6 mirror match 50g = tie (52-48) — PIMC アーキテクチャ自体の限界確定
+
+補遺 16 で PIMC v6 smoke PASSED 後、 50-game mirror match で実評価:
+PIMC-ON s500 vs PIMC-OFF s500 (= 同じ MlpPolicy、 PIMC の有無のみ差)。
+
+**結果** (scripts/bench_pimc_v6_mirror.py, 50g, 196s = 3.9s/game):
+```
+PIMC-ON wins: 26/50 (52.0%)  ← 95% CI [38%, 66%]、 50% を含む
+PIMC-OFF wins: 24/50 (48.0%)
+Draws: 0/50 (0.0%)
+```
+
+**既存 PIMC v5 (linear rollout) との比較**:
+- v5 (100g): PIMC-ON 51 / OFF 49 = **51.0%** (CI [41%, 61%])
+- v6 (50g):  PIMC-ON 26 / OFF 24 = **52.0%** (CI [38%, 66%])
+- → 結果ほぼ同一、 **rollout policy 改善で lift しない** ことが確定
+
+**衝撃の発見 — PIMC アーキテクチャ自体の限界**:
+- PPO_v40 s500 (= Mode B、 3-MLP base を 77.5% で勝つ強い policy) を
+  rollout に使っても改善なし
+- 補遺 15 の linear rollout 結論 (= tie) は **rollout policy の質と
+  無関係**
+- これは PIMC v1-v6 で **アーキテクチャの限界**を示す:
+  - **1-ply lookahead** の浅さ: 局所最適化が opp の最適応答に脆弱
+  - **Naive opp_state sampling**: 相手 deck = 我々と仮定する prior が
+    実際の opp 分布と大きく乖離
+  - **Rollout-to-terminal noise**: 1 rollout の終局 reward は ±1 で
+    high variance、 n_worlds=2 では平均化できない
+
+**結論 (= 補遺 17 で確定)**:
+- **PIMC は v40 PPO 系統での lift path として棄却**: v1-v6 全 backend
+  と rollout policy で no measurable lift
+- 残された path (= 9/14 STRATEGY 締切までの真の探索):
+  1. **AlphaZero (= MCTS + learnt value head)**: deep search で局所最適
+     を避ける、 value head が rollout noise を平均化
+  2. **異 features (card-level embedding)**: state representation を
+     根本的に改善
+  3. **deck 切替**: deck-policy strong coupling を活かす
+  4. **League learning**: 過去 policy を opponent pool に含めて
+     overfitting を防ぐ
+
+**戦略的最終結論**:
+- v40 PPO 系統での **single policy + 浅 search の path は完全に閉じた**
+- 真の改善は **deep search (AlphaZero) または features 根本見直し** のみ
+- これは 9/14 STRATEGY 締切までの最重要設計判断
+- 明日 UTC LB 着地後の analysis では PIMC v6 失敗を踏まえた path 選択
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1385,6 +1432,7 @@ elapsed: 196 ms (= 1 call)
 | 補遺 14 | 3-MLP base vs s42 直接対戦 | 40 games alternating side | **45.0%-55.0% (s42 勝ち)** = lab と 1v1 winrate の負の相関確定、 **PPO 2 軸 trade-off 完全モデル化** + PIMC Phase 1 完了 (= 訂正必要) |
 | 補遺 15 | PIMC 既存実装の発見 | train/pimc.py v1-v5 100-game bench | **PIMC-ON ≈ PIMC-OFF (51-49 tie)**、 既に default-OFF で運用中。 PPO_v40 s500 rollout 化が次の試行候補 |
 | 補遺 16 | PIMC v6 smoke test (= MlpPolicy rollout) | pick_best_option(s500) 単体テスト | **PASSED** (196 ms / call、 Kaggle budget 内)。 next: 100-game mirror match |
+| 補遺 17 | PIMC v6 mirror match 50g | PIMC-ON vs PIMC-OFF (both s500) | **52-48 tie (CI [38%, 66%])** = v5 (51-49) と完全一致、 **PIMC アーキテクチャ自体の限界**確定。 残る path: AlphaZero / 異 features / deck 切替 |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization

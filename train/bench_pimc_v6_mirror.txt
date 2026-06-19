@@ -1,0 +1,93 @@
+Loading environment werewolf failed: cannot import name 'completion' from 'litellm' (unknown location)
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO: Successfully loaded OpenSpiel environments: 31.
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_amazons
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_backgammon
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_python_ant_foraging
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_checkers
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_chess
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_clobber
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_coin_game
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_coin_game_arena
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_connect_four
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_dark_hex
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_dots_and_boxes
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_gin_rummy
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_go
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_goofspiel
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_havannah
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_hearts
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_hex
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_lines_of_action
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_mancala
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_matching_pennies_3p
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_negotiation
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_oshi_zumo
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_othello
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_repeated_game
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_tic_tac_toe
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_ultimate_tic_tac_toe
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_snake
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_y
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_universal_poker
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_repeated_poker
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_python_repeated_pokerkit
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO: OpenSpiel games skipped: 0.
+PIMC v6 mirror match (PIMC-ON vs PIMC-OFF, both s500), 50 games
+  rollout policy: PPO_v40 s500 (= Mode B)
+
+  game 1: ON 0 / OFF 1 / D 0  [2s = 2.3s/game]
+  game 2: ON 1 / OFF 1 / D 0  [7s = 3.3s/game]
+  game 3: ON 2 / OFF 1 / D 0  [9s = 2.9s/game]
+  game 4: ON 3 / OFF 1 / D 0  [10s = 2.6s/game]
+  game 5: ON 3 / OFF 2 / D 0  [12s = 2.5s/game]
+  game 6: ON 4 / OFF 2 / D 0  [21s = 3.6s/game]
+  game 7: ON 5 / OFF 2 / D 0  [35s = 4.9s/game]
+  game 8: ON 5 / OFF 3 / D 0  [35s = 4.4s/game]
+  game 9: ON 5 / OFF 4 / D 0  [39s = 4.3s/game]
+  game 10: ON 6 / OFF 4 / D 0  [43s = 4.3s/game]
+  game 11: ON 7 / OFF 4 / D 0  [50s = 4.6s/game]
+  game 12: ON 8 / OFF 4 / D 0  [57s = 4.8s/game]
+  game 13: ON 8 / OFF 5 / D 0  [63s = 4.8s/game]
+  game 14: ON 8 / OFF 6 / D 0  [65s = 4.6s/game]
+  game 15: ON 9 / OFF 6 / D 0  [68s = 4.5s/game]
+  game 16: ON 9 / OFF 7 / D 0  [71s = 4.4s/game]
+  game 17: ON 9 / OFF 8 / D 0  [76s = 4.4s/game]
+  game 18: ON 9 / OFF 9 / D 0  [77s = 4.3s/game]
+  game 19: ON 10 / OFF 9 / D 0  [79s = 4.1s/game]
+  game 20: ON 11 / OFF 9 / D 0  [80s = 4.0s/game]
+  game 21: ON 11 / OFF 10 / D 0  [81s = 3.9s/game]
+  game 22: ON 12 / OFF 10 / D 0  [86s = 3.9s/game]
+  game 23: ON 13 / OFF 10 / D 0  [93s = 4.0s/game]
+  game 24: ON 13 / OFF 11 / D 0  [101s = 4.2s/game]
+  game 25: ON 13 / OFF 12 / D 0  [108s = 4.3s/game]
+  game 26: ON 14 / OFF 12 / D 0  [112s = 4.3s/game]
+  game 27: ON 15 / OFF 12 / D 0  [116s = 4.3s/game]
+  game 28: ON 16 / OFF 12 / D 0  [125s = 4.5s/game]
+  game 29: ON 17 / OFF 12 / D 0  [126s = 4.3s/game]
+  game 30: ON 17 / OFF 13 / D 0  [130s = 4.3s/game]
+  game 31: ON 18 / OFF 13 / D 0  [134s = 4.3s/game]
+  game 32: ON 19 / OFF 13 / D 0  [135s = 4.2s/game]
+  game 33: ON 20 / OFF 13 / D 0  [138s = 4.2s/game]
+  game 34: ON 20 / OFF 14 / D 0  [139s = 4.1s/game]
+  game 35: ON 20 / OFF 15 / D 0  [139s = 4.0s/game]
+  game 36: ON 20 / OFF 16 / D 0  [141s = 3.9s/game]
+  game 37: ON 20 / OFF 17 / D 0  [142s = 3.8s/game]
+  game 38: ON 20 / OFF 18 / D 0  [145s = 3.8s/game]
+  game 39: ON 20 / OFF 19 / D 0  [145s = 3.7s/game]
+  game 40: ON 21 / OFF 19 / D 0  [155s = 3.9s/game]
+  game 41: ON 22 / OFF 19 / D 0  [163s = 4.0s/game]
+  game 42: ON 22 / OFF 20 / D 0  [164s = 3.9s/game]
+  game 43: ON 22 / OFF 21 / D 0  [165s = 3.8s/game]
+  game 44: ON 22 / OFF 22 / D 0  [168s = 3.8s/game]
+  game 45: ON 23 / OFF 22 / D 0  [173s = 3.8s/game]
+  game 46: ON 23 / OFF 23 / D 0  [173s = 3.8s/game]
+  game 47: ON 24 / OFF 23 / D 0  [178s = 3.8s/game]
+  game 48: ON 25 / OFF 23 / D 0  [179s = 3.7s/game]
+  game 49: ON 25 / OFF 24 / D 0  [181s = 3.7s/game]
+  game 50: ON 26 / OFF 24 / D 0  [196s = 3.9s/game]
+
+Final (50 games, 196s = 3.9s/game):
+  PIMC-ON wins: 26/50 (52.0%)
+  PIMC-OFF wins: 24/50 (48.0%)
+  Draws: 0/50 (0.0%)
+  PIMC-ON in decisive: 26/50 (52.0%)
