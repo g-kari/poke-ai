@@ -395,9 +395,16 @@ wins-only filter は意味があった (= negative samples の影響を取り除
 LB 888 でも、 supervised cloning で学べる部分は 1/9 程度しか転写されて
 いないことを示す。
 
-**v3 次の手 (進行中)**: BC v2 weights を REINFORCE warm-start として
-利用。 V6 prior で初期化された政策が self-play で distribution shift を
-解消できるか検証。 (AlphaGo 戦略の縮小版)
+**v3 (= BCRL1/2/3)**: BC v2 weights を REINFORCE warm-start として利用。
+BCRL2 (= +5000ep, lr=5e-5, V6 入り opp pool) で **lab 19.3% / LB 570.4**
+に到達 = BC+RL ルートの **local optimum**。 さらに延長した BCRL3
+(+5000ep) は lab 15.4% で regression。 entropy_coef=0.02 で延長した
+BCRL3-ent は lab 17.1% で BCRL2 を超えず。
+
+**最終結論**: BC+RL 系統で submission に値する到達点は **BCRL2 のみ
+(LB 570.4, ratio 29.5)**。 3-MLP base 679.6 には届かないが、 異なる
+アプローチで V60 EXT3 (562.4) と同水準を達成、 **第三の DL 路線**
+として有用。
 
 ### 5.3b BC 系統が一般的に LB 700+ に届かない理由
 
