@@ -9,43 +9,73 @@
 
 ## TL;DR
 
-12 系統 (線形 / 3-MLP / V60 / V60 ensemble / V6 deck / deck-builder /
-GA / PIMC v1-v5 / Crustle 検出 agent / vendored rule-based) を試行し、
-**LB best は rule-based vendored の V6 (LB 926)、 deep-learning best は
-3-MLP (LB 679)** で確定。 我々自身の深層学習 V60 は LB 523 で 3-MLP に
-劣後。 「lab 1pp ≈ LB 43 ポイント」 の換算法則 + 「features 共通の
-policy ensemble は seed diversity が効かない」 等の知見を発見。
+15+ 系統 (線形 / 3-MLP base / 4-MLP base / V60 single / V60 ensemble /
+V6 deck / deck-builder / GA / PIMC / Crustle 検出 / vendored rule-based /
+BC v1/v2 / BC+RL (BCRL1/2/3/3-ent) / Bigger MLP / mixed ensemble) を試行
+し、 **LB best は rule-based vendored の CrustleDashimaki (LB 874.7) と
+V6 (860.8)、 deep-learning best は 3-MLP base (seed=0/2/100, lab 18.9%,
+LB 679.6)** で確定。
+
+**驚きの発見**:
+- **「more seeds = better ensemble」は不成立**: 4-MLP base ensemble
+  は lab +1.5pp 改善でも LB は -247 と大暴落 (599→432)
+- **entropy bonus は single policy 改善には有効だが ensemble を破壊**:
+  ext seed を 1 つでも混ぜると LB ratio が 35 → 21 に下落
+- **TrueSkill σ settling 中の LB は ±150-200 振れる**: 提出直後の
+  数十時間で誤判断しない
 
 ### Executive summary
 
 | 質問 | 回答 |
 |---|---|
-| **LB best agent** | vendored romanrozen V6 (LB 926.5) |
-| **我々自身の DL best** | 3-MLP ensemble (LB 679.6) |
-| **DL 路線で投資された時間** | 約 9 サイクル (V60: 7、 v40 warm-ext: 1、 PIMC: 1) |
-| **最大の発見** | lab 1pp ≈ LB 43 の換算法則、 deck と policy の coupling |
-| **最大の罠** | features_v60 で ensemble seed diversity 消滅、 GA の 3g/eval noise 量産 |
-| **shippable な再利用部品** | bench_v60.py / extract_v60_weights.py / build_deck.py / matchups.json |
+| **LB best agent (全体)** | CrustleDashimaki (LB 874.7) |
+| **我々自身の DL best (再現困難な local optimum)** | 3-MLP base (LB 679.6, lab 18.9% @ 7-opp) |
+| **試行した DL 系統数** | 15+ (BC/V60/v40/ensemble/mixed) |
+| **submission slots 使用** | 17+ (うち 2 ERROR、 15 COMPLETE) |
+| **最大の発見** | features × ensemble × entropy の 3 軸 trade-off (= 後述) |
+| **最大の罠** | 初期 LB スナップショットでの誤判断 (Mix v1 711 → 490 の例) |
+| **shippable 再利用部品** | bench_v40/v60.py / collect_bc_dataset.py / bench_v60_ensemble.py |
 
-### 3 つの中心的な学び
+### 4 つの中心的な学び (改訂版)
 
-1. **「lab と LB は線形的に対応するが、 absolute 値の予測は困難」**
-   - 実測ケース: 3-MLP (lab 23.3% → LB 679) vs V60 EXT3 (lab 19.7% → LB 523)
-   - 3.6pp 差が 156 ポイント差 = 1pp ≈ 43
-   - ただし高 lab 領域では LB 増分が縮小 (V6 は lab 57.9% で LB 926)
+1. **「lab 改善 ≠ LB 改善」**: lab winrate は ensemble の改善を直線で
+   反映するが、 LB は **diversity composition** に強く依存。 4-MLP base
+   は lab 20.4% (+1.5pp) なのに LB 432.9 (-247) と大幅劣化。
 
-2. **「deck と agent の同時設計が真の breakthrough」**
-   - V6 が LB 926 で勝つのは 30+ 行の **CRUSTLE_AWARE logic** が deck と
-     一体だから
-   - 我々の generic_agent + heuristic deck-builder では agent と deck を
-     別個に最適化、 統合困難
-   - deck.csv だけ変えても overall -10pp、 warm-start でも shock 緩和不可
+2. **「entropy bonus は single policy 改善向け、 ensemble を破壊する」**:
+   - 個別 v40 seed に entropy_coef=0.02 で延長 → lab +3.6~+7.3pp 改善
+   - 3 個全部 ext で ensemble → lab 16.1% (-10.6pp 大幅 regression)
+   - 1 個だけ ext (mixed) → LB 470.9 (3-MLP base 679 を遥かに下回り)
 
-3. **「features 改修と ensemble effect は trade-off」**
-   - v40 features は表現力低いが seed 0/2/100 ensemble で +α (23.3%)
-   - v60 features は deck-id fingerprint 追加で seed diversity 消滅 (-2pp)
-   - features の **discriminative power** が高すぎると、 多 seed policy が
-     同じ偏りを学んで中庸化に陥る
+3. **「3-MLP base は特殊解」**: 同じ訓練方法で seed=200 追加した 4-MLP
+   base は LB 432.9 (= ratio 21.2)、 3-MLP base の ratio 35.9 は再現困難
+   な diversity match。 ensemble size は monotonic ではない。
+
+4. **「7-opp と 4-opp の bench で lab 数値が違う」**: 旧 STRATEGY で
+   引用した "3-MLP lab 26.7%" は bench_meta.py (4 Kiyota opp) の値。
+   7-opp suite (Lucario/Drag/Iono/Aboma/Crustle/CrustleDashi/V6) で
+   再 bench すると 18.9% に。 LB との対応は **7-opp の方が精度高い**。
+
+### features × ensemble × entropy の 3 軸 trade-off (= 大発見)
+
+| 構成 | lab | LB | ratio |
+|---|---|---|---|
+| 3-MLP v40 base (LB 679.6) | 18.9% | **679.6** | **35.9** |
+| 2-MLP v40 base | (~17%) | 613.3 | (~36) |
+| 4-MLP v40 base | 20.4% | 432.9 | 21.2 |
+| Mixed (1 ext + 2 base) v40 | 20.4% | 470.9 | 23.1 |
+| Mix v3 (1 ext + 2 base) v40 | 19.4% | 350.1 | 18.0 |
+| 3-poly v60 base ensemble | 18.9% | (未提出) | (推定 ~20) |
+| V60 EXT3 single | 20.5% | 562.4 | 27.4 |
+| BCRL2 single (BC+RL) | 19.3% | 570.4 | 29.5 |
+| Bigger v40 MLP single | 15.0% | (未提出) | (推定 ~14) |
+
+**法則**:
+- v40 (40-d) base ensemble は **2-3 seed が sweet spot** (4 で過剰)
+- v60 (60-d) features は ensemble 効果なし (deck fingerprint が seed
+  diversity を消す)
+- entropy + warm-start は **single policy 改善** には有効 (lab +5pp)、
+  ensemble に混ぜると LB 200 point 単位で破壊
 
 ## 1. 問題設定
 
