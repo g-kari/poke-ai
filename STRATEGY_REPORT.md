@@ -934,6 +934,73 @@ ensemble (18.9%) すら下回り、 全候補で最下位。
 3. **single policy submission が現状の最適戦略であることが更に確定**:
    PPO_v40 seed=100 single = 全探索の lab PEAK = 提出候補 #1
 
+#### 5.3l 補遺 5: PPO_v40 seed=2026 で n=4 拡張 (= 仮説修正、 PPO ガチャの当たり率は ~50%)
+
+seed=42 試行で seed=100 outlier 確定の結論を出したが、 n=3 は σ 推定に
+不足なため第 4 試行 (seed=2026) を実行して median を precise 化。
+
+**訓練ログ**:
+- iter 1: 0.25, iter 5: 0.28, iter 10: 0.19
+- iter 15: **0.09** (= 極端な dip、 collapse signal?)
+- iter 20-25: 0.16, iter 30: 0.28, iter 35: 0.16
+- iter 40: **0.34** (= rebound)
+
+累積勝率: 25.1% (= n=4 中 2 位、 seed=42 の 26.9% に次ぐ)。 high variance
+trajectory (iter 15 → iter 40 で 0.09 → 0.34 swing)。
+
+**bench (700g)**:
+```
+vs Mega Lucario: 19.0% (元 27%, -8pp)
+vs Dragapult ex: 29.0% (元 30%, -1pp ほぼ同等)
+vs Iono: 11.0% (元 10%, +1pp)
+vs Mega Abomasnow: 34.0% (元 32%, +2pp)
+vs Crustle Wall: 22.0% (元 37%, -15pp 暴落)
+vs Crustle Dashi: 12.0% (元 7%, +5pp)
+vs V6: 33.0% (元 20%, +13pp 大幅改善!)
+overall: 160-540 (22.9%) — 元 PEAK 23.3% から -0.4pp、 実質同等
+```
+
+**n=4 集約データ (= 仮説修正の中核)**:
+
+| PPO seed | train 累積勝率 | bench lab @ 700g |
+|----------|----------------|------------------|
+| 0 (= 元 s100 試行) | 23.3% | **23.3%** |
+| 42 | 26.9% | 16.3% |
+| 500 | 23.2% | 18.6% |
+| 2026 | 25.1% | **22.9%** |
+| **median** | 24.2% | **20.75%** |
+| **mean** | 24.6% | 20.3% |
+| **std** | — | 3.5pp |
+
+**仮説修正 (= 5.3l 補遺 3-4 を上書き)**:
+- 旧仮説: 「seed=100 は単発 lucky outlier、 真の lab 18-19%」
+- 新仮説: **「PPO_v40 は ~50% の確率で 23% 級を引き、 残り 50% で 17-19% に
+  着地するガチャ性質」** (= seed=100 と seed=2026 が両方 22.9-23.3%)
+- これは初期試行 (seed=0/2/100) の +5.3pp 改善が seed=100 だけで起きた
+  ことの理由でもある: seed=0 と seed=2 が low-bin に当たっていた
+
+**注目: matchup profile diversity**:
+- seed=100: Crustle Wall 37%、 V6 20%、 Mega Lucario 27% (= Crustle 特化)
+- seed=2026: V6 33%、 Aboma 34%、 Crustle Wall 22% (= V6 特化)
+- 両方 lab 23% 級だが、 **異なる得意分野**を持つ
+- これは「PPO ガチャは強い policy を引くが、 specialization 方向は random」
+  という構造を示唆
+
+**戦略修正 — 明日 UTC reset 後の 5 枠で 4 枠投入が情報量最大**:
+1. **PPO_v40 seed=100 single** (lab 23.3%、 Crustle Wall 特化 profile)
+2. **PPO_v40 seed=2026 single** (lab 22.9%、 V6 特化 profile)
+3. **PPO_v40 seed=500 single** (lab 18.6% median、 mid-tier signal)
+4. **3-MLP base 再提出** (lab 18.9% control、 既知 LB 679.6)
+5. **残り 1 枠**: 上記 1-4 の LB 着地点を見てから adaptive submit
+
+**期待される知見**:
+- もし s100 ≈ s2026 ≈ LB 815 → ratio 35 仮説確定、 PPO_v40 高 lab = 高 LB
+- もし s100 vs s2026 が LB で大差 → matchup profile (specialization) が
+  LB に強く効く → meta-deck 分布の理解が次の鍵
+- もし両方 LB < 700 → "23% lab は overfit" 仮説、 ratio 25-30 へ下方修正
+- s500 が LB ratio 35 なら "lab → LB 線形" 確定、 ratio 不一致なら "23%
+  以上で diminishing returns"
+
 #### 5.3l 補遺 4: PPO_v40 seed=42 で median-of-3 確定 (= PPO ガチャ性質、 seed=100 上振れ outlier 確定)
 
 seed=500 試行で -4.7pp regression が判明した後、 **n=3 の median lab で
