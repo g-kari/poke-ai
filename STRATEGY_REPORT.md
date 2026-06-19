@@ -896,7 +896,7 @@ control の 4 枠投入 (= s100, s2026, s500, 3-MLP base)、 submit_tomorrow_pla
 
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
-5.3l 本体に続く 6 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
+5.3l 本体に続く 7 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
 された。 仮説修正の流れを混乱しないよう、 以下の mapping を参照:
 
 | # | 補遺タイトル | 試行内容 | 結論 |
@@ -907,6 +907,7 @@ control の 4 枠投入 (= s100, s2026, s500, 3-MLP base)、 submit_tomorrow_pla
 | 補遺 4 | seed=42 試行 (median-of-3) | s100 base + PPO seed=42 | s100 outlier 仮説 (= **補遺 5 で修正**) |
 | 補遺 5 | seed=2026 試行 (n=4 拡張) | s100 base + PPO seed=2026 | **仮説修正: PPO ガチャ 50% で 23% 級** |
 | 補遺 6 | s100 + s2026 ensemble | 同 strength × 異 profile を試行 | 失敗 (= 20.3%、 specialization 境界 confusion) |
+| 補遺 7 | s2026 ext (= 2nd PEAK 延長) | s2026 を warm-start し +1280 ep | 失敗 (= 19.4%、 -3.5pp、 V6 特化消失) |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
@@ -952,6 +953,56 @@ ensemble (18.9%) すら下回り、 全候補で最下位。
    を取る) — ただし v40 PPO seed=0/2/100 で既に試行済み、 19.1% で失敗
 3. **single policy submission が現状の最適戦略であることが更に確定**:
    PPO_v40 seed=100 single = 全探索の lab PEAK = 提出候補 #1
+
+#### 5.3l 補遺 7: PPO_v40 s2026 ext (= 全 PPO_v40 PEAK で 2nd stage 必ず劣化 法則確定)
+
+s100 ext (= 補遺 2) が PEAK 通過後の dip 状態と推測されたが、 s2026 は
+high variance trajectory (iter 15 で recent 0.09 → iter 40 で 0.34
+rebound) で「学習途中の状態」 だった可能性を検証。 同じ慎重設定
+(lr=1e-5, entropy 0.01) で +1280 ep 延長。
+
+**訓練ログ**:
+- iter 1: 0.25, iter 5: 0.31, iter 10: 0.19
+- iter 15: 0.16, iter **20: 0.00** (= 32 戦連続敗北、 真の collapse signal!)
+- iter 25: 0.25 (回復), iter 30-35: 0.19-0.28, iter 40: 0.22
+- 累積勝率: 23.7% (元 s2026 25.1% から -1.4pp)
+
+**bench (700g)**:
+```
+vs Mega Lucario: 22.0% (元 19%, +3pp)
+vs Dragapult ex: 24.0% (元 29%, -5pp)
+vs Iono: 12.0% (元 11%, +1pp)
+vs Mega Abomasnow: 26.0% (元 34%, -8pp 大幅劣化)
+vs Crustle Wall: 25.0% (元 22%, +3pp)
+vs Crustle Dashi: 11.0% (元 12%, -1pp)
+vs V6: **16.0%** (元 33%, **-17pp 致命的暴落、 特化消失!**)
+overall: 136-564 (19.4%) — 元 22.9% から -3.5pp
+```
+
+**重大発見 (法則確定)**:
+- **全 PPO_v40 PEAK は 2nd stage で必ず劣化する**:
+  - s100 ext: 23.3% → 19.9% (-3.4pp、 補遺 2)
+  - s2026 ext: 22.9% → 19.4% (-3.5pp、 補遺 7)
+  - 同じ慎重設定 (lr 1/3 + entropy 0.01) で同じ程度の regression
+- **Specialization profile は ガチャで引いた偶然の解、 触ると消える**:
+  - s100 ext: Crustle Wall 37% → 34% (-3pp、 ほぼ維持)
+  - s2026 ext: **V6 33% → 16% (-17pp、 完全消失)**
+  - "強み" が ext で削られて mediocre 化
+- **iter 20 の recent 0.00 は collapse signal の決定的証拠**: 通常の
+  noise で 32 戦連続敗北は確率 ~0、 PPO の policy が崩壊した瞬間
+
+**含意 (= 補遺 7 でほぼ確定の最終法則)**:
+1. **PPO_v40 単一 policy 完了後は触らない**: 2nd stage / ext / fine-tuning
+   全て劣化を招く
+2. **n=4 の lab 23% 級 (s100, s2026) は「学習過程で偶然 PEAK に着地した
+   policy」** であり、 そこから動かすと PEAK を出した specialization
+   pattern が壊れる
+3. **真の expected lab は 18-19%** (= n=4 median 20.75% よりやや低く、
+   ext 試行 2 つの結果も合わせると confirmation)
+4. PPO_v40 系統での次の打ち手: ensemble は失敗 (4 パターン)、 ext は
+   失敗 (2 パターン)、 base 違いも先行試行で済 → **single policy
+   submission が確定的に最適、 lab 23% を引いた 2 つ (s100, s2026)
+   を狙う**
 
 #### 5.3l 補遺 6: PPO_v40 s100 + s2026 ensemble (= 第 4 の ensemble 失敗パターン、 specialization 境界の confusion)
 

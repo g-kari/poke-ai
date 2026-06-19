@@ -1,0 +1,48 @@
+Loading environment werewolf failed: cannot import name 'completion' from 'litellm' (unknown location)
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO: Successfully loaded OpenSpiel environments: 31.
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_amazons
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_backgammon
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_python_ant_foraging
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_checkers
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_chess
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_clobber
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_coin_game
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_coin_game_arena
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_connect_four
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_dark_hex
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_dots_and_boxes
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_gin_rummy
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_go
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_goofspiel
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_havannah
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_hearts
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_hex
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_lines_of_action
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_mancala
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_matching_pennies_3p
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_negotiation
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_oshi_zumo
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_othello
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_repeated_game
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_tic_tac_toe
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_ultimate_tic_tac_toe
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_snake
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_y
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_universal_poker
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_repeated_poker
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_python_repeated_pokerkit
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO: OpenSpiel games skipped: 0.
+warm-started from train/mlp_policy_ppo_v40_s100_t2026.pt
+device=cuda, lr=1e-05, eps_clip=0.2, k_epochs=4
+opponent pool: 6 agents
+iter   1/40  cum W/L/D=8/24/0  recent 0.25  pl=0.0010 vl=0.3354 ent=0.602  [12s]
+iter   5/40  cum W/L/D=35/125/0  recent 0.31  pl=0.0014 vl=0.3589 ent=0.618  [67s]
+iter  10/40  cum W/L/D=62/258/0  recent 0.19  pl=-0.0011 vl=0.2896 ent=0.590  [130s]
+iter  15/40  cum W/L/D=101/379/0  recent 0.16  pl=-0.0008 vl=0.2221 ent=0.611  [195s]
+iter  20/40  cum W/L/D=137/503/0  recent 0.00  pl=0.0021 vl=0.1661 ent=0.581  [259s]
+iter  25/40  cum W/L/D=181/619/0  recent 0.25  pl=-0.0089 vl=0.2436 ent=0.601  [328s]
+iter  30/40  cum W/L/D=214/745/1  recent 0.19  pl=-0.0054 vl=0.2581 ent=0.612  [389s]
+iter  35/40  cum W/L/D=259/860/1  recent 0.28  pl=0.0004 vl=0.3013 ent=0.571  [459s]
+iter  40/40  cum W/L/D=303/976/1  recent 0.22  pl=-0.0014 vl=0.2358 ent=0.573  [521s]
+saved policy to train/mlp_policy_ppo_v40_s2026_ext.pt
+saved metrics to train/metrics_ppo_v40_s2026_ext.json
