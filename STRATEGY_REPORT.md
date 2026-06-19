@@ -699,6 +699,47 @@ v40 seed=0/2/100 を entropy_coef=0.02 で warm-start 2000ep 延長:
 これは Kaggle 競技だけでなく深層強化学習一般において、 ensemble
 設計の重要な経験則になる発見ですわ。
 
+### 5.3j PPO 実装 (Phase 1-4 完成、 smoke test 通過、 Phase 5 訓練中)
+
+35 サイクル後の **最終投資**: PPO_DESIGN.md の通り 5 phase 段階実装:
+
+| Phase | ファイル | 役割 | 状態 |
+|---|---|---|---|
+| 1 | `train/ppo_buffer.py` | trajectory + log_prob + value 記録 | ✅ 完成 |
+| 2 | `train/ppo_gae.py` | sparse-reward GAE | ✅ 完成 |
+| 3 | `train/ppo_loss.py` | clipped surrogate + value MSE + entropy | ✅ 完成 |
+| 4 | `train/ppo_train.py` | 完全 training loop + CLI | ✅ 完成 |
+| 5 | (実訓練) | BCRL2 warm-start + 40 iter × 32 ep = 1280 ep | ⏳ 訓練中 |
+
+**実装の重要設計**:
+- `PPOStep` に **rollout 時の log_prob_old** を記録 (PPO の ratio 計算
+  に必須、 後で recompute は不可)
+- GAE は sparse-reward 用に **terminal step のみ reward + V(s_T)=0**
+  で簡略化
+- `ppo_loss_per_step` は **clipped + value + entropy** を 1 関数に統合、
+  k_epochs 内で per-step に呼ぶ構造
+- normalize_advantages で zero-mean unit-std (= 標準 PPO trick)
+
+**Hyperparameters** (PPO_DESIGN.md 通り):
+- lr=3e-5 (= BCRL2 warm-start 用 fine-tune)
+- eps_clip=0.2, k_epochs=4, mb_size=32
+- gamma=0.99, lam=0.95
+- entropy_coef=0.01, value_coef=0.5, clip_grad=0.5
+
+**Smoke test 通過** (2 iter × 4 ep / 4 秒、 losses 収束、 entropy 0.34):
+学習 loop が完全に動作することを確認、 次は 1280 ep の本番訓練。
+
+**期待効果**:
+- BCRL2 (lab 16.1%, LB 570.4) を warm-start
+- ratio ~35 universal を活用、 lab を 18-20% に押し上げる
+- 期待 LB **630-700** (= LB 700 突破の最有力候補)
+
+**残る不確実性**:
+- PPO が REINFORCE と同様の late-stage overfit を起こさないか
+  (= entropy_coef による regularization が機能するかは未検証)
+- 1280 ep が十分か (= 完全な PPO は 100k+ ep が rule of thumb、 我々は
+  warm-start + 短期 fine-tune を想定)
+
 ### 5.4 Transformer features
 
 card-level representation (= 各カードを embedding、 self-attention で
