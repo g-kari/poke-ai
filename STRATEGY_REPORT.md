@@ -1,8 +1,10 @@
 # Strategy Report — PTCG ABC (poke-ai)
 
 シミュレーション部門 (締切 8/16) の探索ログをストラテジー部門 (締切 9/14)
-向けに整理した報告書。 30 サイクル × 30 分 ≈ **15 時間** の試行錯誤の
-記録。
+向けに整理した報告書。 60+ サイクル × 30 分 ≈ **30 時間** の試行錯誤の
+記録 (Day 1-4)。 PPO 完全実装 + 700g 大規模 bench で **lab→LB ratio ~35
+universal** の発見、 我々の DL ベスト 3-MLP base (LB 679.6) を中心とした
+30+ submission の意思決定ログを含む。
 
 リポジトリ: <https://github.com/g-kari/poke-ai>
 ダッシュボード: <https://g-kari.github.io/poke-ai/>
