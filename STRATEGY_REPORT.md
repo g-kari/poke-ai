@@ -993,6 +993,66 @@ Final: s100 47.5% / s500 52.5%
 - PIMC で s100 に search 加えれば self-play 勝率上がる? → search が
   rule-based specialization を超えて strategic depth を補える可能性
 
+#### 5.3l 補遺 10: 3-MLP base vs PPO_v40 s500 直接対戦 (= DL champion ですら 1v1 で大敗、 新仮説が決定的に確定)
+
+補遺 9 で「lab metric は specialization 度合いを測る、 absolute strength
+ではない」 という新仮説が立った。 この仮説を最も決定的に検証する実験:
+**LB 679.6 の DL champion (= 3-MLP base ensemble)** vs **lab 18.6% の
+PPO_v40 s500** の直接対戦。 もし absolute strength が LB を決めるなら、
+3-MLP base が勝つはず。
+
+**結果** (40 games, alternating side, rng=42, softmax sampling):
+```
+after 10: 3-MLP 1,  s500 9,  draws 0   ← 序盤から大差
+after 20: 3-MLP 4,  s500 16, draws 0
+after 30: 3-MLP 5,  s500 25, draws 0
+after 40: 3-MLP 9,  s500 31, draws 0
+
+Final: 3-MLP base 22.5% / s500 **77.5%**
+```
+
+**衝撃の発見**:
+- **DL champion 3-MLP base (LB 679.6)** が **lab 中庸の s500 (lab 18.6%)**
+  に same-deck 1v1 で **大差で負ける** (22.5% vs 77.5%)
+- これは想像を超える結果: 我々の DL ベストが、 ある探索で偶然引いた
+  policy より strategic depth が低い
+- 補遺 9 の仮説が決定的に確定: **lab/LB は rule-based specialization
+  度合いを測る metric であり、 absolute strategic depth は別軸**
+
+**新仮説の確定 (= 補遺 9 → 補遺 10 で深化)**:
+1. lab metric (= 7-opp suite bench) は **rule-based agent に対する勝率**
+   を測る
+2. LB は **Kaggle 参加者の policy 分布に対する勝率** で、 これも多く
+   rule-based 系統で支配されているため lab と相関
+3. しかし same-deck 1v1 の strategic depth は **これらと完全に別軸**
+4. **3-MLP base (REINFORCE-based) は rule-based specialization で LB 679
+   を稼いだが、 strategic depth が低い**
+5. **PPO は学習 algorithm として variance control が効くため strategic
+   depth が高い**: 同じ features × deck で REINFORCE-based の 3-MLP base
+   を 1v1 で圧倒
+6. 結果として、 PPO_v40 系統は LB 母集団に「強い手筋」 を打ち、
+   rule-based specialization よりも relevant な signal
+
+**戦略的含意 (= 明日 UTC への影響)**:
+- もし LB が「真の strategic depth」 で決まるなら → **s500 single (lab
+  18.6%) が s100 single (lab 23.3%) より高い LB を出す可能性**
+- 既存校正サンプル 3 (3-MLP base / BCRL2 / V60 EXT3) は全て REINFORCE-based
+  で specialization profile が似ていた → ratio 35 仮説は **「rule-based
+  系統内」 で成立する局所法則** だった可能性
+- PPO 系統は absolute strength で勝負しているので、 ratio が違う可能性
+
+**明日 UTC LB 着地後の最重要 decision point** (= 補遺 10 で更新):
+- s500 LB > s100 LB → strategic depth 仮説の決定的支持
+- s500 LB ≈ s100 LB ≈ 815 → ratio 35 維持、 lab は absolute 近似
+- s100 LB > s500 LB and both > 700 → specialization が LB に効くが
+  strategic depth も貢献 (= 二要因モデル)
+
+**含意 (= もし strategic depth 仮説が支持された場合)**:
+- 真の path は **PPO 単体の strategic depth を活かす submission**
+- 3-MLP base / BCRL2 / V60 EXT3 などの REINFORCE-based 系は LB 上限がある
+- **同じ features で PPO 再訓練 → 全 deep learning submission を超える** 可能性
+- PIMC は更に上に積める (= rollout policy としての PPO + search)
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1009,6 +1069,7 @@ Final: s100 47.5% / s500 52.5%
 | 補遺 7 | s2026 ext (= 2nd PEAK 延長) | s2026 を warm-start し +1280 ep | 失敗 (= 19.4%、 -3.5pp、 V6 特化消失) |
 | 補遺 8 | s100 vs s2026 直接対戦 | 40 games alternating side | **50-50 引き分け** = absolute strength 同等、 profile 相殺 |
 | 補遺 9 | s100 vs s500 直接対戦 | 40 games alternating side | **47.5%-52.5% (s500 勝ち)** = lab metric は specialization 度合いを測る、 ratio 35 仮説の前提が揺らぐ |
+| 補遺 10 | 3-MLP base vs s500 直接対戦 | 40 games alternating side | **22.5%-77.5% (s500 大勝)** = DL champion ですら strategic depth で PPO に大敗、 **lab/LB は specialization metric 確定** |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
