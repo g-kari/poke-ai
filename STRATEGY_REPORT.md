@@ -934,6 +934,41 @@ ensemble (18.9%) すら下回り、 全候補で最下位。
 3. **single policy submission が現状の最適戦略であることが更に確定**:
    PPO_v40 seed=100 single = 全探索の lab PEAK = 提出候補 #1
 
+#### 5.3l 補遺 2: PPO_v40 s100 ext (= "PEAK 延長" 仮説 棄却)
+
+PPO_v40 seed=100 (lab 23.3%) を warm-start し、 lr=1e-5 (= 元の 1/3)
++ entropy_coef=0.02 で +1280 ep の "fine-tune-of-fine-tune" を試行。
+慎重設定で PEAK からの drift を抑えつつ exploration で diversity を
+微増させる狙い。
+
+**訓練ログ** (recent winrate per iter):
+- iter 1: 0.31 (warm-start 直後)
+- iter 5: 0.16 (一旦下落)
+- iter 10-20: 0.22-0.28 (回復)
+- iter 25-30: 0.22 (横ばい)
+- iter 35: **0.12** (= 顕著な dip、 collapse signal)
+- iter 40: 0.19
+
+**bench (700g)**:
+```
+vs Mega Lucario: 22.0% (元 27%, -5)
+vs Dragapult ex: 26.0% (元 30%, -4)
+vs Iono: 8.0% (元 10%, -2)
+vs Mega Abomasnow: 24.0% (元 32%, -8)
+vs Crustle Wall: 34.0% (元 37%, -3)
+vs Crustle Dashi: 9.0% (元 7%, +2)  ← 唯一の改善
+vs V6: 16.0% (元 20%, -4)
+overall: 139-561 (19.9%) — 元 PEAK 23.3% から -3.4pp
+```
+
+**含意**:
+- iter 35 の 0.12 dip は noise ではなく本物の collapse signal だった
+- これは [[5.3f]] の "REINFORCE warm-start regression" パターンの 4 度目
+  の再現: 慎重な設定 (lr 1/3 + entropy) でも PEAK からの drift を
+  完全には防げない
+- **lab PEAK な policy は触らない方が良い**: 再訓練すると必ず劣化する
+- 明日 UTC submit は **元の PPO_v40 seed=100** で確定 (期待 LB ~815)
+
 ### 5.4 Transformer features
 
 card-level representation (= 各カードを embedding、 self-attention で

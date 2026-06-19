@@ -1,0 +1,48 @@
+Loading environment werewolf failed: cannot import name 'completion' from 'litellm' (unknown location)
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO: Successfully loaded OpenSpiel environments: 31.
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_amazons
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_backgammon
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_python_ant_foraging
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_checkers
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_chess
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_clobber
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_coin_game
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_coin_game_arena
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_connect_four
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_dark_hex
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_dots_and_boxes
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_gin_rummy
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_go
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_goofspiel
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_havannah
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_hearts
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_hex
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_lines_of_action
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_mancala
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_matching_pennies_3p
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_negotiation
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_oshi_zumo
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_othello
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_repeated_game
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_tic_tac_toe
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_ultimate_tic_tac_toe
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_snake
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_y
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_universal_poker
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_repeated_poker
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_python_repeated_pokerkit
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO: OpenSpiel games skipped: 0.
+warm-started from train/mlp_policy_ppo_v40_s100.pt
+device=cuda, lr=1e-05, eps_clip=0.2, k_epochs=4
+opponent pool: 6 agents
+iter   1/40  cum W/L/D=10/22/0  recent 0.31  pl=-0.0009 vl=0.3940 ent=0.660  [12s]
+iter   5/40  cum W/L/D=39/121/0  recent 0.16  pl=0.0005 vl=0.2335 ent=0.577  [67s]
+iter  10/40  cum W/L/D=70/249/1  recent 0.22  pl=-0.0031 vl=0.3667 ent=0.664  [131s]
+iter  15/40  cum W/L/D=110/369/1  recent 0.28  pl=-0.0002 vl=0.3897 ent=0.599  [200s]
+iter  20/40  cum W/L/D=147/492/1  recent 0.28  pl=-0.0042 vl=0.2936 ent=0.682  [264s]
+iter  25/40  cum W/L/D=183/616/1  recent 0.22  pl=0.0001 vl=0.3151 ent=0.624  [330s]
+iter  30/40  cum W/L/D=223/736/1  recent 0.22  pl=0.0003 vl=0.2772 ent=0.596  [399s]
+iter  35/40  cum W/L/D=257/862/1  recent 0.12  pl=0.0000 vl=0.2262 ent=0.648  [463s]
+iter  40/40  cum W/L/D=287/992/1  recent 0.19  pl=-0.0074 vl=0.2816 ent=0.580  [527s]
+saved policy to train/mlp_policy_ppo_v40_s100_ext.pt
+saved metrics to train/metrics_ppo_v40_s100_ext.json
