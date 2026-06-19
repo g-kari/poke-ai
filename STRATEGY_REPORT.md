@@ -934,6 +934,66 @@ ensemble (18.9%) すら下回り、 全候補で最下位。
 3. **single policy submission が現状の最適戦略であることが更に確定**:
    PPO_v40 seed=100 single = 全探索の lab PEAK = 提出候補 #1
 
+#### 5.3l 補遺 4: PPO_v40 seed=42 で median-of-3 確定 (= PPO ガチャ性質、 seed=100 上振れ outlier 確定)
+
+seed=500 試行で -4.7pp regression が判明した後、 **n=3 の median lab で
+seed=100 PEAK の本当の地位を測る** ために seed=42 で第 3 試行。 同じ
+base、 同じ hyperparams、 PPO random seed のみ 42 に変更。
+
+**訓練ログ**:
+- iter 1: 0.31, iter 5: 0.22, iter 10: 0.25, iter 15: 0.25
+- iter 20: 0.34, iter **25: 0.38** (= 全 n=3 試行で最高 peak)
+- iter 30: 0.25, iter 35: 0.28, iter 40: 0.22
+
+**累積勝率**: 344/(344+935+1) = **26.9%** = n=3 試行で最高 (元 seed=100
+23.3%, seed=500 23.2%)。 train signal だけ見ると seed=42 が最強。
+
+**bench (700g)**:
+```
+vs Mega Lucario: 22.0% (元 27%, -5pp)
+vs Dragapult ex: 18.0% (元 30%, -12pp 大暴落)
+vs Iono: 7.0% (元 10%, -3pp)
+vs Mega Abomasnow: 25.0% (元 32%, -7pp)
+vs Crustle Wall: 17.0% (元 37%, -20pp 大暴落)  ← 致命的
+vs Crustle Dashi: 9.0% (元 7%, +2pp)
+vs V6: 16.0% (元 20%, -4pp)
+overall: 114-586 (16.3%) — 元 PEAK 23.3% から -7.0pp、 n=3 最下位
+```
+
+**n=3 試行データの集約**:
+
+| PPO seed | train 累積勝率 | bench lab @ 700g | 差 (累積-bench) |
+|----------|----------------|------------------|----------------|
+| 0 (= 元 seed=100 試行) | 23.3% | **23.3%** | 0 pp |
+| 42 | **26.9%** | 16.3% | +10.6pp |
+| 500 | 23.2% | 18.6% | +4.6pp |
+| **mean** | 24.5% | 19.4% | +5.1pp |
+| **median** | 23.3% | **18.6%** | +4.7pp |
+
+**重大発見 (累積)**:
+1. **PPO random seed effect は ±7pp の幅を持つ** (= seed=42 の 16.3% から
+   seed=0 の 23.3% まで)
+2. **train 累積勝率と bench lab は必ずしも相関しない**: seed=42 は train
+   で最高 (26.9%) なのに bench で最低 (16.3%)、 +10.6pp の乖離 = 強い
+   overfit signal
+3. **seed=100 (= PPO seed=0 試行) は単発の上振れ outlier**: n=3 mean
+   (19.4%) + 1.96σ (n=3 unbiased std ≈ 3.6pp) = upper 22%、 23.3% は
+   両側 95% CI 外
+4. **真の expected lab は 18-19%**、 ratio 35 仮説で LB ~640-680 が
+   realistic 期待値 (= 3-MLP base 679.6 と同水準)
+5. **seed=100 提出時のリスク**: LB が ratio 35 を維持するか (LB ~815) か、
+   overfit ペナルティで ratio 25-30 (LB 580-700) に下がるか、 直接の
+   検証が必要
+
+**戦略的含意 (明日 UTC submit に重要)**:
+- 明日 UTC reset 後の 5 枠で **3 枠の直接比較** をする情報量が高い:
+  1. PPO_v40 seed=100 single (lab 23.3% PEAK、 ratio 35 検証)
+  2. PPO_v40 seed=500 single (lab 18.6% median、 真の signal)
+  3. 3-MLP base 再提出 (lab 18.9% control、 既知 LB 679.6)
+- 3 枠の LB 着地点を比較すれば、 「seed=100 PEAK は LB に translate する
+  ガチャ outlier か、 noise」 が直接判明する
+- 残り 2 枠は結果次第で adaptive submit
+
 #### 5.3l 補遺 3: PPO_v40 base s100 + PPO seed=500 (= PEAK 再現性 NO、 outlier 確定)
 
 PPO_v40 seed=100 が lab 23.3% で PEAK を達成したが、 これが **PPO の
