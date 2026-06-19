@@ -1322,6 +1322,46 @@ DEFAULT_N_WORLDS=2, DEFAULT_ROLLOUT_ENGINE_PRIOR=False
 - cg.api の動作確認 script として残す価値あり
 - PIMC v6 開発時の reference 実装としても役立つ
 
+#### 5.3l 補遺 16: PIMC v6 smoke test PASSED (= 既存 pick_best_option が MlpPolicy で動作確認)
+
+補遺 15 で「既存 train/pimc.py は LinearPolicy 想定」 と仮定していたが、
+LinearPolicy と MlpPolicy の API 互換性確認 (= `logits`, `probs`,
+`value` 全て同じシグネチャ) で **adapter 不要**と判明。 直接動作確認:
+
+**scripts/pimc_v6_smoke.py 実行結果**:
+```
+policy: PPO_v40 s500 (= Mode B, lab 18.6%, vs 3-MLP base 77.5%)
+captured at step 12, n_options=4
+→ PIMC picked option 0 of 4 (= valid)
+elapsed: 196 ms (= 1 call)
+```
+
+**重要な発見**:
+- PIMC v6 = 既存 pick_best_option(MlpPolicy s500, …) は **そのまま動く**
+- 196 ms / call → Kaggle 5 秒 budget の **十分内** (= 25 倍余裕)
+- main.py の `POKEAI_PIMC=1` 環境変数で有効化可能
+
+**計算量見積もり (100-game mirror match)**:
+- 196 ms / call × ~100 moves/game = ~20 秒/game
+- 100 games = ~33 分 (PIMC-ON 1 side のみ)
+- mirror match (= PIMC-ON × 2): ~66 分
+- 時間予算的に **次サイクル以降で実施可能**
+
+**残された実装ステップ (= PIMC v6 完成への path)**:
+1. scripts/bench_pimc_v6_mirror.py を実装 (= 100-game PIMC-ON vs OFF)
+2. scripts/bench_pimc_v6_vs_random.py (= baseline、 ~33 分)
+3. もし PIMC-ON winrate ≥ 60% in mirror match → default-ON 化、 提出
+   bundle で `POKEAI_PIMC=1` を有効化
+4. 100 game でも tie (= 補遺 15 の linear と同じ結論) → PIMC は rollout
+   policy 改善でも lift しない、 path 終了
+
+**戦略への含意**:
+- PIMC v6 が実際に lift するか否か、 9/14 ストラテジー部門 締切に向けた
+  最重要検証
+- もし lift なし → AlphaZero (= value head + MCTS) の方が改善余地
+- もし lift あり → Mode B (s500) を rollout に組込んだ提出 bundle で
+  LB 800+ チャレンジ
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1344,6 +1384,7 @@ DEFAULT_N_WORLDS=2, DEFAULT_ROLLOUT_ENGINE_PRIOR=False
 | 補遺 13 | s100 + s500 ensemble (異 mode) | Mode A + Mode B logit 平均 | **19.7% (= 単純平均 20.95% も下回り)** = 第 5 の ensemble 失敗パターン (mode mismatch)、 **v40 PPO ensemble は何をやってもダメ確定** |
 | 補遺 14 | 3-MLP base vs s42 直接対戦 | 40 games alternating side | **45.0%-55.0% (s42 勝ち)** = lab と 1v1 winrate の負の相関確定、 **PPO 2 軸 trade-off 完全モデル化** + PIMC Phase 1 完了 (= 訂正必要) |
 | 補遺 15 | PIMC 既存実装の発見 | train/pimc.py v1-v5 100-game bench | **PIMC-ON ≈ PIMC-OFF (51-49 tie)**、 既に default-OFF で運用中。 PPO_v40 s500 rollout 化が次の試行候補 |
+| 補遺 16 | PIMC v6 smoke test (= MlpPolicy rollout) | pick_best_option(s500) 単体テスト | **PASSED** (196 ms / call、 Kaggle budget 内)。 next: 100-game mirror match |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
