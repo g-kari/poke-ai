@@ -294,19 +294,56 @@ Mix v1 (submission_mixed.tar.gz):
 - 一度 LB 700 級を達成できた構成は **触らない** ことが正解
 - 改善試行は **必ず別 tar として提出** し、 元の構成を保護
 
-## 5. 未実装の方向
+## 5. 未実装の方向 (= LB 700+ を目指すなら)
 
-### 5.1 PPO (Proximal Policy Optimization)
+### 5.1 PPO (Proximal Policy Optimization) — 最有力路線
 
-V60 路線最大の問題は **policy gradient variance** で振動 (recent 0.17-0.25
-往復)。 lr=5e-5 まで下げても止まらない。 PPO の clipped surrogate objective +
-GAE で variance を制御できれば 25%+ が現実的。
+V60 / BCRL 路線最大の問題は **policy gradient variance** で振動 + late-
+stage の **catastrophic overfit to training pool** (= 3 事例で確認)。
+PPO の clipped surrogate objective で 1 batch あたりの policy 変化を
+[1-ε, 1+ε] にクリップ → late-stage の暴走を防げる。
+
+**実装の優先順位** (PPO_DESIGN.md 参照):
+1. **Phase 1**: replay buffer + log-prob 記録 (1 サイクル)
+2. **Phase 2**: GAE (Generalized Advantage Estimation) 計算 (1 サイクル)
+3. **Phase 3**: clipped surrogate + value MSE + entropy 損失 (1 サイクル)
+4. **Phase 4**: BCRL2 weights から warm-start で 5000ep PPO 学習 (1-2 サイクル)
+5. **Phase 5**: bench + submission (1 サイクル)
+
+**期待効果**:
+- 個別 single policy lab を 19.3% (BCRL2) → 23-25% に伸ばせる可能性
+- **問題**: ensemble に PPO policy を混ぜると entropy 同様 destroyed する
+  可能性高 (= 確信的になりすぎる)
+- そのため PPO は **single policy 用 submission として別 tar で提出**
+  する戦略が推奨
+
+**実装の重要 hyperparameter** (PPO_DESIGN.md より):
+- `lr=3e-5`、 `gamma=0.99`、 `lam=0.95`、 `epsilon=0.2`
+- `k_epochs=4`、 `batch=64 episodes`、 `mb=32`
+- `entropy_coef=0.01`、 `value_coef=0.5`、 `clip_grad=0.5`
 
 ### 5.2 AlphaZero (PIMC + 学習 value head)
 
 PIMC heuristic は 10% 天井、 価値関数の質に強く依存。 self-distillation で
 PIMC 文脈の value head を訓練すれば AlphaZero スタイルが可能。 ただし
-infra が大きい (= replay buffer、 distributed self-play 等)。
+infra が大きい (= replay buffer、 distributed self-play 等、 数日 GPU
+投資)。
+
+**3-MLP base に PIMC を載せる軽量版**:
+- 3-MLP base を **rollout policy** として PIMC search 1-2 ply 先読み
+- 完全に再現可能、 既存 LB 679 構成を保護
+- 期待効果: search が valuable な分岐点で +5pp 改善 → LB 700-750
+
+### 5.2b deck-builder × 3-MLP joint training (= 鍵だが時間予算外)
+
+3-MLP base が LB 679 の天井に張り付くのは、 **deck.csv が agent に
+特化していない** から (= 我々の deck は Mega Lucario 軸 generic build)。
+deck と agent を同時最適化:
+
+1. CMA-ES など black-box optimizer で deck.csv を初期解
+2. 3-MLP base の lab winrate を fitness にして deck を進化
+3. 各世代で agent を warm-start で軽く再訓練 (200ep など)
+4. 期待: deck と agent が co-evolve、 LB 750-850 圏が現実的
 
 ### 5.3 Behavioral cloning from V6 agent (実行結果: lab 5.7%、 提出見送り)
 
