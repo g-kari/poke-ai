@@ -570,18 +570,42 @@ card-level representation (= 各カードを embedding、 self-attention で
 盤面全体を統合) で feature 表現力を桁違いに増す。 ただし pre-training
 データ無し、 from-scratch 学習は困難。
 
-## 6. 推奨される最短経路 (ストラテジー部門応募者向け)
+## 6. 推奨される最短経路 (ストラテジー部門応募者向け、 改訂版)
 
 時間予算が限られた場合:
 
-1. **rule-based vendored を起点に**: V6 (LB 926) が最強、 改修不要
+1. **rule-based vendored を起点に**: CrustleDashi (LB 874) / V6 (LB 860)
+   が最強、 改修不要
 2. **deck.csv の選び方が決定的**: agent と coupled、 単独最適化不可
-3. **lab 30g+ で bench** (= noise floor ±13pp)、 GA / fine-tune の
-   「improvement」 は 40g 以上で本物か検証
-4. **submission build を 3-MLP main.py パターン** から逸脱させない (=
+3. **lab 80g+ で bench** (= 7-opp suite で、 4-opp bench は LB と乖離)
+4. **DL 路線は早期に「3 seed × 2000ep の base ensemble」 で submit**:
+   - 我々は 3-MLP base (seed 0/2/100, 各 2000ep, no entropy) で LB 679.6
+   - **超える改良は極めて難しい** (5 試行の改善試行が全て失敗、 LB 411-515)
+   - 一度成功した構成は **触らない**、 拡張は **別 tar として保存**
+5. **submission build は 3-MLP main.py パターン** から逸脱させない (=
    multi-root path fallback を継承)
-5. 深層学習路線は **PPO + 大量学習 (50000ep+)** が最低ライン、 数日の
-   GPU 投資が必要
+6. **改善路線 (= 我々が失敗した道)**:
+   - 4 seed 以上の base ensemble → ratio 22 に落ちる
+   - entropy bonus 入り ensemble → ratio 21 に落ちる
+   - features_v60 (deck fingerprint) → seed diversity 消失
+   - Behavioral cloning 単独 → lab 10% 天井 (LB 250 推定)
+   - BC + REINFORCE warm-start → lab 19% (LB 570) ≪ 3-MLP base 679
+   - **真に超えるには PPO + 大量学習 (50000ep+) または PIMC search**
+
+### 6.1 1 サイクル (30 分) で投資すべき優先順位
+
+A. 既存 3-MLP base (LB 679 級) を必ず生成: seed 0/2/100、 2000ep 各、
+   v40 features (40-d state)、 no entropy bonus
+B. それより上を狙うなら: deck.csv 自体の最適化、 PPO 実装、 PIMC
+
+### 6.2 我々の「LB 679 から動かない」 構造を破る最有力路線
+
+- **PPO + base ensemble 維持**: PPO で各 seed を 5000ep+ 学習し ratio
+  35.9 を保ったまま lab を 20%+ に伸ばせる可能性 (= 推定 LB 720+)
+- **Search-based hybrid**: 3-MLP base を rollout policy、 PIMC search
+  で 1-ply 先読み (= AlphaZero 軽量版)
+- **deck-builder agent**: 推定 LB 700-800 の到達点だが、 agent-deck
+  joint 設計が前提
 
 ## 7. 補遺: 試行 timeline
 
