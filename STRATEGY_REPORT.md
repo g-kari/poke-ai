@@ -890,9 +890,28 @@ PPO_v40 では消失。 期待: 23.3% × 1.244 ≈ 28.9% (= base ensemble の
 3. **将来的な ensemble 復活案**: PPO 前の "early checkpoint" を ensemble、
    または PPO 後に意図的に diverse な seed を選別
 
-提出予定: PPO_v40 seed=100 single (submission_ppo_v40_s100.tar.gz, 1.05MB)、
-期待 LB ~815。 失敗時の信号: ratio が 35 から大きく外れる (= もし LB
-< 700 なら、 v40 PPO は overfit 性質を持つ証拠)。
+提出予定 (= **更新**、 詳細は補遺 5 以降): PPO_v40 4 single + 3-MLP base
+control の 4 枠投入 (= s100, s2026, s500, 3-MLP base)、 submit_tomorrow_plan.sh
+を準備済み。
+
+#### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
+
+5.3l 本体に続く 6 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
+された。 仮説修正の流れを混乱しないよう、 以下の mapping を参照:
+
+| # | 補遺タイトル | 試行内容 | 結論 |
+|---|-------------|----------|------|
+| 補遺 (番号なし) | Mixed PPO+base ensemble | s100 + base 0/2 を logit 平均 | 失敗 (= 18.6%、 strength 不均衡 dilution) |
+| 補遺 2 | s100 ext (= PEAK 延長) | s100 を warm-start し +1280 ep | 失敗 (= 19.9%、 -3.4pp regression) |
+| 補遺 3 | seed=500 試行 | s100 base + PPO seed=500 | s100 outlier 仮説 (= **補遺 5 で修正**) |
+| 補遺 4 | seed=42 試行 (median-of-3) | s100 base + PPO seed=42 | s100 outlier 仮説 (= **補遺 5 で修正**) |
+| 補遺 5 | seed=2026 試行 (n=4 拡張) | s100 base + PPO seed=2026 | **仮説修正: PPO ガチャ 50% で 23% 級** |
+| 補遺 6 | s100 + s2026 ensemble | 同 strength × 異 profile を試行 | 失敗 (= 20.3%、 specialization 境界 confusion) |
+
+**4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
+procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
+境界 起因 (補遺 6)。 これら全てを満たさない 3-MLP base ensemble だけが
+LB 679.6 を達成。
 
 #### 5.3l 補遺: Mixed PPO+base ensemble (= "checkpoint diversity 復活" 仮説 棄却)
 
