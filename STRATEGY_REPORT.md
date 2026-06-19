@@ -92,22 +92,30 @@ policy 学習の困難:
 3. **action 構造**: 多段 select (= ATTACH の後に「どこに」 が来る、 等)
 4. **legal move 制約**: deck から合法な行動だけ可、 ATTACK の attackId 等
 
-## 2. 試した 12 系統のアプローチ
+## 2. 試した 18 系統のアプローチ (改訂版)
+
+注: lab は **7-opp suite** (Lucario+Drag+Iono+Aboma+CrustleWall+CrustleDashi+V6) の値。
 
 | # | 系統 | best lab | LB | 結論 |
 |---|---|---|---|---|
 | 1 | 線形 policy (numpy REINFORCE) | 95% vs random | n/a | baseline |
-| 2 | **3-MLP ensemble v40** (seed 0/2/100) | **23.3%** | **679.6** | **我々の DL best** |
-| 3 | V60 single (= +opp deck-id fingerprint features) | 19.7% | 523.1 | 3-MLP に劣後 |
-| 4 | V60 ensemble (= multi-seed) | 18.6% | ~480 推定 | seed diversity 効かず |
-| 5 | V60 + V6 deck (deck.csv 入替え) | 10.0% | n/a | 7 opp で壊滅 |
-| 6 | V60 V6 deck warm-start | 12.4% | n/a | deck shock 緩和できず |
-| 7 | deck-builder v1-v9 (= heuristic + 進化チェーン) | 17.5% (v4) | n/a | 構造的限界 |
-| 8 | GA loop (1-card swap、 8g/eval) | 22.5% in-eval、 13-15% 40g 真値 | n/a | local optimum 5pp 以下 |
-| 9 | PIMC v1 1-ply prize-delta | 8.3% | n/a | engine prior + 1pp |
-| 10 | PIMC v2-v5 (= field-aware / NN value / inference / multi-ply) | 5-10% | n/a | heuristic 天井 |
-| 11 | Crustle 検出 + rotation agent (v8-v11) | 7-8% | n/a | proactive setup 不足 |
-| 12 | vendored rule-based (Kiyota / dashimaki / romanrozen) | **lab 67.3% (CrustleDashi)** | **LB 926 (V6)** | 競技用 best |
+| 2 | **3-MLP base v40 (seed 0/2/100)** | **18.9%** | **🥇 679.6** | **DL チャンピオン** |
+| 3 | 2-MLP ensemble | (~17%) | 613.3 | 2nd DL old |
+| 4 | V60 single EXT3 (= +opp deck-id fingerprint features) | 20.5% | 562.4 | 3-MLP に劣後 |
+| 5 | V60 ensemble (= multi-seed) | 17.5% | (未提出) | seed diversity 効かず |
+| 6 | V60 + V6 deck (deck.csv 入替え) | 10.0% | n/a | 7 opp で壊滅 |
+| 7 | V60 V6 deck warm-start | 12.4% | n/a | deck shock 緩和できず |
+| 8 | deck-builder v1-v9 (= heuristic + 進化チェーン) | 17.5% (v4) | n/a | 構造的限界 |
+| 9 | GA loop (1-card swap、 8g/eval) | 22.5% in-eval、 13-15% 40g 真値 | n/a | local optimum 5pp 以下 |
+| 10 | PIMC v1 1-ply prize-delta | 8.3% | n/a | engine prior + 1pp |
+| 11 | PIMC v2-v5 (= field-aware / NN value / inference / multi-ply) | 5-10% | n/a | heuristic 天井 |
+| 12 | Crustle 検出 + rotation agent (v8-v11) | 7-8% | n/a | proactive setup 不足 |
+| 13 | Behavioral cloning from V6 (v1) | 5.7% | n/a | distribution shift |
+| 14 | BC v2 (wins-only filter) | 10.4% | n/a | BC 単独天井 ~10% |
+| 15 | BCRL1/2 (= BC v2 + REINFORCE warm-start) | **19.3%** | **570.4** | BC+RL 局所最適 |
+| 16 | Bigger MLP v40 (128, 64) | 15.0% | n/a | capacity 増は逆効果 |
+| 17 | **改善試行 5/5 失敗**: 4-MLP / Mixed / Mix v3 / Alt v3 / 3-MLP-ext | 16-22% | **411-515** | **3-MLP base は再現困難な特殊解** |
+| 18 | vendored rule-based (Kiyota / dashimaki / romanrozen) | **lab 67.3% (CrustleDashi)** | **🥇 LB 874 (CrustleDashi)** | 全体 best |
 
 ## 3. 発見した法則
 
