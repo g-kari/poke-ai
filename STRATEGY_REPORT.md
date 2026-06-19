@@ -931,21 +931,51 @@ local optimum から脱出できない。
 
 ---
 
-## 付録 B: 不採用となった submission の一覧
+## 付録 B: 不採用となった submission の一覧 (改訂版、 全 17 件)
 
-| ref | type | result | reason |
+### B.1 ERROR で集計されなかった submission
+
+| ref | type | reason |
+|---|---|---|
+| 53776705 | 2-MLP | `__file__` 罠 |
+| 53810836 | V60 EXT3 torch | torch 依存 (Kaggle ランタイムに torch なし) |
+| 53812115 | V60 EXT3 numpy | single-shot path 解決 (cwd 仮定崩れ) |
+
+### B.2 COMPLETE だが LB が劣後した submission
+
+| ref | type | LB | reason |
 |---|---|---|---|
-| 53776705 | 2-MLP | ERROR | `__file__` 罠 |
-| 53776818 | 2-MLP fix | 613.3 | 古い、 3-MLP に更新 |
-| 53810836 | V60 EXT3 torch | ERROR | torch 依存 + single-shot path |
-| 53812115 | V60 EXT3 numpy | ERROR | single-shot path |
-| 53812882 | V60 EXT3 multi-root | 523.1 | 3-MLP より弱い |
+| 53776818 | 2-MLP fix-only | 613.3 | 古い、 3-MLP に更新 |
+| 53812882 | V60 EXT3 multi-root | 562.4 | 3-MLP の 679.6 を超えず |
+| 53819831 | BCRL2 (BC+REINFORCE) | 570.4 | 3-MLP に -109 |
+| 53823035 | Mixed (1 ext + 2 base) | 470.9 | 初期 711 → 24h で大幅下落 |
+| 53823884 | Mix v3 (different ext seed) | 411.8 | balanced profile も低 ratio |
+| 53824979 | 4-MLP base (+seed=200) | 502.3 | 「more seeds」 仮説棄却 |
+| 53826323 | Alt v3 (no seed=0) | **184.0** | 過去最低、 lab 22.2% で LB 最低 |
 
-最終的に Kaggle で COMPLETE & competitive な submission は:
-- 53778627 (3-MLP ensemble): 679.6
+### B.3 lab で見送られた (= 提出しなかった) 路線
+
+| 路線 | lab | 見送り理由 |
+|---|---|---|
+| BC v1 (random sampling) | 5.7% | 推定 LB 250 |
+| BC v2 (wins-only) | 10.4% | 推定 LB 400 |
+| BCRL1 (BCRL2 短期版) | 12.1% | BCRL2 で上書き |
+| BCRL3 (BCRL2 延長) | 15.4% | warm-start regression |
+| BCRL3-ent (entropy) | 17.1% | entropy bonus 効かず |
+| Bigger MLP v40 (128, 64) | 15.0% | capacity 増は逆効果 |
+| v60 3-poly ensemble | 17.5% | features 過剰 |
+| Alt v1 (seed=0/2/300) | 18.2% | 3-MLP base に -0.7pp |
+| Alt v2 (seed=0/100/300) | 15.7% | vs Crustle Dashi 0% |
+
+### B.4 最終的に Kaggle で COMPLETE & competitive な submission
+
+- **53778627 (3-MLP ensemble): 🥇 LB 679.6** ← DL ベスト
 - 53793417 (rule_based Iono): 762.2
-- 53794617 (rule_based CrustleDashi): 866-888
-- 53794828 (rule_based V6): **921.2-926.5** ← LB best
+- 53794617 (rule_based CrustleDashi): **🥇 LB 874.7** ← 全体ベスト
+- 53794828 (rule_based V6): 860.8 (decay 後)
+
+**観察**: 全 17 件中、 LB 679+ は **1 件のみ** (3-MLP base)。 改善試行
+は全て劣化、 LB 200-500 圏に着地した。
 
 ---
 
@@ -980,9 +1010,38 @@ fitness-driven 進化も可能、 ただし noise floor の影響大。
 8 系統 rule-based + 我々の 3-MLP/V60 の 7 opp × 80g bench 結果を JSON 化。
 新しい agent の fitness を相対評価する material。
 
+### C.6 `scripts/collect_bc_dataset.py` + `scripts/collect_bc_dataset_v2.py`
+
+任意の rule-based agent から (state, picked) ラベルを大量に抽出する BC
+dataset 収集 CLI。 v2 は **勝った試合のみ filter** (noise 軽減)。
+ragged tensor 用に CSR 形式 .npz に保存、 任意 policy 模倣に活用可能。
+
+### C.7 `scripts/bench_v40_ensemble.py` + `scripts/bench_v60_ensemble.py`
+
+任意の MLP weight list を logit 平均で ensemble 化し 7-opp で評価。
+**ext 種類の混合実験** に特化、 「3-MLP base 探索」 「Mixed ensemble」
+「Alt 構成検証」 全部が同 CLI で実行できる。
+
+### C.8 `train/mlp_train.py` + `train/mlp_train_v60.py` の `--entropy-coef`
+
+REINFORCE loss に entropy bonus を追加する flag。 single policy の lab
+改善には有効 (+5pp 達成、 seed=0 ext 例)、 ensemble に混ぜると LB 破壊。
+PPO 実装の前段階として残しておけば、 future work で使える。
+
+### C.9 35 サイクル分の commit log (再現性 material)
+
+`git log --oneline` で全試行が記録されている。 「何が動いて何が動かな
+かったか」 を後続者が辿れる。 ストラテジー部門 report の **「失敗の
+教訓」** の証拠資料になる。
+
 ---
 
-最後に: 30 サイクル × 30 分 ≈ 15 時間という有限時間予算で、 **どこで
-切り上げるか** の判断が学習試行錯誤の核心だった。 ストラテジー部門
-report では「成功事例」 だけでなく **「いつ手を引いた / 引くべきだった」
-の意思決定ログ** を report の主要価値として提示する。
+最後に: **3 日間 (= 35 サイクル × 30 分 ≈ 17 時間)** の有限時間予算で、
+**どこで切り上げるか** + **どこに勝負を残すか** の判断が学習試行錯誤の
+核心だった。 ストラテジー部門 report では「成功事例」 だけでなく
+**「いつ手を引いた / 引くべきだった」 の意思決定ログ** と **「5/5
+改善試行が失敗した記録」** を report の主要価値として提示する。
+
+我々が達成した DL ベスト **LB 679.6** は、 1 度成功した後 5 連敗で
+「触らずに保護すべき champion」 と確定。 この知見自体が、 短期 Kaggle
+コンペでの DL 路線取り組みの基本テンプレートになり得る。
