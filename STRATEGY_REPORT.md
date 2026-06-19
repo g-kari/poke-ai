@@ -1118,6 +1118,67 @@ Final: 3-MLP base 22.5% / s500 **77.5%**
   mode の組み合わせで lab/LB 両方で lift する可能性
 - これは未試行で、 重要な検証対象
 
+#### 5.3l 補遺 13: Mode A + Mode B ensemble (= s100 + s500) — 第 5 の ensemble 失敗パターン (mode mismatch)
+
+補遺 11+12 で 2 軸 policy profile model 確立。 旧 ensemble 失敗 (補遺 6,
+s100 + s2026) は「両 Mode A の同 mode 組み合わせ」 だった可能性。 異
+mode (Mode A + Mode B = s100 + s500) なら lift する仮説を検証。
+
+**bench (700g)**:
+```
+vs Mega Lucario: 22.0% (s100=27, s500=22, ~中間)
+vs Dragapult ex: 25.0% (s100=30, s500=26, やや下)
+vs Iono: 7.0% (s100=10, s500=7, やや下)
+vs Mega Abomasnow: 26.0% (s100=32, s500=32, 両者より下)
+vs Crustle Wall: 26.0% (s100=37, s500=27, ~中間)
+vs Crustle Dashi: 10.0% (s100=7, s500=10, s500 寄り)
+vs V6: 22.0% (s100=20, s500=19, やや上)
+overall: 138-562 (19.7%)
+```
+
+**仮説否定**:
+- 旧仮説: 「異 mode の組み合わせなら ensemble lift 可能」
+- 実測: 19.7% — single (23.3%, 18.6%) の単純平均 (20.95%) すら下回り、
+  **lift なし**
+- Mode A + Mode B でも logit averaging は specialization の "得意" を
+  引き出せず confusion
+
+**累積 ensemble 失敗の 5 パターン (= 完全分類)**:
+| パターン | 原因 | 典型例 |
+|----------|------|--------|
+| 1: features 起因 | v60 deck hash collision | 5.3e |
+| 2: training procedure 起因 | PPO 収束で seed diversity 消失 | 5.3l 本体 |
+| 3: policy strength 不均衡 | 弱い側に dilution | 5.3l 補遺 |
+| 4: specialization 境界 confusion (同 mode) | 同 Mode A 同士 | 5.3l 補遺 6 |
+| 5: mode mismatch confusion (異 mode) | Mode A + Mode B も averaging で消失 | 5.3l 補遺 13 |
+
+**最終結論 (= 補遺 13 で確定)**:
+- **v40 PPO ensemble は何をやっても機能しない**: 5 パターンの失敗例外
+  なし、 single + single の組み合わせは原理的に lift しない
+- 唯一の例外は 3-MLP base ensemble (REINFORCE 浅学習 × seed diversity)、
+  これも non-transitive な 1v1 では Mode B に大敗 (= 補遺 10)
+- **明日 UTC 4 枠投入は single submission のみ** (= 計画変更なし)
+
+**含意 (= lab metric への深い理解)**:
+- lab metric (= 7-opp suite 勝率) は **個々の policy の単純な strength**
+  を測る (= 7 opponent との 100 games での勝率平均)
+- ensemble の logit averaging は **lab metric とは別の operation**:
+  各 step での policy 選択を確率的に混合する
+- これが lab で lift を生むには、 各 policy の "間違い" が opponent
+  によって異なる必要 (= uncorrelated errors)
+- 我々の PPO_v40 policies は **errors が highly correlated** (= 同じ
+  rule-based opponents に対して同じような失敗パターン)
+- 唯一 errors が decorrelated だったのは 3-MLP base (= 弱い浅学習で
+  errors が確率的にバラついた)
+
+**戦略路線への最終影響**:
+- v40 PPO 系統で ensemble は完全に閉じた (= 試行可能な全角度を試した)
+- 残された path は **single policy 改善** (= PIMC で search 加える、
+  features 改善、 deck 変更) のみ
+- Mode B (s500) の play style が 3-MLP base ですら勝てる強さを持つ
+  事実は強い signal → PIMC で s500 を rollout policy にする実装は
+  最優先
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1137,6 +1198,7 @@ Final: 3-MLP base 22.5% / s500 **77.5%**
 | 補遺 10 | 3-MLP base vs s500 直接対戦 | 40 games alternating side | **22.5%-77.5% (s500 大勝)** = DL champion ですら strategic depth で PPO に大敗、 **lab/LB は specialization metric 確定** |
 | 補遺 11 | 3-MLP base vs s100 直接対戦 | 40 games alternating side | **62.5%-37.5% (3-MLP 大勝)** = 非推移性発見! s100 ≠ s500 (補遺 10 と矛盾) |
 | 補遺 12 | 3-MLP base vs s2026 直接対戦 | 40 games alternating side | **60.0%-40.0% (3-MLP 大勝)** = s2026 も s100 と同 mode、 **2 軸 policy profile model 確立** |
+| 補遺 13 | s100 + s500 ensemble (異 mode) | Mode A + Mode B logit 平均 | **19.7% (= 単純平均 20.95% も下回り)** = 第 5 の ensemble 失敗パターン (mode mismatch)、 **v40 PPO ensemble は何をやってもダメ確定** |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
