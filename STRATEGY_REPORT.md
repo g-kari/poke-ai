@@ -111,22 +111,30 @@ policy 学習の困難:
 
 ## 3. 発見した法則
 
-### 3.1 lab 1pp ≈ LB 43 ポイントの換算法則
+### 3.1 lab → LB は **bench に依存し、 ratio 21-36 と幅広く分散**
 
-3-MLP と V60 EXT3 の実測比較で確定:
+旧 STRATEGY では「lab 1pp ≈ LB 43」 と書いたが、 **撤回**。 実際には
+bench の opp 構成と ensemble 構造で ratio が大きく変動:
 
-  3-MLP:      lab 23.3%   LB 679.6
-  V60 EXT3:   lab 19.7%   LB 523.1
-  差:           -3.6pp        -156.5
+| 提出 | 7-opp lab | LB | ratio |
+|---|---|---|---|
+| **3-MLP base** | 18.9% | **679.6** | **35.9** |
+| BCRL2 | 19.3% | 570.4 | 29.5 |
+| V60 EXT3 | 20.5% | 562.4 | 27.4 |
+| Mixed (1 ext + 2 base) | 20.4% | 470.9 | 23.1 |
+| 4-MLP base | 20.4% | 452.1 | 22.2 |
+| Mix v3 | 19.4% | 434.8 | 22.4 |
+| Iono (rule-based) | 64.0% | 762.2 | 11.9 |
+| CrustleDashi (rule-based) | 67.3% | 874.7 | 13.0 |
+| V6 (rule-based) | 57.9% | 860.8 | 14.9 |
 
-→ **lab 3.6pp の差 = LB 156 ポイント差 = 1pp ≈ 43**
+**観察**:
+- DL submission 内でも ratio 22-36 と **+14 ポイント幅**
+- rule-based は ratio 12-15 と低い (= 高 lab 領域での飽和)
+- 3-MLP base の 35.9 は **DL での最高 ratio** = 「seed 構成の偶然」
 
-ただし lab → LB は **非線形**:
-- 23.3% → 679
-- 64.0% (Iono) → 762
-- 67.3% (CrustleDashi) → 870
-- 57.9% (V6) → 926
-- 高 lab 領域 (50%+) では LB 増分が縮小、 低 lab 領域では拡大
+**真理 (改訂版)**: lab → LB の換算は単純な係数ではなく、
+**ensemble の diversity composition と LB 相手分布の match** が ratio を決める。 同 lab でも ratio 1.5x の差がつく。
 
 ### 3.2 Crustle Dashi 0% は ex pokemon を deck から外さない限り解決不可
 
@@ -149,19 +157,27 @@ features_v60 で deck-id fingerprint を入れても:
 含意: 「deck と agent を同時生成 / 共進化」 する仕組み (= AlphaZero スタイル
 self-play with deck mutation) が真の解決。
 
-### 3.4 features 共通の policy ensemble は seed diversity が効かない
+### 3.4 features 共通の policy ensemble は seed diversity が効かない (v60)、 v40 でも 4-seed は失敗
 
-3-MLP (v40 features) は seed 0/2/100 ensemble で **+α** を達成 (23.3%):
-- 1 seed あたり 19-21% を ensemble で 23.3% に
-- seed diversity が overall を改善
+**v40 features 3-MLP base (seed 0/2/100)**:
+- 単独 seed: 13.2% 程度
+- 3-MLP ensemble: **18.9%** (+5.7pp lift)
+- LB 679.6, ratio 35.9 (= 我々の DL チャンピオン)
 
-V60 (v60 features) は 2 試行 ensemble で **-2pp**:
-- EXT1+EXT3 ensemble = 18.1% (EXT1 20.1%、 EXT3 20.5% より低い)
-- EXT3+seed31415 ensemble = 18.6% (EXT3 single より低い)
-- features の表現力が seed-level diversity を吸収して中庸化
+**v40 features 4-MLP base (seed 0/2/100/+200)**:
+- 単独 seed: 13-14% 程度 (seed=200 も同等)
+- 4-MLP ensemble: 20.4% (+1.5pp over 3-MLP)
+- LB **432.9** (-247 vs 3-MLP), ratio 22.2
 
-推測: features_v60 の deck-id bucket hash は overfitting を引き起こし、
-seed 違いの policy も同じ偏りを持つ。
+**→ 「more seeds = better ensemble」は不成立**。 seed 数増は lab 改善
+するが LB は悪化、 ratio は 35.9 → 22.2 と大幅低下。
+
+**v60 features の場合**:
+- EXT3 single: lab 20.5%, LB 562.4
+- 3-poly v60 ensemble (fair 5000ep each): lab 17.5% (=単独より悪化)
+- features_v60 の deck-id bucket hash は **opponent identity を encode
+  しすぎ**て、 各 seed が同じ「相手別 specialization」 に収束、
+  ensemble averaging の中庸性が消失
 
 ### 3.5 lab signal は LB に translate するが、 absolute 予測は困難
 
