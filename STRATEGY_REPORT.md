@@ -748,6 +748,7 @@ v40 seed=0/2/100 を entropy_coef=0.02 で warm-start 2000ep 延長:
 | PPO2 | PPO1 + 1280ep, lr=2e-5 | 19.1% | specialized (Drag/Aboma peak) |
 | PPO3 | seed=42, lr=3e-5, 1280ep | 18.1% | V6/Aboma peak, CW regress |
 | **PPO4** | **5120ep**, batch=64, lr=3e-5 | **18.1%** | overtraining (CW 21%→7% regression) |
+| PPO5 | entropy_coef=0.05 (5x) | 17.3% | exploration too high |
 | PPO1+PPO2 ens | logit 平均 | 19.1% | no lift (= 由来が近い) |
 | PPO1+PPO3 ens | logit 平均 | 17.0% | regression (= v60 ensemble 法則) |
 
