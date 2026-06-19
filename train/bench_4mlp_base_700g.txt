@@ -1,0 +1,9 @@
+v40 ensemble bench (4 policies) @ 100g/opp
+  vs Mega Lucario      : 25-75-0  (25.0%)
+  vs Dragapult ex      : 28-72-0  (28.0%)
+  vs Iono              : 12-88-0  (12.0%)
+  vs Mega Abomasnow    : 27-73-0  (27.0%)
+  vs Crustle Wall      : 29-71-0  (29.0%)
+  vs Crustle Dashi     : 9-90-1  (9.0%)
+  vs V6                : 20-80-0  (20.0%)
+overall: 150-549 (21.5%) across 700g  [258s]
