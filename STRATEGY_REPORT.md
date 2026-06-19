@@ -1492,6 +1492,62 @@ Per-phase:
 4. deck 切替 (= deck-policy strong coupling)
 5. League learning (= 過去 policy を opponent pool に)
 
+#### 5.3l 補遺 19: value head calibration 20g 129 samples = 補遺 18 結論の訂正 (= value head は使える)
+
+補遺 18 で「value head 使えない、 sign match 35.7%」 と結論したが、
+**14 sample は noise だらけ**で意味なかった。 20 game (= 129 samples)
+で再評価:
+
+**scripts/value_head_calibration.py 結果**:
+```
+N samples: 129
+V range: [-0.936, +0.747]
+V mean: -0.488, median: -0.550
+Outcome mean: -0.163
+Bias (V - O) mean: -0.325 (V は outcome より 0.325 低く予測)
+Sign match: 85/129 (65.9%) ← chance 50% より上!
+
+Per-phase:
+  early: N=40, V mean=-0.448, O mean=-0.200, sign match 24/40 (60%)
+  mid:   N=51, V mean=-0.484, O mean=-0.098, sign match 33/51 (65%)
+  late:  N=38, V mean=-0.536, O mean=-0.211, sign match 28/38 (74%)
+```
+
+**補遺 18 結論の訂正**:
+- 旧 (補遺 18): 14 sample で sign match 35.7% → 「value head 使えない」
+- 新 (補遺 19): 129 sample で sign match **65.9%** → **value head は使える、
+  calibration あり**
+- 14 vs 129 で結論が反転 = small sample の罠 ([[4.2]] noise floor と同様)
+
+**3 つの新発見**:
+
+1. **Sign match 65.9% は AlphaZero MCTS に使える質**: chance 50% より
+   明確に上、 特に late phase は 74%
+2. **Bias mean = -0.325**: value head は systematic に outcome より 0.325
+   低く予測、 calibration で `V'(s) = V(s) + 0.325` 補正可能
+3. **Bias median = +0.153** (mean と逆向き): 分布が skewed、 mean を
+   bias 補正に使うのが安全
+
+**含意 — AlphaZero 計画の再修正**:
+- AlphaZero Phase 1a (= calibration) は **完了**
+  (`train/value_calibration.json` 保存済)
+- AlphaZero Phase 1b (= MSE 再学習) は **不要**: 65.9% match で十分
+- 直接 **Phase 2 (= MCTS 実装)** に着手可能
+- 明日 UTC LB 着地後の analysis 次第で、 AlphaZero Phase 2 を本格着手
+
+**残された path 優先順 再 update (= 補遺 19 後)**:
+1. ~~AlphaZero Phase 1a (calibration、 完了済)~~
+2. AlphaZero Phase 2 (MCTS + calibrated value) — 残時間で着手可能
+3. 異 features (= card-level embedding)
+4. deck 切替 (= deck-policy strong coupling)
+5. League learning
+
+**教訓 (= 戦略部門 report 用)**:
+- 「14 sample smoke test」 と「129 sample calibration」 で結論が反転した
+  事例: small sample の罠は判定すべき内容が確率的でない場合 (= sign
+  match のような binary outcome) でも顕著
+- 今後の DL submission 評価では、 **N >= 100 が必須**
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1516,7 +1572,8 @@ Per-phase:
 | 補遺 15 | PIMC 既存実装の発見 | train/pimc.py v1-v5 100-game bench | **PIMC-ON ≈ PIMC-OFF (51-49 tie)**、 既に default-OFF で運用中。 PPO_v40 s500 rollout 化が次の試行候補 |
 | 補遺 16 | PIMC v6 smoke test (= MlpPolicy rollout) | pick_best_option(s500) 単体テスト | **PASSED** (196 ms / call、 Kaggle budget 内)。 next: 100-game mirror match |
 | 補遺 17 | PIMC v6 mirror match 50g | PIMC-ON vs PIMC-OFF (both s500) | **52-48 tie (CI [38%, 66%])** = v5 (51-49) と完全一致、 **PIMC アーキテクチャ自体の限界**確定。 残る path: AlphaZero / 異 features / deck 切替 |
-| 補遺 18 | PPO_v40 s500 value head smoke | 5 games, V vs outcome 比較 | **V mean -0.364 (悲観バイアス)、 sign match 35.7%** = AlphaZero Phase 1 (= value head 再学習 or calibration) 必須 |
+| 補遺 18 | PPO_v40 s500 value head smoke | 5 games, V vs outcome 比較 | **V mean -0.364 (悲観バイアス)、 sign match 35.7%** = AlphaZero Phase 1 (= value head 再学習 or calibration) 必須 (← **補遺 19 で訂正**) |
+| 補遺 19 | value head calibration 20g | 129 samples、 bias 統計測定 | **Sign match 65.9% (late phase 74%)、 bias mean -0.325** = value head は使える (補遺 18 訂正)、 calibration JSON 保存、 直接 Phase 2 (MCTS) 着手可能 |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
