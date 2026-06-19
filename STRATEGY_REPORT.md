@@ -102,13 +102,14 @@ deep-learning best は 3-MLP base (seed=0/2/100, lab 18.9%, LB 679.6)。
    - 3 つの構造的問題: (a) 1-ply 浅さ、 (b) Naive opp sampling、 (c)
      rollout-to-terminal noise
 
-9. **「探索系 (PIMC / AlphaZero) は PTCG ABC で機能しない」** (= 補遺 18-21
-   で完全確定、 全 path 終了):
-   - AlphaZero v1 (= MCTS + calibrated value head, n_sims=20) mirror match
-     50g で **AZ-ON 42% / AZ-OFF 58% (AZ-ON 負け!)**
-   - 期待 (= 設計 doc で +5pp 改善) と真逆、 **MCTS が干渉**
-   - PIMC tie (= 52-48) + AlphaZero loss (= 42-58) で、 「探索付き
-     inference」 path 全完全閉鎖
+9. **「探索系 (PIMC / AlphaZero) は PTCG ABC で lift しない (= tie)」**
+   (= 補遺 18-22 で完全確定、 全 path 終了):
+   - PIMC v5 (linear rollout) 100g: 51% (tie)
+   - PIMC v6 (PPO_v40 s500 rollout) 50g: 52% (tie)
+   - AlphaZero n_sims=20 50g: 42% (noise floor 下、 補遺 21 → 22 で訂正)
+   - AlphaZero n_sims=50 50g: 48% (tie、 PIMC と同水準)
+   - **どの探索法でも lift しない** = 「探索 + 学習 value head」 path
+     全完全閉鎖
    - **構造的原因**: AlphaGo Zero は囲碁の **完全情報 + 短期決着** に
      依存、 PTCG ABC のような **不完全情報 + 長期戦** には合わない
    - 真の path は **state representation 根本見直し** (= card-level
@@ -1678,6 +1679,61 @@ Draws: 0/50 (0.0%)
 | PIMC-ON s500 | PIMC-OFF s500 | 52.0% (補遺 17、 tie) |
 | AZ-ON s500 | AZ-OFF s500 | **42.0% (補遺 21、 負け!)** |
 
+#### 5.3l 補遺 22: AlphaZero n_sims=50 mirror = 48% (補遺 21 訂正、 noise floor だった)
+
+補遺 21 で「AlphaZero n_sims=20 mirror 50g で AZ-ON 42% = 構造的失敗」
+と結論したが、 n_sims=50 (= 2.5x 深さ) で再評価:
+
+**結果** (scripts/bench_alphazero_mirror_n50.py, 50g, 214s = 4.3s/game):
+```
+AZ-ON wins: 24/50 (48.0%)  ← Wilson CI [34%, 62%]
+AZ-OFF wins: 26/50 (52.0%)
+Draws: 0/50 (0.0%)
+```
+
+**重要な発見 — 補遺 21 の訂正**:
+- n_sims=20: 42% (loss、 補遺 21)
+- n_sims=50: 48% (near tie、 補遺 22)
+- → **+6pp 改善で 50% に向かう** = AZ-ON 負けは **noise だった**
+- 補遺 21 の「構造的失敗、 MCTS が干渉」 は誤解釈
+
+**真の結論 (= 補遺 22 で確定)**:
+- AlphaZero v1 は **構造的失敗ではない**、 n_sims=20 では search が
+  浅すぎて Q 値が信頼できなかっただけ
+- n_sims=50 で **PIMC v6 (52%) と同じ tie** = 探索系は PTCG ABC で
+  lift しない構造的限界 (補遺 17 と一致)
+- 探索系 (PIMC v5/v6, AlphaZero n_sims=20/50) は全 **tie 近辺で限界**
+
+**統合結論 (= 探索系の最終評価)**:
+| アプローチ | 計算時間 | mirror 結果 (Wilson CI) |
+|-----------|----------|--------------------------|
+| PIMC v5 (linear rollout, N_WORLDS=2) | 1 call 196 ms | 51% (100g, [41%, 61%]) |
+| PIMC v6 (PPO_v40 s500 rollout) | 1 call 196 ms | 52% (50g, [38%, 66%]) |
+| AlphaZero (n_sims=20) | 1 call 211 ms | 42% (50g, [29%, 56%]) ← noise |
+| AlphaZero (n_sims=50) | 1 call 550 ms | 48% (50g, [34%, 62%]) |
+- 全 CI が 50% を含む = **すべて tie**
+- どの探索法でも **lift しない** ことが補遺 22 で確定
+
+**戦略的意味**:
+- 探索 + 学習 value head は PTCG ABC で **lift しないが、 negative
+  にもならない** (= n_sims 十分なら)
+- 9/14 STRATEGY 部門レポートには「探索系を試したが全 tie」 とのみ記載、
+  「AlphaZero v1 が負けた」 と書くと誤解 (= n_sims 不足が真因)
+
+**残された path 優先順 (= 補遺 22 後)**:
+1. **異 features (= card-level embedding)**: 唯一 path、 ただし pre-training
+   データなし、 実装難易度高い
+2. **deck 切替**: deck-policy strong coupling 活かす、 短期で動かせる
+3. **League learning**: opponent pool 拡張で overfitting 防止、 長期路線
+4. **DL submission 天井は ratio 35 ベースで 3-MLP base LB 679.6** で
+   確定の可能性、 これを上回るには rule-based vendored の 80%+ winrate
+   path が必要
+
+**教訓 (= 戦略部門 report 用、 補遺 22 の意義)**:
+- AlphaZero のような複雑系での **n_sims 不足は noise floor を下げる**
+- 50g で測ったが Wilson CI が ±14pp と広い → 100g+ が必要だった
+- **3 回の noise floor の罠** (= 補遺 18→19、 補遺 21→22) を経験
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1705,7 +1761,8 @@ Draws: 0/50 (0.0%)
 | 補遺 18 | PPO_v40 s500 value head smoke | 5 games, V vs outcome 比較 | **V mean -0.364 (悲観バイアス)、 sign match 35.7%** = AlphaZero Phase 1 (= value head 再学習 or calibration) 必須 (← **補遺 19 で訂正**) |
 | 補遺 19 | value head calibration 20g | 129 samples、 bias 統計測定 | **Sign match 65.9% (late phase 74%)、 bias mean -0.325** = value head は使える (補遺 18 訂正)、 calibration JSON 保存、 直接 Phase 2 (MCTS) 着手可能 |
 | 補遺 20 | AlphaZero Phase 2 実装 + smoke | MCTS minimum + calibrated value head | **smoke PASSED** (n_sims=20 で 211 ms)。 計算は PIMC v6 と同等、 構造的に deep PUCT search で局所最適回避を狙う |
-| 補遺 21 | AlphaZero mirror match 50g | AZ-ON vs AZ-OFF (both s500) | **42% vs 58% (AZ-ON 負け!)** = PIMC v6 (52-48) より悪い、 MCTS が干渉。 全探索 path 完全に閉じた |
+| 補遺 21 | AlphaZero mirror match 50g | AZ-ON vs AZ-OFF (both s500), n_sims=20 | **42% vs 58%** = PIMC v6 (52-48) より悪い、 MCTS が干渉 (← **補遺 22 で訂正**: noise だった) |
+| 補遺 22 | AlphaZero n_sims=50 mirror 50g | AZ-ON vs AZ-OFF (both s500), n_sims=50 | **48% vs 52% (tie)** = n_sims=20 から +6pp 改善、 補遺 21 訂正。 探索系は全 tie 確定 (PIMC + AlphaZero) |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization

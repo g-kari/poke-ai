@@ -1,0 +1,94 @@
+Loading environment werewolf failed: cannot import name 'completion' from 'litellm' (unknown location)
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO: Successfully loaded OpenSpiel environments: 31.
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_amazons
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_backgammon
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_python_ant_foraging
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_checkers
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_chess
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_clobber
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_coin_game
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_coin_game_arena
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_connect_four
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_dark_hex
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_dots_and_boxes
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_gin_rummy
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_go
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_goofspiel
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_havannah
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_hearts
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_hex
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_lines_of_action
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_mancala
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_matching_pennies_3p
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_negotiation
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_oshi_zumo
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_othello
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_repeated_game
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_tic_tac_toe
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_ultimate_tic_tac_toe
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_snake
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_y
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_universal_poker
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_repeated_poker
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO:    open_spiel_python_repeated_pokerkit
+[kaggle_environments.envs.open_spiel_env.open_spiel_env] INFO: OpenSpiel games skipped: 0.
+AlphaZero mirror match (AZ-ON vs AZ-OFF, both s500), 50 games
+  policy: PPO_v40 s500 (= Mode B)
+  n_sims: 50
+
+  game 1: ON 1 / OFF 0 / D 0  [2s = 1.9s/game]
+  game 2: ON 1 / OFF 1 / D 0  [5s = 2.6s/game]
+  game 3: ON 2 / OFF 1 / D 0  [9s = 3.1s/game]
+  game 4: ON 3 / OFF 1 / D 0  [16s = 4.0s/game]
+  game 5: ON 3 / OFF 2 / D 0  [21s = 4.3s/game]
+  game 6: ON 3 / OFF 3 / D 0  [28s = 4.6s/game]
+  game 7: ON 4 / OFF 3 / D 0  [36s = 5.1s/game]
+  game 8: ON 5 / OFF 3 / D 0  [38s = 4.7s/game]
+  game 9: ON 6 / OFF 3 / D 0  [42s = 4.6s/game]
+  game 10: ON 7 / OFF 3 / D 0  [46s = 4.6s/game]
+  game 11: ON 8 / OFF 3 / D 0  [48s = 4.4s/game]
+  game 12: ON 8 / OFF 4 / D 0  [51s = 4.3s/game]
+  game 13: ON 9 / OFF 4 / D 0  [56s = 4.3s/game]
+  game 14: ON 9 / OFF 5 / D 0  [57s = 4.1s/game]
+  game 15: ON 10 / OFF 5 / D 0  [61s = 4.0s/game]
+  game 16: ON 11 / OFF 5 / D 0  [66s = 4.1s/game]
+  game 17: ON 11 / OFF 6 / D 0  [73s = 4.3s/game]
+  game 18: ON 11 / OFF 7 / D 0  [76s = 4.2s/game]
+  game 19: ON 11 / OFF 8 / D 0  [81s = 4.2s/game]
+  game 20: ON 11 / OFF 9 / D 0  [82s = 4.1s/game]
+  game 21: ON 12 / OFF 9 / D 0  [95s = 4.5s/game]
+  game 22: ON 12 / OFF 10 / D 0  [98s = 4.4s/game]
+  game 23: ON 13 / OFF 10 / D 0  [103s = 4.5s/game]
+  game 24: ON 14 / OFF 10 / D 0  [107s = 4.4s/game]
+  game 25: ON 14 / OFF 11 / D 0  [113s = 4.5s/game]
+  game 26: ON 15 / OFF 11 / D 0  [116s = 4.5s/game]
+  game 27: ON 15 / OFF 12 / D 0  [119s = 4.4s/game]
+  game 28: ON 15 / OFF 13 / D 0  [120s = 4.3s/game]
+  game 29: ON 15 / OFF 14 / D 0  [122s = 4.2s/game]
+  game 30: ON 15 / OFF 15 / D 0  [123s = 4.1s/game]
+  game 31: ON 16 / OFF 15 / D 0  [128s = 4.1s/game]
+  game 32: ON 16 / OFF 16 / D 0  [128s = 4.0s/game]
+  game 33: ON 16 / OFF 17 / D 0  [132s = 4.0s/game]
+  game 34: ON 16 / OFF 18 / D 0  [132s = 3.9s/game]
+  game 35: ON 16 / OFF 19 / D 0  [141s = 4.0s/game]
+  game 36: ON 17 / OFF 19 / D 0  [145s = 4.0s/game]
+  game 37: ON 17 / OFF 20 / D 0  [148s = 4.0s/game]
+  game 38: ON 17 / OFF 21 / D 0  [151s = 4.0s/game]
+  game 39: ON 18 / OFF 21 / D 0  [159s = 4.1s/game]
+  game 40: ON 18 / OFF 22 / D 0  [161s = 4.0s/game]
+  game 41: ON 18 / OFF 23 / D 0  [163s = 4.0s/game]
+  game 42: ON 19 / OFF 23 / D 0  [168s = 4.0s/game]
+  game 43: ON 19 / OFF 24 / D 0  [172s = 4.0s/game]
+  game 44: ON 20 / OFF 24 / D 0  [174s = 4.0s/game]
+  game 45: ON 21 / OFF 24 / D 0  [180s = 4.0s/game]
+  game 46: ON 22 / OFF 24 / D 0  [191s = 4.1s/game]
+  game 47: ON 23 / OFF 24 / D 0  [200s = 4.3s/game]
+  game 48: ON 23 / OFF 25 / D 0  [203s = 4.2s/game]
+  game 49: ON 24 / OFF 25 / D 0  [211s = 4.3s/game]
+  game 50: ON 24 / OFF 26 / D 0  [214s = 4.3s/game]
+
+Final (50 games, 214s = 4.3s/game):
+  AZ-ON wins: 24/50 (48.0%)
+  AZ-OFF wins: 26/50 (52.0%)
+  Draws: 0/50 (0.0%)
+  AZ-ON in decisive: 24/50 (48.0%)
