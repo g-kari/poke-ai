@@ -740,27 +740,37 @@ v40 seed=0/2/100 を entropy_coef=0.02 で warm-start 2000ep 延長:
 - ratio ~35 universal を活用、 lab を 18-20% に押し上げる
 - 期待 LB **630-700** (= LB 700 突破の最有力候補)
 
-**実際の結果** (= 全 5 PPO variant + 2 ensemble の 700g 大規模 bench):
+**実際の結果** (= 全 10 PPO variant の 700g 大規模 bench、 ranked):
 
-| PPO 試行 | 設定 | 700g lab | 備考 |
-|---|---|---|---|
-| **PPO1 (= 主候補)** | seed=0, lr=3e-5, 1280ep | **19.0%** | **consistent profile** |
-| PPO2 | PPO1 + 1280ep, lr=2e-5 | 19.1% | specialized (Drag/Aboma peak) |
-| PPO3 | seed=42, lr=3e-5, 1280ep | 18.1% | V6/Aboma peak, CW regress |
-| **PPO4** | **5120ep**, batch=64, lr=3e-5 | **18.1%** | overtraining (CW 21%→7% regression) |
-| PPO5 | entropy_coef=0.05 (5x) | 17.3% | exploration too high |
-| PPO1+PPO2 ens | logit 平均 | 19.1% | no lift (= 由来が近い) |
-| PPO1+PPO3 ens | logit 平均 | 17.0% | regression (= v60 ensemble 法則) |
+| Rank | PPO 試行 | 設定 | 700g lab | 備考 |
+|---|---|---|---|---|
+| 🥇 1 | **PPO1 (= 主候補)** | BCRL2, seed=0, lr=3e-5, 1280ep | **19.0%** | **consistent profile** |
+| 2 | PPO2 | PPO1 + 1280ep, lr=2e-5 | 19.1% | specialized (Drag/Aboma peak) |
+| 3 | PPO1+PPO2 ens | logit 平均 | 19.1% | no lift (= 由来が近い) |
+| 4 | **PPO1+PPO7 ens** | BCRL2 + EXT3 warm 混合 | **18.9%** | 異 warm-start でも lift なし |
+| 5 | **PPO7** | EXT3 warm-start, 1280ep | **18.6%** | BCRL2 と nearly identical |
+| 6 | PPO3 | seed=42 | 18.1% | seed 違いで V6/Aboma peak |
+| 7 | PPO4 | 5120ep, batch=64 | 18.1% | overtraining (CW 21%→7% regression) |
+| 8 | PPO5 | entropy_coef=0.05 (5x) | 17.3% | exploration too high |
+| 9 | PPO1+PPO3 ens | logit 平均 | 17.0% | regression (= v60 ensemble 法則) |
+| 10 | **PPO6** | mirror self-play | **16.1%** | = BCRL2 baseline (transfer なし) |
 
-**学び (= PPO chain 完全検証後の確定知見)**:
+**学び (= PPO chain 完全検証後の確定知見、 10 variants 後)**:
 - PPO は BCRL2 から **+2.9pp 改善** (= REINFORCE warm-start の regression
   を完全防止 + 改善)
 - **1280 ep が PPO sweet spot** (= PPO4 5120ep は overtraining で
   Crustle Wall -14pp regression、 lab 18.1% に劣化)
+- **warm-start choice 不問**: BCRL2 (= PPO1) と V60 EXT3 (= PPO7) で
+  PPO 後 lab は両方 ~19% に収束 — algorithm 自体が決め手で starting
+  point ではない
 - lr 影響は限定的 (3e-5 / 2e-5 で同 lab)
 - seed 違い (PPO3) は per-opp specialization を生むが lab は劣後
-- **v60 PPO ensemble は失敗** (= 旧 5.3e の base ensemble 同様、 deck
-  fingerprint feature が seed diversity を吸収)
+- entropy 5x (= PPO5) は exploration 過剰で lab 劣化
+- Self-play (= PPO6) は v60 features で transfer なし
+- **v60 PPO ensemble は 3 角度全て失敗**:
+  - Same warm-start (PPO1+PPO2): no lift
+  - Same warm-start, seed diff (PPO1+PPO3): regression
+  - Different warm-starts (PPO1+PPO7): no lift
 - 期待 LB (ratio 35): PPO1 → ~665、 3-MLP base 679 に肉薄
 
 **残る検証** (明日 UTC reset 後):
