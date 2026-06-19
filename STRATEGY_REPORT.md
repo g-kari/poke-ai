@@ -1601,6 +1601,72 @@ alphazero_choose(n_sims=20): 211 ms (11 ms/sim) → option 0 ✓
 - もし tie (= PIMC v6 同様) なら、 features 改善 or deck 切替の他 path
   に移行
 
+#### 5.3l 補遺 21: AlphaZero mirror match 50g = AZ-ON 42% / AZ-OFF 58% (= 衝撃の負け!)
+
+補遺 20 で AlphaZero smoke PASSED 後、 50g mirror match で AZ-ON s500
+vs AZ-OFF s500 の実評価。 期待は「PIMC v6 (52-48 tie) を破る」、 実測:
+
+**結果** (scripts/bench_alphazero_mirror.py, 50g, 90s = 1.8s/game):
+```
+AZ-ON wins: 21/50 (42.0%)  ← Wilson CI [29%, 56%]
+AZ-OFF wins: 29/50 (58.0%)
+Draws: 0/50 (0.0%)
+```
+
+**衝撃の発見**:
+- **AlphaZero が PIMC v6 (52-48) より悪い結果**
+- AZ-ON 42% < 50% (tie) < AZ-OFF 58%
+- MCTS が **干渉している** = pure PPO sampling より弱い手筋を選んでいる
+- これは設計 doc の期待 (= AlphaZero で +5pp 改善) と真逆
+
+**3 つの推定原因**:
+
+1. **n_sims=20 不足**: shallow MCTS では visit count の差が small、
+   選ばれる手筋が "policy prior に近い" or "noise" になる
+2. **value head calibration の不正確さ**: bias_mean -0.325 補正は粗い、
+   実際は state-dependent な bias 構造かも
+3. **opp_state sampling が naive すぎる**: 相手 deck = 我々と仮定が、
+   実際の対戦相手分布と乖離 (= PIMC v1-v6 と同じ問題)
+
+**推定外の構造的原因**:
+- PTCG ABC は **不完全情報** で、 PUCT の Q 値計算が **rollout pop** に
+  弱い (= 異なる sample で異なる Q が計算され、 averaging が不安定)
+- value head は **mid-game の prediction quality 65%** で十分でない可能性
+  (= 補遺 19 の per-phase 統計で mid 65% に対して MCTS は mid-leaf で
+  評価することが多い)
+
+**結論 (= 補遺 21 で確定)**:
+- **AlphaZero v1 (n_sims=20, naive opp sampling, single-policy value head)
+  は失敗**
+- これで **single policy + 浅 search + value head** の path も完全に
+  閉じた (= PIMC v1-v6 と同様の構造的限界)
+- 残された path:
+  1. **異 features (= card-level embedding)**: state representation を
+     根本的に変更
+  2. **deck 切替**: deck-policy strong coupling を活かす
+  3. **League learning**: opponent pool 拡張で overfitting 防止
+  4. **より深い search (= n_sims=200, 500)** で AlphaZero 再評価 (= 時間
+     予算的に Kaggle で動かない、 但し研究レポート用)
+
+**戦略部門レポートへの含意**:
+- 「探索 + 学習 value head」 の組合せは PTCG ABC でも機能しない
+- AlphaGo Zero の方法論は囲碁の **完全情報 + 短期決着** に依存していた
+- PTCG ABC のような **不完全情報 + 長期戦** では別アプローチが必要
+- 真の path は features (= state representation) の根本見直し か、
+  deck 構成の戦略的変更 (= meta-deck 制覇)
+
+**1v1 対戦表の最終状態**:
+| Player A | Player B | A 勝率 |
+|----------|----------|--------|
+| s100 | s2026 | 50.0% (補遺 8) |
+| s100 | s500 | 47.5% (補遺 9) |
+| 3-MLP base | s500 | 22.5% (補遺 10) |
+| 3-MLP base | s100 | 62.5% (補遺 11) |
+| 3-MLP base | s2026 | 60.0% (補遺 12) |
+| 3-MLP base | s42 | 45.0% (補遺 14) |
+| PIMC-ON s500 | PIMC-OFF s500 | 52.0% (補遺 17、 tie) |
+| AZ-ON s500 | AZ-OFF s500 | **42.0% (補遺 21、 負け!)** |
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1628,6 +1694,7 @@ alphazero_choose(n_sims=20): 211 ms (11 ms/sim) → option 0 ✓
 | 補遺 18 | PPO_v40 s500 value head smoke | 5 games, V vs outcome 比較 | **V mean -0.364 (悲観バイアス)、 sign match 35.7%** = AlphaZero Phase 1 (= value head 再学習 or calibration) 必須 (← **補遺 19 で訂正**) |
 | 補遺 19 | value head calibration 20g | 129 samples、 bias 統計測定 | **Sign match 65.9% (late phase 74%)、 bias mean -0.325** = value head は使える (補遺 18 訂正)、 calibration JSON 保存、 直接 Phase 2 (MCTS) 着手可能 |
 | 補遺 20 | AlphaZero Phase 2 実装 + smoke | MCTS minimum + calibrated value head | **smoke PASSED** (n_sims=20 で 211 ms)。 計算は PIMC v6 と同等、 構造的に deep PUCT search で局所最適回避を狙う |
+| 補遺 21 | AlphaZero mirror match 50g | AZ-ON vs AZ-OFF (both s500) | **42% vs 58% (AZ-ON 負け!)** = PIMC v6 (52-48) より悪い、 MCTS が干渉。 全探索 path 完全に閉じた |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
