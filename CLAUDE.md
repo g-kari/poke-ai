@@ -5,11 +5,12 @@
 ## TL;DR (30秒で把握する)
 
 - **何か?** Kaggle ポケモン TCG AI バトル (シミュ部門) の提出エージェント
-- **提出は?** `./make_submission.sh` → `submission.tar.gz` (1.1MB) → `kaggle competitions submit`
+- **提出は?** `./make_submission_*.sh` → `*.tar.gz` (1.0-1.2MB) → `kaggle competitions submit`
 - **エントリ?** リポジトリ root の `main.py` (filename 固定、ネスト不可)
-- **学習は?** `scripts/run.sh python3 -m train.reinforce ...` (numpy 線形ポリシー、CPU、~6分/2000ep)
-- **強さ?** 2000ep 学習で vs random 34-6 (85%)
-- **PIMC?** `cg/api.py` の `search_begin/step/release` で実装可能 (凍結解除済)
+- **学習は?** `scripts/run.sh python3 -m train.ppo_train_v40 ...` (PPO + v40 features、 GPU、 ~9分/1280ep)
+- **強さ (DL)?** LB 679.6 = 3-MLP base ensemble (= champion)、 PPO_v40 seed=100 lab 23.3% = single PEAK
+- **強さ (rule-based)?** LB 874.7 = CrustleDashimaki (= 全体 champion)
+- **PIMC?** `cg/api.py` の `search_begin/step/release` で実装可能 (凍結解除済)、 未着手
 - **GPU?** RTX 3070 Ti (8GB) + PyTorch cu128 動作確認済。`scripts/env.sh` が `libcuda` を解決
 - **コミット前?** `pre-commit install` 必須 (deck/main/bundle/ruff の品質ゲート)
 - **次の打ち手?** §"次の打ち手" を見るべし
@@ -266,15 +267,34 @@ cg/{__init__.py,api.py,game.py,sim.py,utils.py,libcg.so,cg.dll}
 train/{__init__.py,policy.py,features.py,policy.npz}
 ```
 
-## 次の打ち手 (優先順)
+## 次の打ち手 (優先順、 2026-06-19 更新)
 
-1. **PIMC (Perfect Information Monte Carlo) を実装** — `cg.api.search_begin/step` で
-   情報集合サンプリング。線形ポリシーは rollout policy に流用できる
-2. **長め自己対戦** で学習を積む (`--episodes 2000` で勝率カーブを取る)
-3. **特徴量追加**: カード ID 埋め込み、active Pokemon の attack 候補
-4. **PyTorch + PPO**: 線形ポリシーの限界を超えるとき
-5. **デッキ差し替え**: `deck.csv` をメタ環境に合わせて再構成
-6. **ストラテジー部門レポート** (締切 9/14)
+1. **明日 UTC reset 後に PPO_v40 seed=100 single 提出**
+   (`submission_ppo_v40_s100.tar.gz` 検証済、 lab 23.3% PEAK、 期待 LB ~815)
+   - 結果次第で ratio 35 仮説の校正点 = LB 815 確認なら成功
+   - LB < 700 着地なら "seed=100 overfit 仮説" が成立
+2. **PPO 探索の median-of-N protocol 導入**: 同じ手法で 3-5 seed 試行し
+   median lab を真の signal とする (= seed=500 で 18.6% 出た教訓)
+3. **PIMC (Perfect Information Monte Carlo)**: `cg.api.search_begin/step` で
+   情報集合サンプリング。 PPO_v40 seed=100 を rollout policy に流用
+4. **AlphaZero (PIMC + value head)**: PPO_v40 の value network を learnt
+   value として PIMC に組込み、 search のリーフ評価を改善
+5. **デッキ差し替え**: `deck.csv` をメタ環境に合わせて再構成 (= deck と
+   policy の strong coupling を活かす)
+6. **ストラテジー部門レポート** (締切 9/14、 STRATEGY_REPORT.md は v2 完成済、
+   ratio 35 検証結果待ち)
+
+## 終わった打ち手 (= 試行済み、 結論あり)
+
+- ✅ PPO Phase 1-5 完成 (= LB 700 突破の最有力路線として実装) — PPO1 LB
+  570.4 で完了、 v60 chain 10 variants 試行
+- ✅ PPO_v40 chain (seed=0/2/100/500): single PEAK 23.3% (seed=100)、
+  ensemble 失敗 3 パターン (PPO 収束 / strength 不均衡 / random seed dependency)
+- ✅ 3-MLP ensemble (= LB 679.6, ratio 35.9) — 我々の DL champion
+- ✅ V60 features (= 60-d deck fingerprint) — 7 サイクル投資、 ensemble
+  効果なし、 BCRL2 LB 570.4 が best
+- ✅ BC + REINFORCE (= AlphaGo 縮小版) — LB 570.4 で打ち止め
+- ✅ Deck builder GA + PIMC v1-v5 + Crustle 検出 — heuristic value の天井
 
 ## 環境メモ
 
