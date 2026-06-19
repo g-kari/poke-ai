@@ -1548,6 +1548,59 @@ Per-phase:
   match のような binary outcome) でも顕著
 - 今後の DL submission 評価では、 **N >= 100 が必須**
 
+#### 5.3l 補遺 20: AlphaZero Phase 2 minimum 実装 + smoke test PASSED
+
+補遺 19 で value head は使えると確定後、 AlphaZero MCTS minimum を実装。
+PIMC v6 と異なり、 1-ply rollout ではなく **deep PUCT search + value
+head 評価** を使う構造。
+
+**実装** (train/alphazero.py):
+- `MCTSNode`: visit count + prior + Q value、 PUCT child selection
+- `alphazero_choose(obs, deck, policy, rng, n_sims, c_puct, max_depth)`:
+  - 既存 MlpPolicy.probs() で root priors
+  - search_begin → search_step で deep PUCT 降下
+  - leaf に達したら `_calibrated_value()` (= V - bias) で評価
+  - backup で root の visit count を更新
+  - argmax visit を返す
+- `_sample_world()`: inline 実装 (= naive opp = our deck 仮定)
+
+**scripts/alphazero_smoke.py 結果**:
+```
+captured mid-game obs at step 15, n_options=2
+alphazero_choose(n_sims=5):  59 ms (12 ms/sim) → option 0 ✓
+alphazero_choose(n_sims=20): 211 ms (11 ms/sim) → option 0 ✓
+```
+
+**重要な発見**:
+- **動作確認 PASSED**: AlphaZero MCTS が exception なしで動く
+- **計算予算**: 11-12 ms/sim → n_sims=50 でも 550 ms (Kaggle 5s budget の 1/10)
+- **n_sims=100 でも 1.1 秒、 n_sims=200 で 2.2 秒** = Kaggle で実用可能
+- PIMC v6 の 1 call 196 ms vs AlphaZero n_sims=20 の 211 ms = **ほぼ同じ計算量**
+- ただし AlphaZero は **deep PUCT search** で局所最適を回避
+
+**残された path (= AlphaZero 完成への step)**:
+1. **scripts/bench_alphazero_mirror.py**: AlphaZero-ON vs OFF mirror match
+   (= PIMC v6 と同じ方法論で 50g 比較)
+2. **main.py 統合**: `POKEAI_ALPHAZERO=1` 環境変数で有効化
+3. **n_sims sweep** (5, 20, 50, 100): lab/LB 改善曲線
+4. **提出 bundle**: AlphaZero 入り版で Kaggle 提出
+
+**比較サマリー (= 補遺 20 で確定)**:
+| アプローチ | 1 call ms | 計算特性 | mirror result |
+|-----------|-----------|----------|---------------|
+| PIMC v5 (linear rollout) | 196 ms | 1-ply + rollout-to-terminal | 51-49 tie |
+| PIMC v6 (MlpPolicy rollout) | 196 ms | 1-ply + MlpPolicy rollout | 52-48 tie |
+| AlphaZero (n_sims=20) | 211 ms | PUCT 降下 + value head | (未測定、 次サイクル) |
+| AlphaZero (n_sims=50) | ~550 ms | PUCT 降下 + value head | (未測定) |
+
+**戦略的含意 (= 補遺 20 で明確化)**:
+- AlphaZero が PIMC tie を破るか否かが、 9/14 STRATEGY 締切に向けた
+  **最重要検証**
+- もし mirror match で AlphaZero-ON が **>= 60%** なら default-ON 化、
+  Kaggle 提出
+- もし tie (= PIMC v6 同様) なら、 features 改善 or deck 切替の他 path
+  に移行
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1574,6 +1627,7 @@ Per-phase:
 | 補遺 17 | PIMC v6 mirror match 50g | PIMC-ON vs PIMC-OFF (both s500) | **52-48 tie (CI [38%, 66%])** = v5 (51-49) と完全一致、 **PIMC アーキテクチャ自体の限界**確定。 残る path: AlphaZero / 異 features / deck 切替 |
 | 補遺 18 | PPO_v40 s500 value head smoke | 5 games, V vs outcome 比較 | **V mean -0.364 (悲観バイアス)、 sign match 35.7%** = AlphaZero Phase 1 (= value head 再学習 or calibration) 必須 (← **補遺 19 で訂正**) |
 | 補遺 19 | value head calibration 20g | 129 samples、 bias 統計測定 | **Sign match 65.9% (late phase 74%)、 bias mean -0.325** = value head は使える (補遺 18 訂正)、 calibration JSON 保存、 直接 Phase 2 (MCTS) 着手可能 |
+| 補遺 20 | AlphaZero Phase 2 実装 + smoke | MCTS minimum + calibrated value head | **smoke PASSED** (n_sims=20 で 211 ms)。 計算は PIMC v6 と同等、 構造的に deep PUCT search で局所最適回避を狙う |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
