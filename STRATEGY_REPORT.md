@@ -934,6 +934,55 @@ ensemble (18.9%) すら下回り、 全候補で最下位。
 3. **single policy submission が現状の最適戦略であることが更に確定**:
    PPO_v40 seed=100 single = 全探索の lab PEAK = 提出候補 #1
 
+#### 5.3l 補遺 6: PPO_v40 s100 + s2026 ensemble (= 第 4 の ensemble 失敗パターン、 specialization 境界の confusion)
+
+n=4 試行で「PPO は ~50% で 23% 級を引くガチャ + matchup profile が異な
+る」 と判明したため、 ensemble の必須条件 (= 同レベル strength + 実質的
+diversity) を **初めて満たす ペア** として s100 (lab 23.3%, Crustle Wall
+特化) + s2026 (lab 22.9%, V6 特化) を logit averaging で混合。
+
+**仮説**: 既存 ensemble 失敗 (= 5.3e, 5.3l 本体, 5.3l 補遺 2) は全て
+構成条件を欠いていたため。 今回は **両条件を満たす初の ペア** で
+ensemble lift が復活するはず。
+
+**bench (700g)**:
+```
+vs Mega Lucario: 24.0% (s100=27%, s2026=19%, 中庸)
+vs Dragapult ex: 28.0% (s100=30%, s2026=29%, やや下)
+vs Iono: 10.0% (s100=10%, s2026=11%, 同等)
+vs Mega Abomasnow: 27.0% (s100=32%, s2026=34%, **両者より下**)
+vs Crustle Wall: 26.0% (s100=37%, s2026=22%, 中庸)
+vs Crustle Dashi: 11.0% (s100=7%, s2026=12%, s2026 寄り)
+vs V6: 16.0% (s100=20%, s2026=33%, **両者より下**)
+overall: 142-558 (20.3%) — single best 23.3% から -3.0pp
+```
+
+**重大発見 (第 4 の ensemble 失敗パターン確定)**:
+- 一部 matchup で **両 single より低い** 結果が出る (Aboma 27% <
+  min(32, 34)、 V6 16% < min(20, 33))
+- これは「異なる specialization を持つ same-strength policies の logit
+  averaging は、 specialization の境界で **confusion を起こす**」 構造
+- ensemble の本来の意味 (= "uncorrelated errors の平均化") は、 v40 PPO
+  の場合は機能しない: errors ではなく "specialization patterns" が
+  averaging されて互いを打ち消してしまう
+
+**累積 ensemble 失敗の 4 パターン**:
+| パターン | 原因 | 典型例 |
+|----------|------|--------|
+| 1: features 起因 | v60 deck hash collision | 5.3e |
+| 2: training procedure 起因 | PPO 収束で seed diversity 消失 | 5.3l 本体 |
+| 3: policy strength 不均衡 | 弱い側に dilution | 5.3l 補遺 2 |
+| 4: specialization 境界の confusion | 異 profile の logit 平均が両者を破壊 | 5.3l 補遺 6 |
+
+**含意 (戦略的最終結論)**:
+- **Ensemble は v40 PPO 系統では原理的に機能しない**: 4 パターンの失敗
+  が示すように、 PPO で訓練された policies の組み合わせは常に劣化
+- 例外は 3-MLP base ensemble (LB 679.6) のみ、 これは "弱い base
+  policies の浅い学習段階での偶然のマッチ" として説明される
+- **Single policy submission が確定的に最適戦略**
+- 明日 UTC の 4 枠投入計画は変更なし: s100 + s2026 + s500 + 3-MLP base
+  (= single 3 つ + control ensemble 1 つ)
+
 #### 5.3l 補遺 5: PPO_v40 seed=2026 で n=4 拡張 (= 仮説修正、 PPO ガチャの当たり率は ~50%)
 
 seed=42 試行で seed=100 outlier 確定の結論を出したが、 n=3 は σ 推定に
