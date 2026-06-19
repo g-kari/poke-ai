@@ -110,6 +110,9 @@ CLAUDE.md             Claude Code 向け開発メモ
 | **3-MLP ensemble (seed=20260628 + 42 + 100, 各 2000ep)** | **vs 4 meta deck 32-88 (120 戦, 26.7%)** | 2-MLP の 22.5% から +4.2pp。default の policy |
 | V60 EXT3 (10500ep, features_v60 60-d) | 20.5% @ 30g/opp | LB 573.9 — 3-MLP (679.6) を下回り |
 | **PPO_v40 seed=100 single (base + 1280ep PPO)** | **23.3% @ 700g (= single PEAK)** | 期待 LB ~815、 明日 UTC で提出予定 |
+| PPO_v40 seed=2026 single (= 23% 級 2 個目) | 22.9% @ 700g | s100 と同等 strength、 V6 特化 profile |
+| PPO_v40 seed=500 single (= n=4 中 mid-tier) | 18.6% @ 700g | median signal、 ratio 35 検証用 |
+| PPO_v40 seed=42 single (= n=4 中最弱) | 16.3% @ 700g | train 累積 26.9% (最高) なのに bench 最低 = overfit signal |
 
 ### LB 履歴 (最新スナップショット 2026-06-19、 **訂正版 — TrueSkill settling 後**)
 
@@ -149,19 +152,33 @@ TrueSkill σ settling** の混入だった。
 PPO で BCRL2 (16.1%) → 18-20% への改善が可能なら LB 630-700 が現実
 的視野。
 
-### 明日の path (UTC reset 後の 5 slot)
+### 明日の path (UTC reset 後の 5 slot、 4 枠投入計画)
 
-1. **PPO_v40 seed=100 single 提出** (= 全探索の single PEAK lab 23.3%、
-   期待 LB ~815、 3-MLP base 679.6 を +136 超え狙い)
-2. **3-MLP base 再提出 (control)** — settling 後の真 LB 確認用、
-   ratio 35 仮説の校正用
-3. **残り 3 slot 温存** (= PPO_v40 seed=500 試行中、 結果次第で別 variant)
+1. **PPO_v40 seed=100 single 提出** (= lab 23.3% PEAK、 Crustle Wall 特化
+   profile、 期待 LB ~815、 ratio 35 仮説の検証 1)
+2. **PPO_v40 seed=2026 single 提出** (= lab 22.9% 同 strength、 V6 特化
+   profile、 期待 LB ~800、 ratio 35 仮説の検証 2 + specialization 効果)
+3. **PPO_v40 seed=500 single 提出** (= lab 18.6% mid-tier、 期待 LB ~650、
+   "lab → LB 線形性" の中間点校正)
+4. **3-MLP base 再提出 (control)** — settling 後の真 LB 確認 + ratio 35
+   の baseline (= 既知 LB 679.6)
+5. **残り 1 slot adaptive** — 上記 1-4 の LB 結果次第で決定
 
-**重要な学び (本日確定)**:
-- PPO_v40 ensemble (3 seed × 1280 ep) = 19.1% (single PEAK -4.2pp 劣化)
-- Mixed PPO+base ensemble = 18.6% (= dilution、 全候補で最下位)
-- PPO_v40 s100 ext (lr 1/3 + entropy 0.02) = 19.9% (PEAK regression)
-- → **single policy submission が現状の最適戦略**で確定
+**期待される知見** (LB 着地点から判明する事):
+- s100 ≈ s2026 ≈ 815 → ratio 35 確定、 PPO 高 lab が高 LB に直接 translate
+- s100 vs s2026 で大差 → matchup specialization が LB に強く効く →
+  meta-deck 分布の理解が次の鍵
+- 全部 LB < 700 → "PPO 23% lab は overfit 仮説"、 ratio 25-30 へ下方修正
+- s500 が ratio 35 → "lab → LB 線形" 確定
+
+**今日確定した重要な学び**:
+- PPO は ~50% の確率で 23% 級を引く ガチャ性質 (n=4 試行で確認)
+- ensemble は v40 PPO 系統では原理的に機能しない (4 失敗パターン確定):
+  - features 起因 (v60 deck hash)
+  - PPO 収束で seed diversity 消失
+  - policy strength 不均衡で dilution
+  - specialization 境界で confusion (= 一部 matchup で両 single より下)
+- → **single policy submission が確定的に最適戦略**
 
 **驚きの発見 (2026-06-19)**: 5 個の DL submission 試行 (4-MLP / Mixed /
 Mix v3 / Alt v3) すべて ratio 22-23 で 3-MLP base の 35.9 を再現できず:
