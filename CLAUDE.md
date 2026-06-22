@@ -267,22 +267,21 @@ cg/{__init__.py,api.py,game.py,sim.py,utils.py,libcg.so,cg.dll}
 train/{__init__.py,policy.py,features.py,policy.npz}
 ```
 
-## 次の打ち手 (優先順、 2026-06-19 更新)
+## 次の打ち手 (優先順、 2026-06-22 更新)
 
-1. **明日 UTC reset 後に PPO_v40 seed=100 single 提出**
-   (`submission_ppo_v40_s100.tar.gz` 検証済、 lab 23.3% PEAK、 期待 LB ~815)
-   - 結果次第で ratio 35 仮説の校正点 = LB 815 確認なら成功
-   - LB < 700 着地なら "seed=100 overfit 仮説" が成立
-2. **PPO 探索の median-of-N protocol 導入**: 同じ手法で 3-5 seed 試行し
+1. **公式 Top episodes リプレイ活用** (補遺 25 = 2026-06-22 新発見、 最有力):
+   Kaggle `pokemon-tcg-ai-battle-episodes-YYYY-MM-DD` dataset で LB トップ層の
+   実戦リプレイが取得可能。 a) `strong_team_visible_cards.csv` から deck.csv
+   見直し、 b) Top episodes = BC v2 教師 (BCRL2 LB 570.4 の天井を破る path)
+2. **AlphaZero n_sims=100/200 を 100g 再測定** (補遺 24 で n=200 が
+   42% = 補遺 23 の 54% から後退、 sweet spot 仮説 vs noise 仮説の
+   区別が必要、 50g CI は ±14 pp で広すぎる)
+3. **AlphaZero hyperparameter sweep**: c_puct / value mix / dirichlet
+   noise — 現状 default 値、 tuning 余地大
+4. **PPO 探索の median-of-N protocol**: 同じ手法で 3-5 seed 試行し、
    median lab を真の signal とする (= seed=500 で 18.6% 出た教訓)
-3. **PIMC (Perfect Information Monte Carlo)**: `cg.api.search_begin/step` で
-   情報集合サンプリング。 PPO_v40 seed=100 を rollout policy に流用
-4. **AlphaZero (PIMC + value head)**: PPO_v40 の value network を learnt
-   value として PIMC に組込み、 search のリーフ評価を改善
-5. **デッキ差し替え**: `deck.csv` をメタ環境に合わせて再構成 (= deck と
-   policy の strong coupling を活かす)
-6. **ストラテジー部門レポート** (締切 9/14、 STRATEGY_REPORT.md は v2 完成済、
-   ratio 35 検証結果待ち)
+5. **ストラテジー部門レポート** (締切 9/14、 STRATEGY_REPORT.md は補遺
+   24-25 まで反映、 残る重要 update は Top episodes 活用結果)
 
 ## 終わった打ち手 (= 試行済み、 結論あり)
 

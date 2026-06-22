@@ -1802,6 +1802,118 @@ Draws: 0/50 (0.0%)
 - 「探索系全部 tie」 という強い結論は **慎重に**: 探索深さは
   hyperparameter で、 sweet spot は問題依存
 
+#### 5.3l 補遺 24: AlphaZero n_sims=200 mirror = **AZ-ON 42% (= scaling 仮説の反証)**
+
+**結果 (2026-06-22)**:
+
+PPO_v40 s500 base、 AZ-ON (= alphazero_choose, n_sims=200) vs AZ-OFF
+(= raw MlpPolicy sampling) で 50 g (alternating sides):
+
+```
+Final (50 games, 1722s = 34.4s/game):
+  AZ-ON wins: 21/50 (42.0%)
+  AZ-OFF wins: 29/50 (58.0%)
+  Draws: 0/50 (0.0%)
+```
+
+**scaling table の完成形 (補遺 21-24 を貫いて)**:
+
+| n_sims | AZ-ON 勝率 | 補遺 | 解釈 |
+|--------|------------|------|------|
+| 20  | 42% | 補遺 21 | 当初「干渉」と読んだが、 後に noise floor |
+| 50  | 48% | 補遺 22 | tie 域、 補遺 21 から +6 pp |
+| 100 | **54%** | 補遺 23 | 初の勝ち越し、 monotonic scaling 仮説 |
+| 200 | 42% | 補遺 24 | n=20 と同値、 **scaling 仮説の反証** |
+
+**解釈の選択肢**:
+
+1. **sweet spot 仮説**: n_sims=100 付近に最適点があり、 探索を深めると
+   逆に基底 policy (= raw MlpPolicy) から離れて損失。 PUCT の prior
+   信頼が低下することで誤った行動を選びがち
+2. **noise 仮説**: 50 g の CI は ~±14 pp で広い (補遺 17 の PIMC v6 も
+   52-48 で「tie」と判定)。 補遺 23 の 54% も補遺 24 の 42% もどちらも
+   50% 周辺の noise。 真の勝率は 45-55% に落ちつく可能性
+3. **深い探索ペナルティ仮説**: 1 g に 34.4 s (= n=100 の 2 倍弱) かかり、
+   探索木の評価 leaf が 200 まで広がると noisy な value head 評価が
+   混ざって平均化が劣化
+
+**意義 (= 強い結論を慎重に避ける)**:
+
+- 補遺 23 の「path 再開」結論は**保留**。 真に lift があるかどうか
+  100-200 g で再確認が必要 (= 1 セッション 5-6 時間)
+- もし noise 仮説が正なら、 AlphaZero は **PIMC v6 (52-48 tie) と同等
+  の天井**にぶつかっている可能性
+- 教訓: **scaling curve は 1 点で判断しない**。 補遺 23 で「monotonic
+  scaling 確認」と書いたのは早計だった
+
+**path 優先順 (= 補遺 24 で再修正)**:
+
+1. **公式 Top episodes 活用 (補遺 25)** — DL 系の新規 path、 期待値が
+   高い (= AlphaGo 棋譜 BC と同位置)
+2. **AlphaZero n_sims=100 + n_sims=200 を各 100 g で再測定** —
+   sweet spot 仮説か noise 仮説かの区別が必要
+3. **AlphaZero hyperparameter** (c_puct、 value mix、 dirichlet noise) の
+   sweep — 現状は default 値、 tuning 余地大
+4. **異 features (= card-level embedding)** — DL 系の天井 LB 679.6 を
+   破る別 path
+
+#### 5.3l 補遺 25: 公式 Top episodes リプレイ dataset 発見 + BC 再戦の path 復活
+
+**発見 (2026-06-22)**:
+
+Kaggle 公式が `pokemon-tcg-ai-battle-episodes-YYYY-MM-DD` という日別
+dataset を公開しており、 **LB トップ層 (= 「Top episodes」)** の対戦
+JSON が全て取得可能 (= 直前の n=100 path 再開と独立した新発見):
+
+- `pokemon-tcg-ai-battle-episodes-index`: manifest (483B) — 日付・件数の
+  目録
+- `pokemon-tcg-ai-battle-episodes-2026-06-{16..21}`: 1日 ~750 MB × 6日
+  ≈ 4.5 GB (= 過去 6 日分の全 Top リプレイ JSON)
+- 6/22 以降毎日追加され続けるはず (= 締切 8/16 まで毎日新データ)
+
+外部 EDA notebook (`makimakiai/ptcg-official-top-episodes-detailed-eda-ja`)
+で構造化済 (72 cells、 episode/player/action/visible card/log を pandas
+DataFrame 化、 出力 CSV 8 種):
+
+- `episodes.csv`: 試合単位 (date, team, reward, steps)
+- `players.csv`: プレイヤー単位
+- `actions_sample.csv`: アクション一覧 + winner flag
+- `visible_cards_jp.csv`: 公開観測カードの集計
+- `strong_team_visible_cards.csv`: **勝率上位チームの使用カード**
+- `review_queue.csv`: 短すぎる/長すぎる試合 (= 序盤崩壊 vs リソース循環)
+
+**コンペ路線への示唆 (= 補遺 17 で抑制した BC path の再活性化)**:
+
+1. **BC 再戦**: 過去の BC (BCRL2 = LB 570.4) は「random / PIMC ベースの
+   自己対戦」教師だったため天井 = LB 570。 **Top episodes は LB 800-1000
+   級プレイヤーの実戦データ** → BC 教師として桁違いに強い (= AlphaGo の
+   人プロ棋譜 BC と同じ位置付け)
+2. **deck.csv 見直し**: `strong_team_visible_cards.csv` で勝率上位
+   チームの公開カードを抽出 → 我々の deck が「弱いカード混合」になって
+   いれば差し替え (= heuristic deck builder の天井を破る材料)
+3. **勝者-敗者差分カード**: `visible_cards_jp.csv` + winner flag で
+   「勝者側でよく見えるカード」 を特定 → meta tier-1 カードリスト
+
+**次のステップ (= 補遺 26 候補)**:
+
+- (a) 6/21 dataset を 1 日分だけ DL (~750 MB) して `episodes.csv` 抽出、
+  LB top 10% プレイヤーの deck カードリストを取得
+- (b) 抽出 deck で local mirror match (vs PPO_v40 s500) を試行
+- (c) 勝てそうなら deck.csv 差し替え + Kaggle 提出
+- (d) BC v2 = Top episodes 教師での policy 学習を試行
+
+**注意点 (= EDA notebook cell 71 より)**:
+
+- リプレイ観測は部分情報 (= 手札・正確な山札は非公開)
+- 完全な deck list は再構成必要 (= 「60 枚」確定はできない、 採用率推定
+  のみ)
+- BC は「合法手候補内でランキング」する方式が必要 (= 全行動から直接
+  選ぶと invalid 多発)
+
+**意義**: 補遺 17 の「PIMC 系全部 tie」結論を受けて DL 系から探索系
+への重心シフト中だったが、 公式 Top episodes 公開で **DL 系の天井**
+(= LB 679.6) を破る path が復活。 deck 周りの停滞も解消されうる。
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1832,6 +1944,8 @@ Draws: 0/50 (0.0%)
 | 補遺 21 | AlphaZero mirror match 50g | AZ-ON vs AZ-OFF (both s500), n_sims=20 | **42% vs 58%** = PIMC v6 (52-48) より悪い、 MCTS が干渉 (← **補遺 22 で訂正**: noise だった) |
 | 補遺 22 | AlphaZero n_sims=50 mirror 50g | AZ-ON vs AZ-OFF (both s500), n_sims=50 | **48% vs 52% (tie)** = n_sims=20 から +6pp 改善、 補遺 21 訂正 (← **補遺 23 で再訂正**) |
 | 補遺 23 | AlphaZero n_sims=100 mirror 50g | AZ-ON vs AZ-OFF (both s500), n_sims=100 | **54% vs 46% (初の勝ち越し!)** = n_sims=50 から +6pp、 monotonic scaling 確認、 **AlphaZero path 再開**! |
+| 補遺 24 | AlphaZero n_sims=200 mirror 50g | AZ-ON vs AZ-OFF (both s500), n_sims=200 | **42% vs 58%** = 補遺 23 (54%) から大幅後退、 n=20 の補遺 21 (42%) と同値、 **monotonic scaling 仮説の反証**。 sweet spot は n_sims=100 付近、 または補遺 23 自体が noise (CI 50 g で広い) の可能性 |
+| 補遺 25 | 公式 Top episodes dataset 発見 | Kaggle `pokemon-tcg-ai-battle-episodes-YYYY-MM-DD` 探索 | **LB トップ層の実戦リプレイが全公開** = BC 教師として桁違い、 deck 構成も再検討の材料 |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
