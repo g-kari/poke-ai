@@ -1914,6 +1914,52 @@ DataFrame 化、 出力 CSV 8 種):
 への重心シフト中だったが、 公式 Top episodes 公開で **DL 系の天井**
 (= LB 679.6) を破る path が復活。 deck 周りの停滞も解消されうる。
 
+#### 5.3l 補遺 26: 公式 Top episodes EDA v1 — **我々の deck はトップ層と 10% しか被らない**
+
+**実行 (2026-06-22)**:
+
+- データ: 6/16 dataset (= 1278 episodes、 2.85 GB)
+- サンプル: 最初の 200 episodes
+- 出力: `docs/EPISODES_EDA_V1.md` (完全表 + 解釈付き)
+- スクリプト: `scripts/episodes_eda_v1.py`
+
+**発見 (= deck 戦略の根本的な再考材料)**:
+
+1. **アーキタイプ違い確定**: 勝者側で見えたカード Top 50 のうち、
+   我々の `deck.csv` (60 枚 / **11 種類のみ**) と重なるのは **5 種類
+   (10%)** のみ。 残り 45 種類は全く採用していない
+2. **共通の中核**: `[3, 721, 723, 1145, 1227]` の 5 種類は我々とトップ
+   層の共通カード = deck の「正当性が担保された部分」
+3. **取り入れ候補筆頭**: `[1120, 1152, 121, 235]` は勝者偏差 +3000 以上
+   で我々が未採用 = deck 全面見直しの起点
+4. **トップチーム発見**: `monst_dama` が 10-0 で全勝、 `okadayuki` が
+   5-0 (= top tier の戦略を更に絞り込める)
+
+**意義 (= 補遺 17 「PIMC アーキテクチャ自体の限界」 への対案)**:
+
+- 補遺 17 で「DL も探索も天井近い」と判定した直後、 deck そのものが
+  非最適だった可能性が浮上 = **問題は policy ではなく environment 入力**
+- LB 874.7 の rule-based champion (CrustleDashimaki) も特定 deck 前提
+  で設計されている。 strong-deck × weak-policy が weak-deck × strong-
+  policy を上回るのが TCG の本質
+
+**次のステップ (= 補遺 27 候補)**:
+
+1. **強チーム単独復元**: top 5 チームの全 episode を読み、 個別 episode
+   で各カードの「採用枚数推定」(= max-seen-count) を集計
+2. **JP_Card_Data.csv 突合**: 上記カード ID の日本語名 + カテゴリで
+   ポケモン/トレーナー/エネルギー 比率を可視化
+3. **暫定 deck.csv 試作**: 60 枚制約 + 4 枚ルールを満たす top tier
+   構成を生成、 local mirror で従来 deck vs 新 deck を A/B
+4. **BC v2 教師生成**: 勝者プレイの (obs, action) ペアで policy 再学習
+
+**注意点**:
+
+- 200 ep は 1278 中の 16% サンプリング、 偶然性混入
+- 観測は公開部分のみ (= 山札 + 手札の一部は不可視)
+- delta は記述統計で因果ではない
+- top チームの games が少ない (3-12)、 CI は広い
+
 #### 5.3l 補遺 mapping (= reader 用 TOC、 時系列順 + 結論変遷)
 
 5.3l 本体に続く 8 個の補遺は、 30 分サイクル毎に発見が重なって順次追加
@@ -1946,6 +1992,7 @@ DataFrame 化、 出力 CSV 8 種):
 | 補遺 23 | AlphaZero n_sims=100 mirror 50g | AZ-ON vs AZ-OFF (both s500), n_sims=100 | **54% vs 46% (初の勝ち越し!)** = n_sims=50 から +6pp、 monotonic scaling 確認、 **AlphaZero path 再開**! |
 | 補遺 24 | AlphaZero n_sims=200 mirror 50g | AZ-ON vs AZ-OFF (both s500), n_sims=200 | **42% vs 58%** = 補遺 23 (54%) から大幅後退、 n=20 の補遺 21 (42%) と同値、 **monotonic scaling 仮説の反証**。 sweet spot は n_sims=100 付近、 または補遺 23 自体が noise (CI 50 g で広い) の可能性 |
 | 補遺 25 | 公式 Top episodes dataset 発見 | Kaggle `pokemon-tcg-ai-battle-episodes-YYYY-MM-DD` 探索 | **LB トップ層の実戦リプレイが全公開** = BC 教師として桁違い、 deck 構成も再検討の材料 |
+| 補遺 26 | 公式 Top episodes EDA v1 (= 6/16 dataset、 200 ep) | 勝者-敗者の見えカード集計 + チーム別勝率 | **我々の deck はトップ層 Top 50 中 5 種類 (10%) しか採用していない**! アーキタイプ違い確定、 deck 全面見直し候補 (`docs/EPISODES_EDA_V1.md`) |
 
 **4 つの ensemble 失敗パターン分類**: features 起因 (5.3e)、 training
 procedure 起因 (5.3l 本体)、 strength 不均衡 起因 (補遺)、 specialization
